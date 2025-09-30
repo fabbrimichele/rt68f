@@ -1,0 +1,29 @@
+[0m[[0m[0mdebug[0m] [0m[0mPackaging /home/michele/rt68f/target/scala-2.13/rt68f_2.13-1.0.jar ...[0m
+[0m[[0m[0mdebug[0m] [0m[0mInput file mappings:[0m
+[0m[[0m[0mdebug[0m] [0m[0m	rt68f[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/michele/rt68f/target/scala-2.13/classes/rt68f[0m
+[0m[[0m[0mdebug[0m] [0m[0m	rt68f/Rt68fTopLevel.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/michele/rt68f/target/scala-2.13/classes/rt68f/Rt68fTopLevel.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	rt68f/Rt68fTopLevelVhdl$delayedInit$body.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/michele/rt68f/target/scala-2.13/classes/rt68f/Rt68fTopLevelVhdl$delayedInit$body.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	rt68f/memory[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/michele/rt68f/target/scala-2.13/classes/rt68f/memory[0m
+[0m[[0m[0mdebug[0m] [0m[0m	rt68f/memory/keys.hex[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/michele/rt68f/target/scala-2.13/classes/rt68f/memory/keys.hex[0m
+[0m[[0m[0mdebug[0m] [0m[0m	rt68f/memory/blinker.hex[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/michele/rt68f/target/scala-2.13/classes/rt68f/memory/blinker.hex[0m
+[0m[[0m[0mdebug[0m] [0m[0m	rt68f/memory/led_on.hex[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/michele/rt68f/target/scala-2.13/classes/rt68f/memory/led_on.hex[0m
+[0m[[0m[0mdebug[0m] [0m[0m	rt68f/Config$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/michele/rt68f/target/scala-2.13/classes/rt68f/Config$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	rt68f/Rt68fTopLevelVhdl.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/michele/rt68f/target/scala-2.13/classes/rt68f/Rt68fTopLevelVhdl.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	rt68f/Rt68fTopLevel$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/michele/rt68f/target/scala-2.13/classes/rt68f/Rt68fTopLevel$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	rt68f/Rt68fTopLevel$$anon$1.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/michele/rt68f/target/scala-2.13/classes/rt68f/Rt68fTopLevel$$anon$1.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	rt68f/Config.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/michele/rt68f/target/scala-2.13/classes/rt68f/Config.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	rt68f/Rt68fTopLevelVhdl$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/michele/rt68f/target/scala-2.13/classes/rt68f/Rt68fTopLevelVhdl$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0mDone packaging.[0m

@@ -1,0 +1,2 @@
+vhdl work "../hw/gen/Rt68fTopLevel.vhd"
+vhdl work "../hw/gen/mergeRTL.vhd"

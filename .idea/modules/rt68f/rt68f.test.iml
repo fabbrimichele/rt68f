@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module external.linked.project.id="projectname:test [file:/home/michele/rt68f/]" external.linked.project.path="$MODULE_DIR$/../../.." external.root.project.path="$MODULE_DIR$/../../.." external.system.id="SBT" external.system.module.type="sbtSourceSet" type="JAVA_MODULE" version="4">
+  <component name="DisplayModuleName">
+    <option name="name" value="rt68f.test" />
+  </component>
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_8">
+    <output-test url="file://$MODULE_DIR$/../../../target/scala-2.13/test-classes" />
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/../../../src/test" />
+    <content url="file://$MODULE_DIR$/../../../target/scala-2.13/resource_managed/test" />
+    <content url="file://$MODULE_DIR$/../../../target/scala-2.13/src_managed/test" />
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="sbt: scala-sdk-2.13.14" level="project" />
+    <orderEntry type="module" module-name="rt68f.main" />
+    <orderEntry type="library" name="sbt: org.scala-lang:scala-library:2.13.14:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.github.spinalhdl:spinalhdl-core_2.13:1.12.3:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.github.spinalhdl:spinalhdl-lib_2.13:1.12.3:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.github.spinalhdl:spinalhdl-idsl-plugin_2.13:1.12.3:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.github.spinalhdl:spinalhdl-sim_2.13:1.12.3:jar" level="project" />
+    <orderEntry type="library" name="sbt: org.scalactic:scalactic_2.13:3.2.10:jar" level="project" />
+    <orderEntry type="library" name="sbt: org.scala-lang:scala-reflect:2.13.14:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.github.scopt:scopt_2.13:4.1.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.lihaoyi:sourcecode_2.13:0.3.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: commons-io:commons-io:2.11.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: org.scala-lang:scala-compiler:2.13.14:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.github.spinalhdl:spinalhdl-idsl-payload_2.13:1.12.3:jar" level="project" />
+    <orderEntry type="library" name="sbt: net.openhft:affinity:3.23.2:jar" level="project" />
+    <orderEntry type="library" name="sbt: org.slf4j:slf4j-simple:2.0.5:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.github.oshi:oshi-core:6.4.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: io.github.java-diff-utils:java-diff-utils:4.12:jar" level="project" />
+    <orderEntry type="library" name="sbt: org.jline:jline:3.25.1:jar" level="project" />
+    <orderEntry type="library" name="sbt: net.java.dev.jna:jna:5.14.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: org.slf4j:slf4j-api:2.0.5:jar" level="project" />
+    <orderEntry type="library" name="sbt: net.java.dev.jna:jna-platform:5.12.1:jar" level="project" />
+  </component>
+  <component name="TestModuleProperties" production-module="rt68f.main" />
+</module>

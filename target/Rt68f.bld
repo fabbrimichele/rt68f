@@ -1,0 +1,42 @@
+Release 14.7 ngdbuild P.20131013 (lin64)
+Copyright (c) 1995-2013 Xilinx, Inc.  All rights reserved.
+
+Command Line: /opt/Xilinx/14.7/ISE_DS/ISE/bin/lin64/unwrapped/ngdbuild -intstyle
+ise -dd _ngo -nt timestamp -uc ../hw/xilinx/papilio_duo_computing_shield.ucf -p
+xc6slx9-tqg144-2 Rt68f.ngc Rt68f.ngd
+
+Reading NGO file "/home/michele/rt68f/target/Rt68f.ngc" ...
+Gathering constraint information from source properties...
+Done.
+
+Annotating constraints to design from ucf file
+"../hw/xilinx/papilio_duo_computing_shield.ucf" ...
+Resolving constraint associations...
+Checking Constraint Associations...
+INFO:ConstraintSystem - The Period constraint <PERIOD=31.25ns;>
+   [../hw/xilinx/papilio_duo_computing_shield.ucf(10)], is specified using the
+   Net Period method which is not recommended. Please use the Timespec PERIOD
+   method.
+
+Done...
+
+Checking expanded design ...
+
+Partition Implementation Status
+-------------------------------
+
+  No Partitions were found in this design.
+
+-------------------------------
+
+NGDBUILD Design Results Summary:
+  Number of errors:     0
+  Number of warnings:   0
+
+Total memory usage is 393596 kilobytes
+
+Writing NGD file "Rt68f.ngd" ...
+Total REAL time to NGDBUILD completion:  0 sec
+Total CPU time to NGDBUILD completion:   0 sec
+
+Writing NGDBUILD log file "Rt68f.bld"...
