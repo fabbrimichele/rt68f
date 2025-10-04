@@ -1,24 +1,112 @@
 package rt68f
 
+import rt68f.core.{M68k, M68kToApb3Bridge16, ResetCtrl, Tg68000BB}
+import rt68f.io.LedApb16
+import rt68f.memory.Mem16Bits
 import spinal.core._
-import spinal.lib.com.uart._
-import spinal.lib._
+import spinal.lib.bus.amba3.apb.Apb3Decoder
+import spinal.lib.bus.misc.SizeMapping
 
+import scala.Predef.->
 import scala.language.postfixOps
 
 /**
  * Hardware definition
  * @param romFilename name of the file containing the ROM content
+ *
+ * SimpleSoC Memory Map
+ *
+ *   0x0000 - 0x0FFF   : 4 KB ROM (16-bit words)
+ *   0x10000 - 0x10FFF : APB3 - LED peripheral (16-bit, lower 4 bits drive LEDs)
+ *
+ * Notes:
+ * - ROM is read-only, currently with no init file (optionally load via initFile).
+ * - APB3 bus is hardwired for 16-bit transfers.
+ * - Active-low signals: AS, DTACK (handled by Mem16Bits and bridge).
  */
+
 //noinspection TypeAnnotation
 case class Rt68fTopLevel(romFilename: String) extends Component {
   val io = new Bundle {
-    val clk = in Bool()
     val reset = in Bool()
     val led = out Bits(4 bits)
   }
 
-  io.led := B("0001")
+  val resetCtrl = ResetCtrl()
+  resetCtrl.io.button := io.reset
+
+  val resetArea = new ResetArea(resetCtrl.io.resetOut, cumulative = false) {
+    // ----------------
+    // CPU Core
+    // ----------------
+    val cpu = M68k()
+    val cpuDataI = Bits(16 bits)
+    val cpuDtack = Bool()
+
+    // Connect CPU inputs to the aggregated signals
+    cpu.io.DATAI := cpuDataI
+    cpu.io.DTACK := cpuDtack
+
+    // Default responses
+    cpuDataI := B(0, 16 bits)
+    cpuDtack := True
+
+    // ----------------
+    // ROM: 2 KB @ 0x0000
+    // ----------------
+    val romSizeWords = 2048 / 2 // 2 KB / 2 bytes per 16-bit word
+    val rom = Mem16Bits(size = romSizeWords, readOnly = true, initFile = Some(romFilename))
+    val romSel = cpu.io.ADDR < U(0x1000, cpu.io.ADDR.getWidth bits)
+
+    // Connect CPU outputs to ROM inputs
+    rom.io.bus.AS    := cpu.io.AS
+    rom.io.bus.UDS   := cpu.io.UDS
+    rom.io.bus.LDS   := cpu.io.LDS
+    rom.io.bus.RW    := cpu.io.RW
+    rom.io.bus.ADDR  := cpu.io.ADDR
+    rom.io.bus.DATAO := cpu.io.DATAO
+
+    rom.io.sel := romSel
+
+    // If ROM selected, forward ROM response into CPU aggregated signals
+    when(!cpu.io.AS && romSel) {
+      cpuDataI := rom.io.bus.DATAI
+      cpuDtack := rom.io.bus.DTACK
+    }
+
+    // ----------------
+    // APB3 Bridge and Devices
+    // ----------------
+    val apbBridge = M68kToApb3Bridge16(addrWidth = 32)
+
+    // Connect CPU outputs to bridge inputs (only single-driver assignments)
+    apbBridge.io.m68k.AS    := cpu.io.AS
+    apbBridge.io.m68k.UDS   := cpu.io.UDS
+    apbBridge.io.m68k.LDS   := cpu.io.LDS
+    apbBridge.io.m68k.RW    := cpu.io.RW
+    apbBridge.io.m68k.ADDR  := cpu.io.ADDR.resized
+    apbBridge.io.m68k.DATAO := cpu.io.DATAO
+
+    // determine APB-mapped selection for simple top-level arbitration
+    val apbSel = (cpu.io.ADDR >= U(0x10000)) && (cpu.io.ADDR < U(0x11000))
+
+    // When APB-selected, forward bridge response into CPU aggregated signals
+    when(!cpu.io.AS && apbSel) {
+      cpuDataI := apbBridge.io.m68k.DATAI
+      cpuDtack := apbBridge.io.m68k.DTACK
+    }
+
+    // LED device (16-bit APB)
+    val ledDev = LedApb16(width = 4, addressWidth = 12)
+    io.led := ledDev.io.leds
+
+    val apbDecoder = Apb3Decoder(
+      master = apbBridge.io.apb,
+      slaves = Seq(
+        (ledDev.io.apb, SizeMapping(0x10000, 4 KiB))  // LED mapped at 0x10000
+      )
+    )
+  }
 
   // Remove io_ prefix
   noIoPrefix()
@@ -26,7 +114,8 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
 object Rt68fTopLevelVhdl extends App {
   //private val romFilename = "keys.hex"
-  private val romFilename = "blinker.hex"
+  //private val romFilename = "blinker.hex"
+  private val romFilename = "led_on.hex"
   private val report = Config.spinal.generateVhdl(Rt68fTopLevel(romFilename))
   report.mergeRTLSource("mergeRTL") // Merge all rtl sources into mergeRTL.vhd and mergeRTL.v files
   report.printPruned()

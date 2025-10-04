@@ -49,4 +49,4 @@ LOOP:   JMP   LOOP            ; Infinite loop
         ; ===========================
         ; Constants
         ; ===========================
-LED     EQU     $00FF0000       ; LED-mapped register base address
+LED     EQU     $10000       ; LED-mapped register base address
