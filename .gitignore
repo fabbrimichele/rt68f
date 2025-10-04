@@ -1,2 +1,3 @@
 target/
 gen/
+/hw/spinal/rt68f/memory/*.hex
