@@ -15,8 +15,12 @@ import scala.language.postfixOps
  *
  * SimpleSoC Memory Map
  *
- *   0x0000 - 0x0FFF   : 4 KB ROM (16-bit words)
- *   0x10000 - 0x10FFF : APB3 - LED peripheral (16-bit, lower 4 bits drive LEDs)
+ *   0x0000  - 0x0FFF  : 4 KB ROM (16-bit words)
+ *   0x0800  - 0x0FFF  : 2 KB RAM (16-bit words)
+ *   0x10000 - 0x13FFF : APB3 bus (16-bit)
+ *       0x10000 - 0x10FFF : LED peripheral (lower 4 bits drive LEDs)
+ *       0x11000 - 0x11FFF : KEY peripheral (lower 4 bits reflect key inputs)
+ *       0x12000 - 0x13FFF : reserved for future APB3 devices
  *
  * Notes:
  * - ROM is read-only, currently with no init file (optionally load via initFile).
@@ -29,6 +33,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
   val io = new Bundle {
     val reset = in Bool()
     val led = out Bits(4 bits)
+    val key = in Bits(4 bits)
   }
 
   val resetCtrl = ResetCtrl()
@@ -110,7 +115,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     apbBridge.io.m68k.DATAO := cpu.io.DATAO
 
     // determine APB-mapped selection for simple top-level arbitration
-    val apbSel = (cpu.io.ADDR >= U(0x10000)) && (cpu.io.ADDR < U(0x11000))
+    val apbSel = (cpu.io.ADDR >= U(0x10000)) && (cpu.io.ADDR < U(0x14000))
 
     // When APB-selected, forward bridge response into CPU aggregated signals
     when(!cpu.io.AS && apbSel) {
@@ -122,10 +127,15 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val ledDev = LedApb16(width = 4, addressWidth = 12)
     io.led := ledDev.io.leds
 
+    // Key device (16-bit APB)
+    val keyDev = KeyApb16(width = 4, addressWidth = 12)
+    keyDev.io.keys := io.key
+
     val apbDecoder = Apb3Decoder(
       master = apbBridge.io.apb,
       slaves = Seq(
-        (ledDev.io.apb, SizeMapping(0x10000, 4 KiB))  // LED mapped at 0x10000
+        (ledDev.io.apb, SizeMapping(0x10000, 4 KiB)),  // LED mapped at 0x10000
+        (keyDev.io.apb, SizeMapping(0x11000, 4 KiB)),  // KEY mapped at 0x10000
       )
     )
   }
@@ -135,8 +145,8 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 }
 
 object Rt68fTopLevelVhdl extends App {
-  //private val romFilename = "keys.hex"
-  private val romFilename = "blinker.hex"
+  private val romFilename = "keys.hex"
+  //private val romFilename = "blinker.hex"
   //private val romFilename = "led_on.hex"
   private val report = Config.spinal.generateVhdl(Rt68fTopLevel(romFilename))
   report.mergeRTLSource("mergeRTL") // Merge all rtl sources into mergeRTL.vhd and mergeRTL.v files

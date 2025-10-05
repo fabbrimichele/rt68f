@@ -65,8 +65,8 @@ DLY_LOOP:
     ; Constants
     ; ===========================
 DLY_VAL     EQU     53200       ; Delay iterations, 53200 = 20 ms at 32MHz
-KEY         EQU     $00AA0000   ; Key-mapped register base address
-LED         EQU     $00FF0000   ; LED-mapped register base address
 END_RAM     EQU     $00001000   ; End of RAM address
+LED         EQU     $00010000   ; LED-mapped register base address
+KEY         EQU     $00011000   ; Key-mapped register base address
 
 
