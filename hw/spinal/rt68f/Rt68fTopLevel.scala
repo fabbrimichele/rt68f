@@ -1,13 +1,12 @@
 package rt68f
 
-import rt68f.core.{M68k, M68kToApb3Bridge16, ResetCtrl, Tg68000BB}
-import rt68f.io.LedApb16
-import rt68f.memory.Mem16Bits
+import rt68f.core._
+import rt68f.io._
+import rt68f.memory._
 import spinal.core._
-import spinal.lib.bus.amba3.apb.Apb3Decoder
+import spinal.lib.bus.amba3.apb._
 import spinal.lib.bus.misc.SizeMapping
 
-import scala.Predef.->
 import scala.language.postfixOps
 
 /**
@@ -52,11 +51,11 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     cpuDtack := True
 
     // ----------------
-    // ROM: 2 KB @ 0x0000
+    // ROM: 2 KB @ 0x0000 - 0x0800
     // ----------------
     val romSizeWords = 2048 / 2 // 2 KB / 2 bytes per 16-bit word
     val rom = Mem16Bits(size = romSizeWords, readOnly = true, initFile = Some(romFilename))
-    val romSel = cpu.io.ADDR < U(0x1000, cpu.io.ADDR.getWidth bits)
+    val romSel = cpu.io.ADDR < U(0x800, cpu.io.ADDR.getWidth bits)
 
     // Connect CPU outputs to ROM inputs
     rom.io.bus.AS    := cpu.io.AS
@@ -72,6 +71,29 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     when(!cpu.io.AS && romSel) {
       cpuDataI := rom.io.bus.DATAI
       cpuDtack := rom.io.bus.DTACK
+    }
+
+    // ----------------
+    // RAM: 2 KB @ 0x0800 - 0x1000
+    // ----------------
+    val ramSizeWords = 2048 / 2 // 2 KB / 2 bytes per 16-bit word
+    val ram = Mem16Bits(size = ramSizeWords)
+    val ramSel = cpu.io.ADDR >= U(0x800, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x1000, cpu.io.ADDR.getWidth bits)
+
+    // Connect CPU outputs to ROM inputs
+    ram.io.bus.AS    := cpu.io.AS
+    ram.io.bus.UDS   := cpu.io.UDS
+    ram.io.bus.LDS   := cpu.io.LDS
+    ram.io.bus.RW    := cpu.io.RW
+    ram.io.bus.ADDR  := cpu.io.ADDR
+    ram.io.bus.DATAO := cpu.io.DATAO
+
+    ram.io.sel := ramSel
+
+    // If RAM selected, forward RAM response into CPU aggregated signals
+    when(!cpu.io.AS && ramSel) {
+      cpuDataI := ram.io.bus.DATAI
+      cpuDtack := ram.io.bus.DTACK
     }
 
     // ----------------

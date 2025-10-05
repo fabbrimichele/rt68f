@@ -23,8 +23,8 @@ case class M68kToApb3Bridge16(addrWidth: Int) extends Component {
   val pselReg    = Reg(Bits(1 bits)) init 0
   val penableReg = Reg(Bool()) init False
   val pwriteReg  = Reg(Bool()) init False
-  val paddrReg   = Reg(UInt(addrWidth bits)) init(U(0, addrWidth bits))
-  val pwdataReg  = Reg(Bits(16 bits)) init(B(0, 16 bits))
+  val paddrReg   = Reg(UInt(addrWidth bits)) init U(0, addrWidth bits)
+  val pwdataReg  = Reg(Bits(16 bits)) init B(0, 16 bits)
 
   // Connect registers to APB master outputs (single place where io.apb is driven)
   io.apb.PSEL   := pselReg
@@ -37,7 +37,7 @@ case class M68kToApb3Bridge16(addrWidth: Int) extends Component {
   io.m68k.DATAI := io.apb.PRDATA
 
   // We'll drive DTACK from a register to avoid multiple drivers / glitches
-  val dtackReg = Reg(Bool()) init(False)
+  val dtackReg = Reg(Bool()) init True // de-asserted by default (high)
   io.m68k.DTACK := dtackReg
 
   // ----------------------------------------------------------------------------
@@ -51,7 +51,7 @@ case class M68kToApb3Bridge16(addrWidth: Int) extends Component {
         // defaults in idle
         pselReg := 0
         penableReg := False
-        dtackReg := False
+        dtackReg := True // de-asserted
 
         // wait for active transfer (AS is active-low)
         when(!io.m68k.AS) {
@@ -74,7 +74,7 @@ case class M68kToApb3Bridge16(addrWidth: Int) extends Component {
         // Keep PSEL asserted in setup, PENABLE false (setup phase)
         pselReg := 1
         penableReg := False
-        dtackReg := False
+        dtackReg := True // de-asserted
 
         // move to access on next clock (APB slaves now see PSEL and address)
         goto(access)
@@ -90,11 +90,11 @@ case class M68kToApb3Bridge16(addrWidth: Int) extends Component {
         // Wait for slave to indicate ready
         when(io.apb.PREADY) {
           // Acknowledge CPU for one cycle
-          dtackReg := True
+          dtackReg := False // asserted
           goto(done)
         } otherwise {
           // Keep waiting, DTACK remains False until PREADY
-          dtackReg := False
+          dtackReg := True // de-asserted
         }
       }
     }
@@ -105,9 +105,9 @@ case class M68kToApb3Bridge16(addrWidth: Int) extends Component {
         pselReg := 0
         penableReg := False
 
-        // DTACK was asserted in previous state; here we can clear it.
+        // DTACK was asserted in previous state; here we can clear it (True).
         // Note: CPU might sample DTACK combinationally — this code asserts it for one clock.
-        dtackReg := False
+        dtackReg := True
 
         // Wait for CPU to release AS (transaction finished)
         when(io.m68k.AS) {
