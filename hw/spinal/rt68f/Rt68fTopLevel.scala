@@ -6,6 +6,8 @@ import rt68f.memory._
 import spinal.core._
 import spinal.lib.bus.amba3.apb._
 import spinal.lib.bus.misc.SizeMapping
+import spinal.lib.com.uart.{Apb3UartCtrl, Uart, UartCtrlMemoryMappedConfig}
+import spinal.lib.master
 
 import scala.language.postfixOps
 
@@ -34,6 +36,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val reset = in Bool()
     val led = out Bits(4 bits)
     val key = in Bits(4 bits)
+    val uart = master(Uart()) // Expose UART pins (txd, rxd), must be defined in the ucf
   }
 
   val resetCtrl = ResetCtrl()
@@ -123,6 +126,10 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       cpuDtack := apbBridge.io.m68k.DTACK
     }
 
+    // TODO: the following might be used to replace
+    //  dedicated modules for LED and Key
+    //  https://spinalhdl.github.io/SpinalDoc-RTD/master/SpinalHDL/Libraries/regIf.html
+
     // LED device (16-bit APB)
     val ledDev = LedApb16(width = 4, addressWidth = 12)
     io.led := ledDev.io.leds
@@ -131,11 +138,27 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val keyDev = KeyApb16(width = 4, addressWidth = 12)
     keyDev.io.keys := io.key
 
+    // Serial
+    // WIDTH MISMATCH (32 bits <- 16 bits) on (toplevel/resetArea_uartDev/io_apb_PWDATA : in Bits[32 bits]) := (toplevel/[Apb3Router]/io_outputs_2_PWDATA : out Bits[16 bits])
+    // TODO: I need either implement a 32bit APB3 to 68000 bridge or create an adapter between 32bit APB3 and 16bit APB3
+    val uartDev = new Apb3UartCtrl16(
+      UartCtrlMemoryMappedConfig(
+        baudrate = 9600,
+        txFifoDepth = 1,
+        rxFifoDepth = 1,
+      )
+    )
+    uartDev.io.uart <> io.uart
+
+    // TODO: add timer
+    //  https://spinalhdl.github.io/SpinalDoc-RTD/master/SpinalHDL/Examples/Advanced%20ones/timer.html
+
     val apbDecoder = Apb3Decoder(
       master = apbBridge.io.apb,
       slaves = Seq(
-        (ledDev.io.apb, SizeMapping(0x10000, 4 KiB)),  // LED mapped at 0x10000
-        (keyDev.io.apb, SizeMapping(0x11000, 4 KiB)),  // KEY mapped at 0x10000
+        (ledDev.io.apb, SizeMapping(0x10000, 4 KiB)),   // LED mapped at 0x10000
+        (keyDev.io.apb, SizeMapping(0x11000, 4 KiB)),   // KEY mapped at 0x11000
+        (uartDev.io.apb, SizeMapping(0x12000, 4 KiB)),  // UART mapped at 0x12000
       )
     )
   }
@@ -145,9 +168,11 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 }
 
 object Rt68fTopLevelVhdl extends App {
-  private val romFilename = "keys.hex"
+  //private val romFilename = "keys.hex"
   //private val romFilename = "blinker.hex"
   //private val romFilename = "led_on.hex"
+  private val romFilename = "uart.hex"
+
   private val report = Config.spinal.generateVhdl(Rt68fTopLevel(romFilename))
   report.mergeRTLSource("mergeRTL") // Merge all rtl sources into mergeRTL.vhd and mergeRTL.v files
   report.printPruned()
