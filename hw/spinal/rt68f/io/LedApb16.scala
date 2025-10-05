@@ -1,8 +1,8 @@
 package rt68f.io
 
-import spinal.core.{Bits, Bundle, Component, IntToBuilder, UInt, out}
-import spinal.lib.bus.amba3.apb.{Apb3, Apb3Config, Apb3SlaveFactory}
-import spinal.lib.slave
+import spinal.core._
+import spinal.lib.bus.amba3.apb._
+import spinal.lib._
 
 import scala.language.postfixOps
 
