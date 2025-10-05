@@ -1,3 +1,4 @@
 target/
 gen/
+simWorkspace/
 /hw/spinal/rt68f/memory/*.hex
