@@ -14,7 +14,7 @@ gen/$(TARGET)TopLevel.v: rom
 gen/$(TARGET)TopLevel.vhdl: rom
 	sbt "runMain ${TOPLEVEL}Vhdl"
 
-rom: blinker led_on keys
+rom: blinker led_on keys uart
 
 blinker:
 	vasmm68k_mot -Fbin sw/asm/blinker.asm -o hw/gen/blinker.bin
@@ -34,6 +34,12 @@ keys:
 	mkdir -p target/scala-2.13/classes/rt68f/memory/
 	cp hw/spinal/rt68f/memory/keys.hex target/scala-2.13/classes/rt68f/memory/keys.hex
 
+uart:
+	vasmm68k_mot -Fbin sw/asm/uart.asm -o hw/gen/uart.bin
+	xxd -p -c 2 hw/gen/uart.bin | awk '{print toupper($$0)}' > hw/spinal/rt68f/memory/uart.hex
+	mkdir -p target/scala-2.13/classes/rt68f/memory/
+	cp hw/spinal/rt68f/memory/uart.hex target/scala-2.13/classes/rt68f/memory/uart.hex
+
 prog-fpga:
 	echo "Programming FPGA"
 	papilio-prog -v -f target/$(TARGET).bit
@@ -46,6 +52,7 @@ disassemble:
 	m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/led_on.bin
 	m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/blinker.bin
 	m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/keys.bin
+	m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/uart.bin
 
 clean:
 	rm -f hw/gen/*.v
