@@ -28,10 +28,9 @@ NET uart_txd        LOC="P117" | IOSTANDARD=LVTTL;                              
 #NET SD_MOSI       LOC="P115" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B0
 #NET SD_SCK        LOC="P114" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B1
 #NET SD_nCS        LOC="P112" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B2
-#NET key(3)         LOC="P111" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B3 - key left
-#NET key(2)         LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B4 - key down
-#NET reset          LOC="P102" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST | CLOCK_DEDICATED_ROUTE = FALSE; # B5
-NET reset          LOC="P102" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B5
+NET key(3)         LOC="P111" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B3 - key left
+#NET key(2)         LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B4 - key down - key(2) makes the UART stop working (not working also without DRIVE=8 | SLEW=FAST)
+NET reset          LOC="P102" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST | CLOCK_DEDICATED_ROUTE = FALSE; # B5
 NET key(0)         LOC="P101" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B6 - key up
 NET key(1)         LOC="P100" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B7 - key right
 #NET vgaHSync     LOC="P99"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C0

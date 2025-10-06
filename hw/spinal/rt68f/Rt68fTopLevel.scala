@@ -135,10 +135,8 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     io.led := ledDev.io.leds
 
     // Key device (16-bit APB)
-/*
     val keyDev = KeyApb16(width = 4, addressWidth = 12)
     keyDev.io.keys := io.key
-*/
 
     // Serial
     // WIDTH MISMATCH (32 bits <- 16 bits) on (toplevel/resetArea_uartDev/io_apb_PWDATA : in Bits[32 bits]) := (toplevel/[Apb3Router]/io_outputs_2_PWDATA : out Bits[16 bits])
@@ -158,7 +156,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       master = apbBridge.io.apb,
       slaves = Seq(
         (ledDev.io.apb,  SizeMapping(0x10000, 4 KiB)),   // LED mapped at 0x10000
-        //(keyDev.io.apb,  SizeMapping(0x11000, 4 KiB)),   // KEY mapped at 0x11000
+        (keyDev.io.apb,  SizeMapping(0x11000, 4 KiB)),   // KEY mapped at 0x11000
         (uartDev.io.apb, SizeMapping(0x12000, 4 KiB)),  // UART mapped at 0x12000
       )
     )
