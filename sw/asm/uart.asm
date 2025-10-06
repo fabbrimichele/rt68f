@@ -44,13 +44,31 @@
     ORG    $0080            ; Start of memory
 
 START:
-    LEA     LED,A0          ; Load LED register address into A0
-    LEA     KEY,A1          ; Load KEY register address into A1
-    LEA     UART,A2         ; Load UART register address into A2
 
 LOOP:
-    MOVE.W  #$041,(A2)      ; Write 'A' to UART data register
     JSR     DELAY           ; Call delay
+    MOVE.W  (KEY),D1        ; Read keyboard
+    MOVE.W  D1,(LED)        ; LED feedback
+    CMP.W   #1,D1           ;
+    BEQ     IS_UP           ;
+    CMP.W   #2,D1           ;
+    BEQ     IS_LEFT        ;
+    CMP.W   #4,D1           ;
+    BEQ     IS_DOWN         ;
+    CMP.W   #8,D1           ;
+    BEQ     IS_RIGHT        ;
+    JMP     LOOP            ;
+IS_UP:
+    MOVE.W  #'U',(UART)     ; Write 'U' to UART data register
+    JMP     LOOP            ; Infinite loop
+IS_LEFT:
+    MOVE.W  #'L',(UART)     ; Write 'L' to UART data register
+    JMP     LOOP            ; Infinite loop
+IS_RIGHT:
+    MOVE.W  #'R',(UART)     ; Write 'R' to UART data register
+    JMP     LOOP            ; Infinite loop
+IS_DOWN:
+    MOVE.W  #'D',(UART)     ; Write 'R' to UART data register
     JMP     LOOP            ; Infinite loop
 
 DELAY:

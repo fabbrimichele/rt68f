@@ -28,11 +28,24 @@ NET uart_txd        LOC="P117" | IOSTANDARD=LVTTL;                              
 #NET SD_MOSI       LOC="P115" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B0
 #NET SD_SCK        LOC="P114" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B1
 #NET SD_nCS        LOC="P112" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B2
-NET key(3)         LOC="P111" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B3 - key left
-#NET key(2)         LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B4 - key down - key(2) makes the UART stop working (not working also without DRIVE=8 | SLEW=FAST)
+NET key(3)         LOC="P111" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B3 - key right
+
+# Something I don't understand happens with key(2) unconnected:
+# the value is still read from the vector. In other words, key(2)
+# appears to work even if it is commented out in the UCF.
+# This might be completely unreliable though.
+# Could it damage the board?
+#         Comp: key<0>   IOSTANDARD = LVTTL
+#         Comp: key<1>   IOSTANDARD = LVTTL
+#         Comp: key<2>   IOSTANDARD = LVCMOS25
+#         Comp: key<3>   IOSTANDARD = LVTTL
+
+# key(2) makes the UART stop working (not working also without DRIVE=8 | SLEW=FAST)
+#NET key(2)         LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B4 - key down
+
 NET reset          LOC="P102" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST | CLOCK_DEDICATED_ROUTE = FALSE; # B5
 NET key(0)         LOC="P101" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B6 - key up
-NET key(1)         LOC="P100" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B7 - key right
+NET key(1)         LOC="P100" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B7 - key left
 #NET vgaHSync     LOC="P99"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C0
 #NET vgaVSync     LOC="P97"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C1
 #NET vgaBlue(0)   LOC="P93"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C2
