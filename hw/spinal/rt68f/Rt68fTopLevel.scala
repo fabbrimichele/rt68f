@@ -35,7 +35,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
   val io = new Bundle {
     val reset = in Bool()
     val led = out Bits(4 bits)
-    //val key = in Bits(4 bits)
+    val key = in Bits(4 bits)
     val uart = master(Uart()) // Expose UART pins (txd, rxd), must be defined in the ucf
   }
 
@@ -134,6 +134,12 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val ledDev = LedApb16(width = 4, addressWidth = 12)
     io.led := ledDev.io.leds
 
+    // Key device (16-bit APB)
+/*
+    val keyDev = KeyApb16(width = 4, addressWidth = 12)
+    keyDev.io.keys := io.key
+*/
+
     // Serial
     // WIDTH MISMATCH (32 bits <- 16 bits) on (toplevel/resetArea_uartDev/io_apb_PWDATA : in Bits[32 bits]) := (toplevel/[Apb3Router]/io_outputs_2_PWDATA : out Bits[16 bits])
     // TODO: I need either implement a 32bit APB3 to 68000 bridge or create an adapter between 32bit APB3 and 16bit APB3
@@ -151,8 +157,8 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val apbDecoder = Apb3Decoder(
       master = apbBridge.io.apb,
       slaves = Seq(
-        (ledDev.io.apb, SizeMapping(0x10000, 4 KiB)),   // LED mapped at 0x10000
-        //(keyDev.io.apb, SizeMapping(0x11000, 4 KiB)),   // KEY mapped at 0x11000
+        (ledDev.io.apb,  SizeMapping(0x10000, 4 KiB)),   // LED mapped at 0x10000
+        //(keyDev.io.apb,  SizeMapping(0x11000, 4 KiB)),   // KEY mapped at 0x11000
         (uartDev.io.apb, SizeMapping(0x12000, 4 KiB)),  // UART mapped at 0x12000
       )
     )
