@@ -35,7 +35,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
   val io = new Bundle {
     val reset = in Bool()
     val led = out Bits(4 bits)
-    val key = in Bits(4 bits)
+    val key = in Bits(3 bits)
     val uart = master(Uart()) // Expose UART pins (txd, rxd), must be defined in the ucf
   }
 
@@ -135,7 +135,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     io.led := ledDev.io.leds
 
     // Key device (16-bit APB)
-    val keyDev = KeyApb16(width = 4, addressWidth = 12)
+    val keyDev = KeyApb16(width = 3, addressWidth = 12)
     keyDev.io.keys := io.key
 
     // Serial
