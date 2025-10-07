@@ -126,10 +126,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       cpuDtack := apbBridge.io.m68k.DTACK
     }
 
-    // TODO: the following might be used to replace
-    //  dedicated modules for LED and Key
-    //  https://spinalhdl.github.io/SpinalDoc-RTD/master/SpinalHDL/Libraries/regIf.html
-
     // LED device (16-bit APB)
     val ledDev = LedApb16(width = 4, addressWidth = 12)
     io.led := ledDev.io.leds
@@ -152,6 +148,9 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
     // TODO: add timer
     //  https://spinalhdl.github.io/SpinalDoc-RTD/master/SpinalHDL/Examples/Advanced%20ones/timer.html
+
+    // TODO: add interrupts
+    //  https://spinalhdl.github.io/SpinalDoc-RTD/master/SpinalHDL/Libraries/regIf.html
     val apbDecoder = Apb3Decoder(
       master = apbBridge.io.apb,
       slaves = Seq(
