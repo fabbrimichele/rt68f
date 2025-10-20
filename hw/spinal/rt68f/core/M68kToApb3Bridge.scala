@@ -107,10 +107,13 @@ case class M68kToApb3Bridge16(addrWidth: Int) extends Component {
 
         // DTACK was asserted in previous state; here we can clear it (True).
         // Note: CPU might sample DTACK combinationally — this code asserts it for one clock.
-        dtackReg := True
+
+        // hold DTACK low until CPU finishes
+        dtackReg := False
 
         // Wait for CPU to release AS (transaction finished)
-        when(io.m68k.AS) {
+        when(io.m68k.AS) {           // CPU finished read
+          dtackReg := True
           goto(idle)
         }
       }

@@ -14,7 +14,7 @@ gen/$(TARGET)TopLevel.v: rom
 gen/$(TARGET)TopLevel.vhdl: rom
 	sbt "runMain ${TOPLEVEL}Vhdl"
 
-rom: blinker led_on keys uart
+rom: blinker led_on keys uart uart_echo
 
 blinker:
 	vasmm68k_mot -Fbin sw/asm/blinker.asm -o hw/gen/blinker.bin
@@ -39,6 +39,12 @@ uart:
 	xxd -p -c 2 hw/gen/uart.bin | awk '{print toupper($$0)}' > hw/spinal/rt68f/memory/uart.hex
 	mkdir -p target/scala-2.13/classes/rt68f/memory/
 	cp hw/spinal/rt68f/memory/uart.hex target/scala-2.13/classes/rt68f/memory/uart.hex
+
+uart_echo:
+	vasmm68k_mot -Fbin sw/asm/uart_echo.asm -o hw/gen/uart_echo.bin
+	xxd -p -c 2 hw/gen/uart_echo.bin | awk '{print toupper($$0)}' > hw/spinal/rt68f/memory/uart_echo.hex
+	mkdir -p target/scala-2.13/classes/rt68f/memory/
+	cp hw/spinal/rt68f/memory/uart_echo.hex target/scala-2.13/classes/rt68f/memory/uart_echo.hex
 
 prog-fpga:
 	echo "Programming FPGA"
