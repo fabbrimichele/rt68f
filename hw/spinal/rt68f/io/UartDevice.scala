@@ -16,6 +16,9 @@ case class UartDevice() extends Component {
     val uart = master(Uart())
   }
 
+  // ------------------------
+  // 1. Uart Controller Setup
+  // ------------------------
   val uartCtrl = UartCtrl(
     config = UartCtrlInitConfig(
       baudrate = 9600,
@@ -26,39 +29,36 @@ case class UartDevice() extends Component {
   )
   io.uart <> uartCtrl.io.uart
 
-  // Select which register is being accessed
+  // ------------------------
+  // 2. FIFO Buffer (8 entries deep)
+  // ------------------------
+  val txFifo = StreamFifo(
+    dataType = Bits(8 bits),
+    depth = 8
+  )
+
+  // Default the FIFO push input to ensure non-write cycles don't trigger anything
+  txFifo.io.push.valid   := False
+  txFifo.io.push.payload := 0
+
+  // Connect FIFO output to UART Controller input
+  uartCtrl.io.write <> txFifo.io.pop
+
+  // ------------------------
+  // 3. Status Register Logic
+  // ------------------------
+  // Bit 0 = TX ready (FIFO not full)
+  val txReady = txFifo.io.push.ready
+  val statusReg = Reg(Bits(8 bits))
+  statusReg(0) := txReady
+  statusReg(7 downto 1) := 0
+
+  // ------------------------
+  // 4. Bus Interface
+  // ------------------------
   // 0b00 = Data register
   // 0b10 = Status/Ctrl register
   val regSel = io.bus.ADDR(1)
-
-  // Status register
-  val statusReg = Reg(Bits(8 bits)) init 0
-  // Flag to track if the CPU has performed the first TX write (used for initial un-sticking)
-  val firstTxDone = RegInit(False)
-
-  // Registers to hold the byte to send
-  val txReg   = Reg(Bits(8 bits)) init 0
-  val txValid = Reg(Bool()) init False
-
-  // Create a synchronized, non-delayed version of the UartCtrl ready signal
-  val uartCtrlReadySync = RegNext(uartCtrl.io.write.ready)
-
-  // TODO: I haven't found yet a way to verify that the status register
-  //       isn't actually always set to True, I should write a simulation.
-  // This signal dictates the final state of statusReg(0)
-  val txReadyStatus = Bool()
-  // Logic to guarantee the CPU sees TX ready=True at startup:
-  when(!firstTxDone) {
-    // If we haven't written the first byte, force the status to ready (True)
-    txReadyStatus := True
-  } otherwise {
-    // After the first write, follow the actual synchronized UartCtrl ready signal
-    // This removes the *extra* RegNext latency that was causing the polling race.
-    txReadyStatus := uartCtrlReadySync
-  }
-
-  // Bit 0: TX ready (1 = Ready to accept new byte)
-  statusReg(0) := txReadyStatus
 
   // Default bus signals
   io.bus.DATAI := 0     // default
@@ -76,19 +76,10 @@ case class UartDevice() extends Component {
     } otherwise {
       // Write
       when(!regSel) {
-        // Data register selected
-        txReg := io.bus.DATAO(7 downto 0) // lower byte
-        txValid := True
+        // Data register selected: Write into the FIFO
+        txFifo.io.push.valid   := True
+        txFifo.io.push.payload := io.bus.DATAO(7 downto 0) // lower byte
       }
     }
-  }
-
-  // Connect to UART stream
-  uartCtrl.io.write.payload := txReg
-  uartCtrl.io.write.valid   := txValid
-
-  // Clear valid after UART accepted it
-  when(uartCtrl.io.write.fire) {
-    txValid := False
   }
 }
