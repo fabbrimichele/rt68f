@@ -26,6 +26,15 @@ case class UartDevice() extends Component {
   )
   io.uart <> uartCtrl.io.uart
 
+  // Select which register is being accessed
+  // 0b00 = Data register
+  // 0b10 = Status/Ctrl register
+  val regSel = io.bus.ADDR(1)
+
+  // Status register
+  val statusReg = Reg(Bits(8 bits)) init 0
+  //statusReg(0) := uartCtrl.io.write.ready // TX ready TODO: this does not work
+  statusReg(0) := True
 
   // Registers to hold the byte to send
   val txReg   = Reg(Bits(8 bits)) init 0
@@ -40,11 +49,17 @@ case class UartDevice() extends Component {
 
     when(io.bus.RW) {
       // Read
-      //io.bus.DATAI := dataReg
+      when(regSel) {
+        // Status register selected
+        io.bus.DATAI := statusReg.resize(16 bits)
+      }
     } otherwise {
       // Write
-      txReg := io.bus.DATAO(7 downto 0) // lower byte
-      txValid := True
+      when(!regSel) {
+        // Data register selected
+        txReg := io.bus.DATAO(7 downto 0) // lower byte
+        txValid := True
+      }
     }
   }
 
@@ -56,16 +71,4 @@ case class UartDevice() extends Component {
   when(uartCtrl.io.write.fire) {
     txValid := False
   }
-
-  /*
-  // See: https://spinalhdl.github.io/SpinalDoc-RTD/master/SpinalHDL/Examples/Intermediates%20ones/uart.html#example-with-test-bench
-  val producer = Stream(Bits(8 bits))
-  producer.valid := CounterFreeRun(2000).willOverflow
-  producer.payload := B('a',8 bits)
-
-  // Without fifo, it doesn't work
-  val fifo = StreamFifo(Bits(8 bits), depth = 4)
-  producer >> fifo.io.push
-  fifo.io.pop >> uartCtrl.io.write
-   */
 }

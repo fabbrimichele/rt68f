@@ -42,14 +42,19 @@
     ; Program code
     ; ------------------------------
 START:
-    LEA     UART,A1
     LEA     LED,A0          ; Load LED register address into A0
+    LEA     UART_DATA,A1
+    LEA     UART_STAT,A2
     MOVE.W  #1,D1
 
 LOOP:
     MOVE.W  D1,(A0)         ; Write D1 into LED register
     ADDQ.W  #1,D1           ; Increment register
 
+TX_LOOP:
+    MOVE.W  (A2),D2         ; Read status register
+    BTST    #0,D2           ; Check TX ready
+    BEQ     TX_LOOP         ; Wait until TX ready
     MOVE.W  #'A',(A1)       ; Write 'A' into UART register
 
     JSR     DELAY           ; Call delay
@@ -68,4 +73,5 @@ DLY_LOOP:
 DLY_VAL     EQU     1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
 END_RAM     EQU     $00001000   ; End of RAM address
 LED         EQU     $10000       ; LED-mapped register base address
-UART        EQU     $12000       ; LED-mapped register base address
+UART_DATA   EQU     $12000       ; UART-mapped data register address
+UART_STAT   EQU     $12002       ; UART-mapped data register address

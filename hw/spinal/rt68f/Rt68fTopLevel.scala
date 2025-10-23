@@ -153,7 +153,8 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // UART device @ 0x12000
     // --------------------------------
     val uartDev = UartDevice()
-    val uartDevSel = cpu.io.ADDR === U(0x12000, cpu.io.ADDR.getWidth bits)
+    val uartDevSel = cpu.io.ADDR === U(0x12000, cpu.io.ADDR.getWidth bits) ||
+      cpu.io.ADDR === U(0x12002, cpu.io.ADDR.getWidth bits)
 
     io.uart <> uartDev.io.uart
 
