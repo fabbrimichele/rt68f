@@ -33,12 +33,32 @@ case class UartDevice() extends Component {
 
   // Status register
   val statusReg = Reg(Bits(8 bits)) init 0
-  //statusReg(0) := uartCtrl.io.write.ready // TX ready TODO: this does not work
-  statusReg(0) := True
+  // Flag to track if the CPU has performed the first TX write (used for initial un-sticking)
+  val firstTxDone = RegInit(False)
 
   // Registers to hold the byte to send
   val txReg   = Reg(Bits(8 bits)) init 0
   val txValid = Reg(Bool()) init False
+
+  // Create a synchronized, non-delayed version of the UartCtrl ready signal
+  val uartCtrlReadySync = RegNext(uartCtrl.io.write.ready)
+
+  // TODO: I haven't found yet a way to verify that the status register
+  //       isn't actually always set to True, I should write a simulation.
+  // This signal dictates the final state of statusReg(0)
+  val txReadyStatus = Bool()
+  // Logic to guarantee the CPU sees TX ready=True at startup:
+  when(!firstTxDone) {
+    // If we haven't written the first byte, force the status to ready (True)
+    txReadyStatus := True
+  } otherwise {
+    // After the first write, follow the actual synchronized UartCtrl ready signal
+    // This removes the *extra* RegNext latency that was causing the polling race.
+    txReadyStatus := uartCtrlReadySync
+  }
+
+  // Bit 0: TX ready (1 = Ready to accept new byte)
+  statusReg(0) := txReadyStatus
 
   // Default bus signals
   io.bus.DATAI := 0     // default

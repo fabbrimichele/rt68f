@@ -42,20 +42,17 @@
     ; Program code
     ; ------------------------------
 START:
-    LEA     LED,A0          ; Load LED register address into A0
-    LEA     UART_DATA,A1
-    LEA     UART_STAT,A2
     MOVE.W  #1,D1
 
 LOOP:
-    MOVE.W  D1,(A0)         ; Write D1 into LED register
+    MOVE.W  D1,LED          ; Write D1 into LED register
     ADDQ.W  #1,D1           ; Increment register
 
 TX_LOOP:
-    MOVE.W  (A2),D2         ; Read status register
+    MOVE.W  UART_STAT,D2    ; Read status register
     BTST    #0,D2           ; Check TX ready
     BEQ     TX_LOOP         ; Wait until TX ready
-    MOVE.W  #'A',(A1)       ; Write 'A' into UART register
+    MOVE.W  #'A',UART_DATA  ; Write 'A' into UART register
 
     JSR     DELAY           ; Call delay
     JMP     LOOP            ; Infinite loop
