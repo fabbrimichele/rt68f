@@ -43,8 +43,8 @@
     ; ------------------------------
 START:  LEA     LED,A0          ; Load LED register address into A0
         MOVE.W  #1,(A0)         ; Write 1 into LED register (lower 8 bits)
-        ;LEA     UART,A1
-        ;MOVE.W  #'A',(A1)       ; Write 'A' into UART register
+        LEA     UART,A1
+        MOVE.W  #'A',(A1)       ; Write 'A' into UART register
 
 LOOP:   JMP   LOOP            ; Infinite loop
 

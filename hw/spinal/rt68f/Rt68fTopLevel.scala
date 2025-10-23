@@ -4,8 +4,6 @@ import rt68f.core._
 import rt68f.io._
 import rt68f.memory._
 import spinal.core._
-import spinal.lib.bus.amba3.apb._
-import spinal.lib.bus.misc.SizeMapping
 import spinal.lib.com.uart.Uart
 import spinal.lib.master
 
@@ -19,10 +17,9 @@ import scala.language.postfixOps
  *
  *   0x0000  - 0x0FFF  : 4 KB ROM (16-bit words)
  *   0x0800  - 0x0FFF  : 2 KB RAM (16-bit words)
- *   0x10000 - 0x13FFF : APB3 bus (16-bit)
- *       0x10000 - 0x10FFF : LED peripheral (lower 4 bits drive LEDs)
- *       0x11000 - 0x11FFF : KEY peripheral (lower 4 bits reflect key inputs)
- *       0x12000 - 0x13FFF : reserved for future APB3 devices
+ *   0x10000           : LED peripheral (lower 4 bits drive LEDs)
+ *   0x11000           : KEY peripheral (lower 4 bits reflect key inputs)
+ *   0x12000           : UART (data)
  *
  * Notes:
  * - ROM is read-only, currently with no init file (optionally load via initFile).
@@ -183,9 +180,9 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
 object Rt68fTopLevelVhdl extends App {
   //private val romFilename = "keys.hex"
-  private val romFilename = "blinker.hex"
+  //private val romFilename = "blinker.hex"
   //private val romFilename = "led_on.hex"
-  //private val romFilename = "uart_tx_byte.hex"
+  private val romFilename = "uart_tx_byte.hex"
   private val report = Config.spinal.generateVhdl(Rt68fTopLevel(romFilename))
   report.mergeRTLSource("mergeRTL") // Merge all rtl sources into mergeRTL.vhd and mergeRTL.v files
   report.printPruned()
