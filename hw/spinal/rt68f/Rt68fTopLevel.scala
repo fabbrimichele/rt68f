@@ -151,9 +151,30 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       cpuDtack := keyDev.io.bus.DTACK
     }
 
-    // UART
-    val uartDevice = UartDevice()
-    io.uart <> uartDevice.io.uart
+
+    // --------------------------------
+    // UART device @ 0x12000
+    // --------------------------------
+    val uartDev = UartDevice()
+    val uartDevSel = cpu.io.ADDR === U(0x12000, cpu.io.ADDR.getWidth bits)
+
+    io.uart <> uartDev.io.uart
+
+    // Connect CPU outputs to LedDev inputs
+    uartDev.io.bus.AS    := cpu.io.AS
+    uartDev.io.bus.UDS   := cpu.io.UDS
+    uartDev.io.bus.LDS   := cpu.io.LDS
+    uartDev.io.bus.RW    := cpu.io.RW
+    uartDev.io.bus.ADDR  := cpu.io.ADDR
+    uartDev.io.bus.DATAO := cpu.io.DATAO
+
+    uartDev.io.sel := uartDevSel
+
+    // If RAM selected, forward RAM response into CPU aggregated signals
+    when(!cpu.io.AS && uartDevSel) {
+      cpuDataI := uartDev.io.bus.DATAI
+      cpuDtack := uartDev.io.bus.DTACK
+    }
   }
 
   // Remove io_ prefix
@@ -161,9 +182,10 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 }
 
 object Rt68fTopLevelVhdl extends App {
-  private val romFilename = "keys.hex"
-  //private val romFilename = "blinker.hex"
+  //private val romFilename = "keys.hex"
+  private val romFilename = "blinker.hex"
   //private val romFilename = "led_on.hex"
+  //private val romFilename = "uart_tx_byte.hex"
   private val report = Config.spinal.generateVhdl(Rt68fTopLevel(romFilename))
   report.mergeRTLSource("mergeRTL") // Merge all rtl sources into mergeRTL.vhd and mergeRTL.v files
   report.printPruned()

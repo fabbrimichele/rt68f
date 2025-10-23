@@ -14,7 +14,7 @@ gen/$(TARGET)TopLevel.v: rom
 gen/$(TARGET)TopLevel.vhdl: rom
 	sbt "runMain ${TOPLEVEL}Vhdl"
 
-rom: blinker led_on keys
+rom: blinker led_on keys uart uart_tx_byte
 
 blinker:
 	vasmm68k_mot -Fbin sw/asm/blinker.asm -o hw/gen/blinker.bin
@@ -47,6 +47,12 @@ uart_echo:
 	mkdir -p target/scala-2.13/classes/rt68f/memory/
 	cp hw/spinal/rt68f/memory/uart_echo.hex target/scala-2.13/classes/rt68f/memory/uart_echo.hex
 
+uart_tx_byte:
+	vasmm68k_mot -Fbin sw/asm/uart_tx_byte.asm -o hw/gen/uart_tx_byte.bin
+	xxd -p -c 2 hw/gen/uart_tx_byte.bin | awk '{print toupper($$0)}' > hw/spinal/rt68f/memory/uart_tx_byte.hex
+	mkdir -p target/scala-2.13/classes/rt68f/memory/
+	cp hw/spinal/rt68f/memory/uart_tx_byte.hex target/scala-2.13/classes/rt68f/memory/uart_tx_byte.hex
+
 prog-fpga:
 	echo "Programming FPGA"
 	papilio-prog -v -f target/$(TARGET).bit
@@ -72,4 +78,7 @@ clean:
 	rm -rf hw/spinal/rt68f/memory/blinker.hex
 	rm -rf hw/spinal/rt68f/memory/led_on.hex
 	rm -rf hw/spinal/rt68f/memory/keys.hex
+	rm -rf hw/spinal/rt68f/memory/uart.hex
+	rm -rf hw/spinal/rt68f/memory/uart_echo.hex
+	rm -rf hw/spinal/rt68f/memory/uart_tx_byte.hex
 
