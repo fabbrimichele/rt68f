@@ -4,7 +4,7 @@
     ; 68000 Vector Table (first 32 entries = 0x0000-0x007C)
     ; Each vector is 32 bits (long)
     ; ------------------------------
-    DC.L   $00000000    ; 0: Initial Stack Pointer (SP)
+    DC.L   END_RAM      ; 0: Initial Stack Pointer (SP)
     DC.L   START        ; 1: Reset vector (PC start address)
     DC.L   $00000000    ; 2: Bus Error
     DC.L   $00000000    ; 3: Address Error
@@ -41,15 +41,31 @@
     ; ------------------------------
     ; Program code
     ; ------------------------------
-START:  LEA     LED,A0          ; Load LED register address into A0
-        MOVE.W  #1,(A0)         ; Write 1 into LED register (lower 8 bits)
-        LEA     UART,A1
-        MOVE.W  #'A',(A1)       ; Write 'A' into UART register
+START:
+    LEA     UART,A1
+    LEA     LED,A0          ; Load LED register address into A0
+    MOVE.W  #1,D1
 
-LOOP:   JMP   LOOP            ; Infinite loop
+LOOP:
+    MOVE.W  D1,(A0)         ; Write D1 into LED register
+    ADDQ.W  #1,D1           ; Increment register
 
-        ; ===========================
-        ; Constants
-        ; ===========================
-LED     EQU     $10000       ; LED-mapped register base address
-UART    EQU     $12000       ; LED-mapped register base address
+    MOVE.W  #'A',(A1)       ; Write 'A' into UART register
+
+    JSR     DELAY           ; Call delay
+    JMP     LOOP            ; Infinite loop
+
+DELAY:
+    MOVE.L  #DLY_VAL,D0     ;
+DLY_LOOP:
+    SUBQ.L  #1,D0           ; 4 cycles
+    BNE     DLY_LOOP        ; 10 cycles when taken
+    RTS
+
+    ; ===========================
+    ; Constants
+    ; ===========================
+DLY_VAL     EQU     1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
+END_RAM     EQU     $00001000   ; End of RAM address
+LED         EQU     $10000       ; LED-mapped register base address
+UART        EQU     $12000       ; LED-mapped register base address
