@@ -4,8 +4,8 @@ import rt68f.core._
 import rt68f.io._
 import rt68f.memory._
 import spinal.core._
-import spinal.lib.bus.amba3.apb._
-import spinal.lib.bus.misc.SizeMapping
+import spinal.lib.com.uart.Uart
+import spinal.lib.master
 
 import scala.language.postfixOps
 
@@ -17,10 +17,9 @@ import scala.language.postfixOps
  *
  *   0x0000  - 0x0FFF  : 4 KB ROM (16-bit words)
  *   0x0800  - 0x0FFF  : 2 KB RAM (16-bit words)
- *   0x10000 - 0x13FFF : APB3 bus (16-bit)
- *       0x10000 - 0x10FFF : LED peripheral (lower 4 bits drive LEDs)
- *       0x11000 - 0x11FFF : KEY peripheral (lower 4 bits reflect key inputs)
- *       0x12000 - 0x13FFF : reserved for future APB3 devices
+ *   0x10000           : LED peripheral (lower 4 bits drive LEDs)
+ *   0x11000           : KEY peripheral (lower 4 bits reflect key inputs)
+ *   0x12000           : UART (data)
  *
  * Notes:
  * - ROM is read-only, currently with no init file (optionally load via initFile).
@@ -34,6 +33,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val reset = in Bool()
     val led = out Bits(4 bits)
     val key = in Bits(4 bits)
+    val uart = master(Uart()) // Expose UART pins (txd, rxd), must be defined in the ucf
   }
 
   val resetCtrl = ResetCtrl()
@@ -55,9 +55,9 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     cpuDataI := B(0, 16 bits)
     cpuDtack := True
 
-    // ----------------
+    // --------------------------------
     // ROM: 2 KB @ 0x0000 - 0x0800
-    // ----------------
+    // --------------------------------
     val romSizeWords = 2048 / 2 // 2 KB / 2 bytes per 16-bit word
     val rom = Mem16Bits(size = romSizeWords, readOnly = true, initFile = Some(romFilename))
     val romSel = cpu.io.ADDR < U(0x800, cpu.io.ADDR.getWidth bits)
@@ -78,9 +78,9 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       cpuDtack := rom.io.bus.DTACK
     }
 
-    // ----------------
+    // --------------------------------
     // RAM: 2 KB @ 0x0800 - 0x1000
-    // ----------------
+    // --------------------------------
     val ramSizeWords = 2048 / 2 // 2 KB / 2 bytes per 16-bit word
     val ram = Mem16Bits(size = ramSizeWords)
     val ramSel = cpu.io.ADDR >= U(0x800, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x1000, cpu.io.ADDR.getWidth bits)
@@ -101,43 +101,78 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       cpuDtack := ram.io.bus.DTACK
     }
 
-    // ----------------
-    // APB3 Bridge and Devices
-    // ----------------
-    val apbBridge = M68kToApb3Bridge16(addrWidth = 32)
-
-    // Connect CPU outputs to bridge inputs (only single-driver assignments)
-    apbBridge.io.m68k.AS    := cpu.io.AS
-    apbBridge.io.m68k.UDS   := cpu.io.UDS
-    apbBridge.io.m68k.LDS   := cpu.io.LDS
-    apbBridge.io.m68k.RW    := cpu.io.RW
-    apbBridge.io.m68k.ADDR  := cpu.io.ADDR.resized
-    apbBridge.io.m68k.DATAO := cpu.io.DATAO
-
-    // determine APB-mapped selection for simple top-level arbitration
-    val apbSel = (cpu.io.ADDR >= U(0x10000)) && (cpu.io.ADDR < U(0x14000))
-
-    // When APB-selected, forward bridge response into CPU aggregated signals
-    when(!cpu.io.AS && apbSel) {
-      cpuDataI := apbBridge.io.m68k.DATAI
-      cpuDtack := apbBridge.io.m68k.DTACK
-    }
-
-    // LED device (16-bit APB)
-    val ledDev = LedApb16(width = 4, addressWidth = 12)
+    // --------------------------------
+    // LED device @ 0x10000
+    // --------------------------------
+    val ledDev = LedDevice()
+    val ledDevSel = cpu.io.ADDR === U(0x10000, cpu.io.ADDR.getWidth bits)
     io.led := ledDev.io.leds
 
-    // Key device (16-bit APB)
-    val keyDev = KeyApb16(width = 4, addressWidth = 12)
+    // Connect CPU outputs to LedDev inputs
+    ledDev.io.bus.AS    := cpu.io.AS
+    ledDev.io.bus.UDS   := cpu.io.UDS
+    ledDev.io.bus.LDS   := cpu.io.LDS
+    ledDev.io.bus.RW    := cpu.io.RW
+    ledDev.io.bus.ADDR  := cpu.io.ADDR
+    ledDev.io.bus.DATAO := cpu.io.DATAO
+
+    ledDev.io.sel := ledDevSel
+
+    // If RAM selected, forward RAM response into CPU aggregated signals
+    when(!cpu.io.AS && ledDevSel) {
+      cpuDataI := ledDev.io.bus.DATAI
+      cpuDtack := ledDev.io.bus.DTACK
+    }
+
+
+    // --------------------------------
+    // Key device @ 0x11000
+    // --------------------------------
+    val keyDev = KeyDevice()
+    val keyDevSel = cpu.io.ADDR === U(0x11000, cpu.io.ADDR.getWidth bits)
     keyDev.io.keys := io.key
 
-    val apbDecoder = Apb3Decoder(
-      master = apbBridge.io.apb,
-      slaves = Seq(
-        (ledDev.io.apb, SizeMapping(0x10000, 4 KiB)),  // LED mapped at 0x10000
-        (keyDev.io.apb, SizeMapping(0x11000, 4 KiB)),  // KEY mapped at 0x10000
-      )
-    )
+    // Connect CPU outputs to LedDev inputs
+    keyDev.io.bus.AS    := cpu.io.AS
+    keyDev.io.bus.UDS   := cpu.io.UDS
+    keyDev.io.bus.LDS   := cpu.io.LDS
+    keyDev.io.bus.RW    := cpu.io.RW
+    keyDev.io.bus.ADDR  := cpu.io.ADDR
+    keyDev.io.bus.DATAO := cpu.io.DATAO
+
+    keyDev.io.sel := keyDevSel
+
+    // If RAM selected, forward RAM response into CPU aggregated signals
+    when(!cpu.io.AS && keyDevSel) {
+      cpuDataI := keyDev.io.bus.DATAI
+      cpuDtack := keyDev.io.bus.DTACK
+    }
+
+
+    // --------------------------------
+    // UART device @ 0x12000
+    // --------------------------------
+    val uartDev = UartDevice()
+    val uartDevSel = cpu.io.ADDR === U(0x12000, cpu.io.ADDR.getWidth bits) ||
+      cpu.io.ADDR === U(0x12002, cpu.io.ADDR.getWidth bits)
+
+    io.uart <> uartDev.io.uart
+
+    // Connect CPU outputs to LedDev inputs
+    uartDev.io.bus.AS    := cpu.io.AS
+    uartDev.io.bus.UDS   := cpu.io.UDS
+    uartDev.io.bus.LDS   := cpu.io.LDS
+    uartDev.io.bus.RW    := cpu.io.RW
+    uartDev.io.bus.ADDR  := cpu.io.ADDR
+    uartDev.io.bus.DATAO := cpu.io.DATAO
+
+    uartDev.io.sel := uartDevSel
+
+    // If RAM selected, forward RAM response into CPU aggregated signals
+    when(!cpu.io.AS && uartDevSel) {
+      cpuDataI := uartDev.io.bus.DATAI
+      cpuDtack := uartDev.io.bus.DTACK
+    }
   }
 
   // Remove io_ prefix
@@ -145,9 +180,11 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 }
 
 object Rt68fTopLevelVhdl extends App {
-  private val romFilename = "keys.hex"
+  //private val romFilename = "keys.hex"
   //private val romFilename = "blinker.hex"
   //private val romFilename = "led_on.hex"
+  //private val romFilename = "uart_tx_byte.hex"
+  private val romFilename = "uart_hello.hex"
   private val report = Config.spinal.generateVhdl(Rt68fTopLevel(romFilename))
   report.mergeRTLSource("mergeRTL") // Merge all rtl sources into mergeRTL.vhd and mergeRTL.v files
   report.printPruned()
