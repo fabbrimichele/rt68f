@@ -95,8 +95,10 @@ MESSAGE:
     ; ===========================
     ; Constants
     ; ===========================
-DLY_VAL     EQU     1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
-END_RAM     EQU     $00001000   ; End of RAM address
-LED         EQU     $10000       ; LED-mapped register base address
-UART_DATA   EQU     $12000       ; UART-mapped data register address
-UART_STAT   EQU     $12002       ; UART-mapped data register address
+DLY_VAL     EQU 1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
+END_RAM     EQU $00001000   ; End of RAM address
+LED         EQU $00010000   ; LED-mapped register base address
+UART_BASE   EQU $00012000   ; UART-mapped data register address
+UART_DATA   EQU UART_BASE+0 ; UART-mapped data register address
+UART_STAT   EQU UART_BASE+2 ; UART-mapped data register address
+; NOTE: do not remove spaces around +
