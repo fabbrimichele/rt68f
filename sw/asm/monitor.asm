@@ -37,6 +37,16 @@
     DC.L   $00000000    ; 30: TRAPA
     DC.L   $00000000    ; 31: TRAPB
 
+;-------------------------------
+; Bugs:
+; - When the max buffer limit is reached, e.g. typing 80
+;   characters, going to buffer start with backspace
+;   leave a character instead of deleting it.
+; - I can't hear the Bell when at the end of the buffer
+;   anymore, it used to work.
+;-------------------------------
+
+
 ; ------------------------------
 ; Program code
 ; ------------------------------
@@ -117,13 +127,19 @@ FULL_CHECK_LOOP:
     BRA     FULL_CHECK_LOOP
 
 PROCESS_CMD:
-    MOVE.B  #0,-(A5)            ; Null-terminate the string in the buffer
-    ; TODO
-    ;BSR     PUTCHAR             ; Echo the CR (D0 still holds CR)
-    ;MOVE.B  #LF,D0              ; Output LF for a clean newline
-    ;BSR     PUTCHAR
+    MOVE.B  #0,(A5)            ; Null-terminate the string in the buffer
 
-    ; JMP to parsing routine or
+    ; TODO: Parsing
+    ; For the time being just print the buffer
+    MOVE.B  #LF,D0
+    BSR     PUTCHAR
+    MOVE.B  #'"',D0
+    BSR     PUTCHAR
+    LEA     IN_BUF,A0
+    BSR     PUTS
+    MOVE.B  #'"',D0
+    BSR     PUTCHAR
+
     BRA     NEW_CMD             ; For now, just loop for next command
 
 
@@ -131,7 +147,7 @@ PROCESS_CMD:
 ; Subroutines
 ; ------------------------------
 
-    ; PUTS - Prints the null-terminated string pointed to by A0.
+; PUTS - Prints the null-terminated string pointed to by A0.
 PUTS:
     MOVE.L  A0,-(SP)        ; Save the current string pointer (A0)
 PUTS_LOOP:
@@ -173,27 +189,16 @@ DLY_LOOP:
     RTS
 
 ; ------------------------------
-; Data Section
+; ROM Data Section
 ; ------------------------------
 MSG_TITLE:
     DC.B    'RT68F Monitor v0.1',10,0 ; String with Newline (10) and Null Terminator (0)
 
-IN_BUF:
-    DS.B    80                      ; Reserve 80 bytes for the command line input (e.g., 79 chars + NULL terminator)
-IN_BUF_LEN  EQU 80                  ; Define a constant for its size
-IN_BUF_END  EQU IN_BUF+IN_BUF_LEN   ; Last BUF address
-
 ; ===========================
 ; Constants
 ; ===========================
-DLY_VAL     EQU 1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
-CR          EQU 13          ; Carriage Return
-LF          EQU 10          ; Line Feed
-BEL         EQU 7           ; Bell character
-BS          EQU 8           ; Backspace
-DEL         EQU 127         ; Delete/Rubout (0x7F)
-
-    ; Memory Map
+; Memory Map
+RAM_START   EQU $00000800   ; Start of RAM address
 END_RAM     EQU $00001000   ; End of RAM address
 LED         EQU $00010000   ; LED-mapped register base address
 UART_BASE   EQU $00012000   ; UART-mapped data register address
@@ -201,3 +206,14 @@ UART_DATA   EQU UART_BASE+0 ; UART-mapped data register address
 UART_STAT   EQU UART_BASE+2 ; UART-mapped data register address
 ; NOTE: do not remove spaces around +
 
+; Program Constants
+DLY_VAL     EQU 1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
+CR          EQU 13          ; Carriage Return
+LF          EQU 10          ; Line Feed
+BEL         EQU 7           ; Bell character
+BS          EQU 8           ; Backspace
+DEL         EQU 127         ; Delete/Rubout (0x7F)
+
+IN_BUF          EQU RAM_START           ; IN_BUF starts at 0x800
+IN_BUF_LEN      EQU 80
+IN_BUF_END      EQU IN_BUF+IN_BUF_LEN   ; IN_BUF_END = 0x800 + 80 = 0x850
