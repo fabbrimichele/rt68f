@@ -32,7 +32,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
   val io = new Bundle {
     val reset = in Bool()
     val led = out Bits(4 bits)
-    val key = in Bits(4 bits)
+    val key = in Bits(4 bits) // Keys disabled in UCF file due to UART conflict.
     val uart = master(Uart()) // Expose UART pins (txd, rxd), must be defined in the ucf
   }
 
