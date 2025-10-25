@@ -34,12 +34,26 @@ case class Mem16Bits(size: Int, readOnly: Boolean = false, initFile: Option[Stri
     val wordAddr = io.bus.ADDR(log2Up(size) downto 1)
 
     when(io.bus.RW) {
-      // Read
+      // ------------------------------------
+      // Read Access (Byte strobes are ignored by the memory block)
+      // ------------------------------------
+      // NOTE: mem.readSync is fine; the M68k core internally selects D15-D8 or D7-D0 based on UDS/LDS.
       io.bus.DATAI := mem.readSync(wordAddr)
     } otherwise  {
       if (!readOnly) {
-        // Write if not read only
-        mem.write(wordAddr, io.bus.DATAO)
+        // ------------------------------------
+        // Write Access (Byte strobes MUST be managed)
+        // ------------------------------------
+        // io.bus.UDS (D15-D8) -> mask(1)
+        // io.bus.LDS (D7-D0) -> mask(0)
+        val byteMask = Cat(!io.bus.UDS, !io.bus.LDS).asBits // The 2-bit byte write enable mask
+
+        // Use writeMixedWidth to enable byte-level writing
+        mem.writeMixedWidth(
+          address = wordAddr,
+          data    = io.bus.DATAO,
+          mask    = byteMask
+        )
       }
     }
   }
