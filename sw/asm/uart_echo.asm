@@ -42,18 +42,50 @@
     ; Program code
     ; ------------------------------
 START:
-RX_WAIT:
-    MOVE.W  UART_STAT,D2    ; Read status register
-    MOVE.W  D2,LED
-    BTST    #1,D2           ; Check RX ready (Bit 1)
-    BEQ     RX_WAIT         ; Wait until RX ready
-    MOVE.W  UART_DATA,D0    ; Read character to D0
-TX_WAIT:
+    LEA     MSG_READY,A0    ; A0 holds pointer to the message
+    BSR     PUTS            ; Call PUTS subroutine
+LOOP:
+    BSR     GETCHAR
+    BSR     PUTCHAR
+    BRA     LOOP
+
+    ; ------------------------------
+    ; Subroutines
+    ; ------------------------------
+
+    ; PUTS - Prints the null-terminated string pointed to by A0.
+PUTS:
+    MOVE.L  A0,-(SP)        ; Save the current string pointer (A0)
+PUTS_LOOP:
+    MOVE.B  (A0)+,D0        ; Get character, increment pointer
+    BEQ     PUTS_END        ; Check for null terminator (0)
+    BSR     PUTCHAR         ; Print the character in D0
+    BRA     PUTS_LOOP       ; Loop back
+PUTS_END:
+    MOVE.L  (SP)+,A0        ; Restore the string pointer for the next loop iteration (A0)
+    RTS                     ; Return from subroutine
+
+    ; PUTCHAR - Prints the single character stored in D0 to the UART data register.
+PUTCHAR:
+    ; Check UART status (TX Ready)
+PUTCHAR_WAIT:
     MOVE.W  UART_STAT,D2    ; Read status register
     BTST    #0,D2           ; Check TX ready (Bit 0)
-    BEQ     TX_WAIT         ; Wait until TX ready
-    MOVE.W  D0,UART_DATA    ; Write D0 to serial
-    JMP     RX_WAIT         ; Read next character
+    BEQ     PUTCHAR_WAIT    ; Wait until TX ready
+    ; Write character (from D0)
+    MOVE.W  D0,UART_DATA    ; Write the character to the data register
+    RTS
+
+    ; GETCHAR - Gets a single character from the UART data register and stores it in D0
+GETCHAR:
+    ; Check UART status (RX Ready)
+GETCHAR_WAIT:
+    MOVE.W  UART_STAT,D2    ; Read status register
+    BTST    #1,D2           ; Check RX ready (Bit 1)
+    BEQ     GETCHAR_WAIT    ; Wait until RX ready
+    ; Read character (to D0)
+    MOVE.W  UART_DATA,D0    ; Read character to D0
+    RTS
 
 DELAY:
     MOVE.L  #DLY_VAL,D0     ; Load delay value
@@ -65,6 +97,8 @@ DLY_LOOP:
     ; ------------------------------
     ; Data Section
     ; ------------------------------
+MSG_READY:
+    DC.B    'Ready.',10,0 ; String with Newline (10) and Null Terminator (0)
 
     ; ===========================
     ; Constants
