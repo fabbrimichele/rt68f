@@ -37,65 +37,42 @@
     DC.L   $00000000    ; 30: TRAPA
     DC.L   $00000000    ; 31: TRAPB
 
-
-    ; ===========================
+    ORG    $0080        ; Start of memory
+    ; ------------------------------
     ; Program code
-    ; ===========================
-    ORG    $0080            ; Start of memory
-
-; Note:
-; Don't test it with CuteCom, it has a confusing UI and
-; you might think your writing to the serial, instead your
-; just writing the output of the program.
-; Use GTKTerm instead!
+    ; ------------------------------
 START:
-    ; --- Send initial prompt '>' ---
-    MOVE.W  #'>',UART_DATA      ; write prompt
-
-    ; TODO: it somehow works, but it's extreamly slow!
-    ;       should I try to wait also for TX?
-    ;       I should probably use the interrupts
-WAIT_RX:
-    MOVE.W  UART_DATA,D0        ; read RX register
-    BPL     WAIT_RX             ; Branch to WAIT_RX if it is a positive number
-    ;                             ; Bit test doesn't work, not sure why
-
-    ;MOVE.W  UART_STATUS,D0      ; read status flags
-    ;BTST    #9,D0               ; bit 9 = RX data available
-    ;BEQ     WAIT_RX
-    ;MOVE.W  UART_DATA,D0        ; read received byte
-
-    ANDI.W  #$00FF,D0           ; extract received byte
-
-    ; --- Display on LEDs ---
-    MOVE.W  D0,LED
-
-    ; --- Echo ---
-WAIT_TX:
-    MOVE.W  UART_STATUS,D1     ; read status register
-    BTST    #15,D1             ; test TX ready flag
-    BEQ     WAIT_TX            ; loop until TX is ready
-
-    MOVE.W  D0,UART_DATA        ; echo back received char
-    BRA.S   WAIT_RX
+RX_WAIT:
+    MOVE.W  UART_STAT,D2    ; Read status register
+    MOVE.W  D2,LED
+    BTST    #1,D2           ; Check RX ready (Bit 1)
+    BEQ     RX_WAIT         ; Wait until RX ready
+    MOVE.W  UART_DATA,D0    ; Read character to D0
+TX_WAIT:
+    MOVE.W  UART_STAT,D2    ; Read status register
+    BTST    #0,D2           ; Check TX ready (Bit 0)
+    BEQ     TX_WAIT         ; Wait until TX ready
+    MOVE.W  D0,UART_DATA    ; Write D0 to serial
+    JMP     RX_WAIT         ; Read next character
 
 DELAY:
-    MOVE.L  #DLY_VAL,D7     ;
+    MOVE.L  #DLY_VAL,D0     ; Load delay value
 DLY_LOOP:
-    SUBQ.L  #1,D7           ; 4 cycles
-    BNE     DLY_LOOP        ; 10 cycles when taken
+    SUBQ.L  #1,D0           ; Decrement counter
+    BNE     DLY_LOOP        ; Loop until D0 is zero
     RTS
+
+    ; ------------------------------
+    ; Data Section
+    ; ------------------------------
 
     ; ===========================
     ; Constants
     ; ===========================
-DLY_VAL     EQU  13333 ;33         ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
-END_RAM     EQU  $00001000       ; End of RAM address
-LED         EQU  $00010000       ; LED-mapped register base address
-KEY         EQU  $00011000       ; Key-mapped register base address
-
-UART_BASE    EQU $00012000
-UART_DATA    EQU UART_BASE + 0   ; RX/ TX data + valid bit
-UART_STATUS  EQU UART_BASE + 4   ; Status register
-
-; See UartCtrl.md for the full documentation
+DLY_VAL     EQU 1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
+END_RAM     EQU $00001000   ; End of RAM address
+LED         EQU $00010000   ; LED-mapped register base address
+UART_BASE   EQU $00012000   ; UART-mapped data register address
+UART_DATA   EQU UART_BASE+0 ; UART-mapped data register address
+UART_STAT   EQU UART_BASE+2 ; UART-mapped data register address
+; NOTE: do not remove spaces around +

@@ -87,4 +87,5 @@ clean:
 	rm -rf hw/spinal/rt68f/memory/uart.hex
 	rm -rf hw/spinal/rt68f/memory/uart_echo.hex
 	rm -rf hw/spinal/rt68f/memory/uart_tx_byte.hex
+	rm -rf hw/spinal/rt68f/memory/uart_hello.hex
 
