@@ -15,16 +15,12 @@ import scala.language.postfixOps
  *
  * SimpleSoC Memory Map
  *
- *   0x0000  - 0x0FFF  : 4 KB ROM (16-bit words)
+ *   0x0000  - 0x07FF  : 2 KB ROM (16-bit words)
  *   0x0800  - 0x0FFF  : 2 KB RAM (16-bit words)
  *   0x10000           : LED peripheral (lower 4 bits drive LEDs)
  *   0x11000           : KEY peripheral (lower 4 bits reflect key inputs)
  *   0x12000           : UART (data)
  *
- * Notes:
- * - ROM is read-only, currently with no init file (optionally load via initFile).
- * - APB3 bus is hardwired for 16-bit transfers.
- * - Active-low signals: AS, DTACK (handled by Mem16Bits and bridge).
  */
 
 //noinspection TypeAnnotation
@@ -32,7 +28,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
   val io = new Bundle {
     val reset = in Bool()
     val led = out Bits(4 bits)
-    val key = in Bits(4 bits)
+    val key = in Bits(4 bits) // Keys disabled in UCF file due to UART conflict.
     val uart = master(Uart()) // Expose UART pins (txd, rxd), must be defined in the ucf
   }
 
@@ -56,7 +52,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     cpuDtack := True
 
     // --------------------------------
-    // ROM: 2 KB @ 0x0000 - 0x0800
+    // ROM: 2 KB @ 0x0000 - 0x07FF
     // --------------------------------
     val romSizeWords = 2048 / 2 // 2 KB / 2 bytes per 16-bit word
     val rom = Mem16Bits(size = romSizeWords, readOnly = true, initFile = Some(romFilename))
@@ -79,7 +75,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     }
 
     // --------------------------------
-    // RAM: 2 KB @ 0x0800 - 0x1000
+    // RAM: 2 KB @ 0x0800 - 0x0FFF
     // --------------------------------
     val ramSizeWords = 2048 / 2 // 2 KB / 2 bytes per 16-bit word
     val ram = Mem16Bits(size = ramSizeWords)
@@ -184,7 +180,9 @@ object Rt68fTopLevelVhdl extends App {
   //private val romFilename = "blinker.hex"
   //private val romFilename = "led_on.hex"
   //private val romFilename = "uart_tx_byte.hex"
-  private val romFilename = "uart_hello.hex"
+  //private val romFilename = "uart_hello.hex"
+  //private val romFilename = "uart_echo.hex"
+  private val romFilename = "mem_test.hex"
   private val report = Config.spinal.generateVhdl(Rt68fTopLevel(romFilename))
   report.mergeRTLSource("mergeRTL") // Merge all rtl sources into mergeRTL.vhd and mergeRTL.v files
   report.printPruned()

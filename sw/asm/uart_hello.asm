@@ -72,9 +72,6 @@ PUTCHAR_WAIT:
     BTST    #0,D2           ; Check TX ready (Bit 0)
     BEQ     PUTCHAR_WAIT    ; Wait until TX ready
     ; Write character (from D0)
-    ;NOP                     ; 4 clock cycles
-    ;NOP                     ; 4 clock cycles
-    ;NOP                     ; 4 clock cycles
     MOVE.W  D0,UART_DATA    ; Write the character to the data register
     RTS
 
