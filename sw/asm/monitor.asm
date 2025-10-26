@@ -39,8 +39,8 @@
 
 ;-------------------------------
 ; Bugs:
-; - I can't hear the Bell when at the end of the buffer
-;   anymore, it used to work.
+; - Entering "DUMP W" should fail, but it doesn't.
+;   Instead "DUMP WW" fails as expected.
 ;-------------------------------
 
 
@@ -261,21 +261,19 @@ DLY_LOOP:
 
 ; --------------------------------------
 ; HEXTOBIN: Converts hex string at A0 to binary (32-bit) in D0.
-; Stops at first non-hex char or after 8 digits.
-; D1.L = 1 on success, D1.L = 0 on failure/empty string.
 ; --------------------------------------
 HEXTOBIN:
-    MOVEM.L D1/D2/A1,-(SP)      ; Save D1, D2, A1
+    MOVEM.L D3/D1/D2/A1,-(SP)   ; Save D3, D1, D2, A1
 
-    MOVEQ   #8,D2               ; D2 = Loop counter (Max digits)
+    MOVEQ   #8,D2               ; D2 = Loop counter (Max digits = 8)
     CLR.L   D0                  ; D0 = Result (cleared)
     CLR.L   D1                  ; D1 = Success Flag (0=Failure initially)
-    MOVEQ   #0,D3               ; D3 = Digit Counter (to check for empty string)
+    MOVEQ   #0,D3               ; D3 = Digit Counter (must be zero)
 
 NEXT_DIGIT:
     MOVE.B  (A0),D1             ; D1.B = Peek at next char
 
-    ; Check for end of token (Space, Tab, NULL, or any non-hex)
+    ; Check for end of token (Space or NULL are delimiters, but NOT illegal)
     TST.B   D1                  ; Is it NULL?
     BEQ     HTB_TOKEN_END
     CMP.B   #' ',D1             ; Is it a Space?
@@ -287,36 +285,36 @@ NEXT_DIGIT:
     CMP.B   #'0',D1
     BLT     CHECK_A
     CMP.B   #'9',D1
-    BLE     HTB_DIGIT_FOUND     ; Valid digit (0-9)
+    BLE     HTB_DIGIT_FOUND
 
 CHECK_A:
     ; Check A-F (Uppercase)
     CMP.B   #'A',D1
     BLT     CHECK_a
     CMP.B   #'F',D1
-    BLE     HTB_DIGIT_FOUND     ; Valid digit (A-F)
+    BLE     HTB_DIGIT_FOUND
 
 CHECK_a:
     ; Check a-f (Lowercase)
     CMP.B   #'a',D1
     BLT     HTB_ILLEGAL_CHAR    ; Illegal character, stop parsing
     CMP.B   #'f',D1
-    BLE     HTB_DIGIT_FOUND     ; Valid digit (a-f)
+    BLE     HTB_DIGIT_FOUND
 
-    BRA     HTB_ILLEGAL_CHAR    ; Any other character is illegal
+    BRA     HTB_ILLEGAL_CHAR
 
 HTB_DIGIT_FOUND:
     ; Check 8-digit limit
-    DBRA    D2,HTB_CALC         ; If D2 > 0, we can process. D2 becomes -1 if 8 processed.
+    DBRA    D2,HTB_CALC         ; If D2 > 0, we can process.
 
     ; If DBRA falls through, 8 digits were processed (D2 is -1). Stop parsing.
-    BRA     HTB_END_RESTORE     ; Successful stop, but no more processing.
+    BRA     HTB_TOKEN_END
 
     ; --- 2. Conversion and Arithmetic ---
 HTB_CALC:
-    ADDQ.L  #1,D3               ; Increment digit counter
+    ADDQ.L  #1,D3               ; Increment digit counter (D3 > 0 means success possible)
 
-    ; Conversion logic (same as before to get 4-bit value in D1)
+    ; Conversion logic to get 4-bit value in D1
     CMP.B   #'0',D1
     BLT     ALPHA_CALC
     CMP.B   #'9',D1
@@ -342,26 +340,28 @@ HTB_SHIFT:
     ADDQ.L  #1,A0               ; ADVANCE A0 pointer (Consumed the digit)
     BRA     NEXT_DIGIT          ; Continue loop
 
-    ; --- Exit Paths ---
+    ; --- Failure Exit ---
 HTB_ILLEGAL_CHAR:
     CLR.L   D0                  ; D0 = 0
     CLR.L   D1                  ; D1 = 0 (Failure)
-    ADDQ.L  #1,A0               ; Advance A0 past the illegal character
+
+    ADDQ.L  #1,A0               ; Advance A0 past the illegal character ('W')
     BRA     HTB_END_RESTORE
 
+    ; --- Success Check Exit ---
 HTB_TOKEN_END:
     ; Check if any digits were successfully parsed (D3 > 0)
     TST.L   D3
     BNE     HTB_SUCCESS
 
-    ; D3 = 0: Empty string or only spaces/NULL at start
-    BRA     HTB_END_RESTORE     ; D1 remains 0 (Failure)
+    ; D3 = 0: Empty string or only delimiters at start. Returns D1=0.
+    BRA     HTB_END_RESTORE
 
 HTB_SUCCESS:
     BSET    #0,D1               ; Set D1.0 flag to 1 for Success
 
 HTB_END_RESTORE:
-    MOVEM.L (SP)+,D1/D2/A1      ; Restore registers
+    MOVEM.L (SP)+,D3/D1/D2/A1   ; Restore registers
     RTS
 
 ; ------------------------------
