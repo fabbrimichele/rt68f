@@ -22,6 +22,7 @@ PUTCHAR_WAIT:
     MOVE.W  UART_STAT,D2    ; Read status register
     BTST    #0,D2           ; Check TX ready (Bit 0)
     BEQ     PUTCHAR_WAIT    ; Wait until TX ready
+    ; TODO: WORD is required by the UartDevice, implement proper UDS/LDS to use .B
     MOVE.W  D0,UART_DATA    ; Write the character to the data register
     MOVE.L  (SP)+,D2
     RTS
@@ -36,6 +37,7 @@ GETCHAR_WAIT:
     MOVE.W  UART_STAT,D2    ; Read status register
     BTST    #1,D2           ; Check RX ready (Bit 1)
     BEQ     GETCHAR_WAIT    ; Wait until RX ready
+    ; TODO: WORD is required by the UartDevice, implement proper UDS/LDS to use .B
     MOVE.W  UART_DATA,D0    ; Read character to D0
     MOVE.L  (SP)+,D2
     RTS
