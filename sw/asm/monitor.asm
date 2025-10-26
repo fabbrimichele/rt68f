@@ -123,8 +123,7 @@ BUFFER_FULL:
 PROCESS_CMD:
     MOVE.B  #0,(A5)            ; Null-terminate the string in the buffer
 
-    ; TODO: Parsing
-    ; For the time being just print the buffer
+    ; DEBUG: Print the buffer
     MOVE.B  #LF,D0
     BSR     PUTCHAR
     MOVE.B  #'"',D0
@@ -133,9 +132,57 @@ PROCESS_CMD:
     BSR     PUTS
     MOVE.B  #'"',D0
     BSR     PUTCHAR
+    MOVE.B  #LF,D0
+    BSR     PUTCHAR
 
-    BRA     NEW_CMD             ; For now, just loop for next command
+    ; Parse Dump
+    BSR     PARSE_DUMP
+    BTST    #0,D0
+    BNE     DUMP_CMD        ; D0.0 = 1 execute DUMP
 
+UNKNOWN_CMD:
+    LEA     MSG_UNKNOWN,A0
+    BSR     PUTS
+    MOVE.B  #LF,D0
+    BSR     PUTCHAR
+    BRA     NEW_CMD
+
+DUMP_CMD:
+    MOVE.B  #'+',D0
+    BSR     PUTCHAR
+    MOVE.B  #LF,D0
+    BRA     NEW_CMD
+
+; --------------------------------------
+; CHECK_DUMP: Checks for 'DUMP' command and extracts address argument
+; A0: Points to the start of the command string (IN_BUF)
+; Output D0.0: 1 if 'DUMP' found and address parsed, 0 otherwise.
+; Output A0: If successful, contains the 32-bit starting address for the dump.
+; --------------------------------------d
+PARSE_DUMP:
+    MOVEM.L D1/D2/A0/A1,-(SP)      ; SAVED: D1, D2, A1
+
+    CLR.L   D0
+    MOVEQ   #DUMP_LEN-1,D1
+    LEA     IN_BUF,A0
+    LEA     DUMP_STR,A1
+
+    ; 1. Compare 'DUMP'
+CHECK_LOOP:
+    MOVE.B  (A0)+,D2
+    CMP.B   (A1)+,D2
+    BNE     CHECK_FAIL
+    DBRA    D1,CHECK_LOOP       ; Decrement D1, loop if not -1
+
+    BSET    #0,D0               ; Set D0.0 flag to TRUE
+    BRA     CHECK_DONE
+
+CHECK_FAIL:
+    CLR.L   D0
+
+CHECK_DONE:
+    MOVEM.L (SP)+,D1/D2/A0/A1      ; RESTORED: D1, D2, A1
+    RTS
 
 ; ------------------------------
 ; Subroutines
@@ -185,8 +232,8 @@ DLY_LOOP:
 ; ------------------------------
 ; ROM Data Section
 ; ------------------------------
-MSG_TITLE   DC.B    'RT68F Monitor v0.1',10,0 ; String with Newline (10) and Null Terminator (0)
-
+MSG_TITLE   DC.B    'RT68F Monitor v0.1',LF,NUL
+MSG_UNKNOWN DC.B    'Error: Unknown command or syntax',LF,NUL
 ; Commands
 DUMP_STR    DC.B    'DUMP',0
 DUMP_LEN    EQU     4
@@ -210,6 +257,7 @@ LF          EQU 10          ; Line Feed
 BEL         EQU 7           ; Bell character
 BS          EQU 8           ; Backspace
 DEL         EQU 127         ; Delete/Rubout (0x7F)
+NUL         EQU 0
 
 IN_BUF          EQU RAM_START           ; IN_BUF starts at 0x800
 IN_BUF_LEN      EQU 80
