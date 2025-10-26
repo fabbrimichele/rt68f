@@ -148,14 +148,17 @@ UNKNOWN_CMD:
     BRA     NEW_CMD
 
 DUMP_CMD:
-    MOVE.B  #'+',D0
-    BSR     PUTCHAR
-    MOVE.W  A0,LED        ; DEBUG
+    MOVE.L  A0,D0
+    BSR     BINTOHEX        ; Print address
+
+    ;MOVE.B  #'+',D0
+    ;BSR     PUTCHAR
+    ;MOVE.W  A0,LED        ; DEBUG
 
     BRA     NEW_CMD
 
 ; --------------------------------------
-; CHECK_DUMP: Checks for 'DUMP' command and extracts address argument
+; PARSE_DUMP: Checks for 'DUMP' command and extracts address argument
 ; A0: Points to the start of the command string (IN_BUF)
 ; Output D0.0: 1 if 'DUMP' found and address parsed, 0 otherwise.
 ; Output A0: If successful, contains the 32-bit starting address for the dump.

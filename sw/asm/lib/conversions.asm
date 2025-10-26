@@ -1,4 +1,55 @@
 ; --------------------------------------
+; BINTOHEX: Compliant version. D0.L is converted to 8 ASCII hex characters.
+; --------------------------------------
+BINTOHEX:
+    MOVEM.L D1/D2,-(SP)         ; Save D1, D2
+
+    MOVEQ   #7,D2               ; Loop Counter (8 nibbles - 1 = 7)
+
+BTH_LOOP:
+    MOVE.L  D0,D1               ; Copy D0 to D1 for processing
+
+    ; --- 1. Isolate the Most Significant Nibble (MSN) into D1.L nibble 0 ---
+    ; Goal: Move MSN (bits 31-28) to LSN (bits 3-0). Total shift needed: 28.
+    ; This is done by SWAP (16-bit) + two small shifts (7+5=12)
+
+    SWAP    D1                  ; D1 = [original Low Word] [original High Word]
+    ; MSN is now in the high nibble of the Low Word (bits 15-12).
+
+    LSR.W   #7,D1               ; Shift right by 7. (MSN moves to bits 8-5)
+    LSR.W   #5,D1               ; Shift right by 5. (MSN moves to bits 3-0)
+    ; Total shift = 16 (SWAP) + 7 + 5 = 28. Valid shifts used.
+
+    ANDI.L  #$0000000F,D1       ; Mask D1, leaving only the 4-bit value (0-15).
+
+    ; --- 2. Convert value (0-15) to ASCII ('0'-'9', 'A'-'F') ---
+    CMP.B   #10,D1
+    BLT.S   BTH_DIGIT_CONV
+    ADDI.B  #'A'-10,D1
+    BRA.S   BTH_PRINT
+
+BTH_DIGIT_CONV:
+    ADDI.B  #'0',D1
+
+BTH_PRINT:
+    ; --- 3. Display Character and Restore D0 (The robust fix) ---
+    MOVE.L  D0,-(SP)            ; SAFELY PUSH D0.L (THE VALUE) TO STACK
+
+    MOVE.B  D1,D0               ; Pass the ASCII char in D0.B for PUTCHAR
+    BSR     PUTCHAR             ; Display the character
+
+    MOVE.L  (SP)+,D0            ; RESTORE D0.L (THE VALUE) from stack
+
+    ; --- 4. Consume the MSN and prepare for the next nibble ---
+    ASL.L   #4,D0               ; Shift Left D0 by 4 bits to remove the displayed MSN.
+
+    DBRA    D2,BTH_LOOP         ; Loop 8 times
+
+    MOVEM.L (SP)+,D1/D2          ; Restore D1, D2
+    RTS
+
+
+; --------------------------------------
 ; HEXTOBIN: Converts hex string at A0 to binary (32-bit) in D0.
 ; --------------------------------------
 HEXTOBIN:
