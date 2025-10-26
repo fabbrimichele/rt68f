@@ -185,8 +185,11 @@ DLY_LOOP:
 ; ------------------------------
 ; ROM Data Section
 ; ------------------------------
-MSG_TITLE:
-    DC.B    'RT68F Monitor v0.1',10,0 ; String with Newline (10) and Null Terminator (0)
+MSG_TITLE   DC.B    'RT68F Monitor v0.1',10,0 ; String with Newline (10) and Null Terminator (0)
+
+; Commands
+DUMP_STR    DC.B    'DUMP',0
+DUMP_LEN    EQU     4
 
 ; ===========================
 ; Constants
@@ -211,6 +214,3 @@ DEL         EQU 127         ; Delete/Rubout (0x7F)
 IN_BUF          EQU RAM_START           ; IN_BUF starts at 0x800
 IN_BUF_LEN      EQU 80
 IN_BUF_END      EQU IN_BUF+IN_BUF_LEN   ; IN_BUF_END = 0x800 + 80 = 0x850
-
-; Commands
-
