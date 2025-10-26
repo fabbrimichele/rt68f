@@ -175,8 +175,8 @@ DUMP_CELL:
     BRA     NEW_CMD
 
 WRITE_CMD:
-    MOVE.B  #'W',D0
-    BSR     PUTCHAR
+    ; TODO: additional parameter with the value to be written
+    MOVE.W  #$FFFF,(A0)
     BRA     NEW_CMD
 
 ; --------------------------------------
