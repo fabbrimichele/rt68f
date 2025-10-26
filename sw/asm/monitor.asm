@@ -39,9 +39,6 @@
 
 ;-------------------------------
 ; Bugs:
-; - When the max buffer limit is reached, e.g. typing 80
-;   characters, going to buffer start with backspace
-;   leave a character instead of deleting it.
 ; - I can't hear the Bell when at the end of the buffer
 ;   anymore, it used to work.
 ;-------------------------------
@@ -71,10 +68,10 @@ LOOP:
     CMP.B   #DEL,D0          ; Check for Backspace
     BEQ     BS_HANDLER
 
-    BSR     PUTCHAR         ; print character
     CMP.L   #IN_BUF_END,A5  ; Check if buffer is full
     BEQ     BUFFER_FULL
 
+    BSR     PUTCHAR         ; print character
     MOVE.B  D0,(A5)+        ; Store D0 into buffer, then increment A5
     BRA     LOOP
 
