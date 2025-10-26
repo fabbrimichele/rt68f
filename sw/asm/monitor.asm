@@ -4,7 +4,7 @@
 ; 68000 Vector Table (first 32 entries = 0x0000-0x007C)
 ; Each vector is 32 bits (long)
 ; ------------------------------
-    DC.L   END_RAM      ; 0: Initial Stack Pointer (SP)
+    DC.L   RAM_END      ; 0: Initial Stack Pointer (SP)
     DC.L   START        ; 1: Reset vector (PC start address)
     DC.L   $00000000    ; 2: Bus Error
     DC.L   $00000000    ; 3: Address Error
@@ -193,7 +193,7 @@ MSG_TITLE:
 ; ===========================
 ; Memory Map
 RAM_START   EQU $00000800   ; Start of RAM address
-END_RAM     EQU $00001000   ; End of RAM address
+RAM_END     EQU $00001000   ; End of RAM address
 LED         EQU $00010000   ; LED-mapped register base address
 UART_BASE   EQU $00012000   ; UART-mapped data register address
 UART_DATA   EQU UART_BASE+0 ; UART-mapped data register address
@@ -211,3 +211,6 @@ DEL         EQU 127         ; Delete/Rubout (0x7F)
 IN_BUF          EQU RAM_START           ; IN_BUF starts at 0x800
 IN_BUF_LEN      EQU 80
 IN_BUF_END      EQU IN_BUF+IN_BUF_LEN   ; IN_BUF_END = 0x800 + 80 = 0x850
+
+; Commands
+
