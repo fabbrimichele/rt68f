@@ -109,19 +109,16 @@ BUFFER_FULL:
     MOVE.B  #BEL,D0
     BSR     PUTCHAR
 
-FULL_CHECK_LOOP:
     BSR     GETCHAR             ; Get the next character
-
     ; Check 1: Enter pressed (CR)
     CMP.B   #CR,D0
     BEQ     PROCESS_CMD         ; Yes, go process the command
-
     ; Check 2: Backspace or Delete
     CMP.B   #BS,D0
     BEQ     BS_HANDLER
 
     ; Discard all other input
-    BRA     FULL_CHECK_LOOP
+    BRA     BUFFER_FULL
 
 PROCESS_CMD:
     MOVE.B  #0,(A5)            ; Null-terminate the string in the buffer
