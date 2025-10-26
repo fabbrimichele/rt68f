@@ -126,14 +126,12 @@ PROCESS_CMD:
     BSR     PUTCHAR
 
     ; Parse Dump
-    MOVEQ   #DUMP_LEN-1,D1
     LEA     DUMP_STR,A1
     BSR     PARSE_CMD
     BTST    #0,D0
     BNE     DUMP_CMD        ; D0.0 = 1 execute DUMP
 
     ; Parse Write
-    MOVEQ   #WRITE_LEN-1,D1
     LEA     WRITE_STR,A1
     BSR     PARSE_CMD
     BTST    #0,D0
@@ -181,31 +179,37 @@ WRITE_CMD:
 
 ; --------------------------------------
 ; PARSE_CMD: Checks for command and extracts address argument
-; A1: Points to the start of the command to be compared to (e.g. DUMP_STR)
-; D1: Len-1 of the command to be compared to (e.g. DUMP_LEN-1)
+; A1: Points to the start of the command (NULL terminated) to be compared to (e.g. DUMP_STR)
 ; Output D0.0: 1 if 'DUMP' found and address parsed, 0 otherwise.
 ; Output A0: If successful, contains the 32-bit starting address for the dump.
 ; --------------------------------------d
 PARSE_CMD:
-    MOVEM.L D1/D2/A1,-(SP)      ; SAVED: D1, D2, A1
+    MOVEM.L D1/D2/D3/A1,-(SP)
 
     CLR.L   D0
     LEA     IN_BUF,A0
 
     ; 1. Compare
+    MOVE.W  #1,LED
 CHECK_LOOP:
+    MOVE.B  (A1)+,D3
+    CMP.B   #NUL,D3
+    BEQ     CHECK_SEP
     MOVE.B  (A0)+,D2
-    CMP.B   (A1)+,D2
+    CMP.B   D3,D2
     BNE     CHECK_FAIL
-    DBRA    D1,CHECK_LOOP       ; Decrement D1, loop if not -1
+    BRA     CHECK_LOOP
 
+CHECK_SEP:
     ; 2. Check for separator (Space)
+    MOVE.W  #2,LED
     MOVE.B  (A0),D2             ; Peek at the next character
     CMP.B   #' ',D2             ; Must be a space
     BNE     CHECK_FAIL           ; Fail if not space
 
     ; 3. Skip whitespace to find argument
 SKIP_WS:
+    MOVE.W  #3,LED
     CMP.B   #' ',(A0)+          ; Check for space, and advance A0
     BEQ     SKIP_WS             ; Loop while space
     SUBQ.L  #1,A0               ; A0 advanced one too far, backtrack
@@ -235,7 +239,7 @@ CHECK_FAIL:
     CLR.L   D0
 
 CHECK_DONE:
-    MOVEM.L (SP)+,D1/D2/A1      ; RESTORED: D1, D2, A1
+    MOVEM.L (SP)+,D1/D2/D3/A1
     RTS
 
 ; ------------------------------
@@ -254,11 +258,8 @@ MSG_UNKNOWN DC.B    'Error: Unknown command or syntax',LF,NUL
 
 ; Commands
 ; They must be null terminated
-DUMP_STR    DC.B    'DUMP',0
-DUMP_LEN    EQU     4
-
-WRITE_STR   DC.B    'WRITE',0
-WRITE_LEN   EQU     5
+DUMP_STR    DC.B    'DUMP',NUL
+WRITE_STR   DC.B    'WRITE',NUL
 
 ; ===========================
 ; Constants

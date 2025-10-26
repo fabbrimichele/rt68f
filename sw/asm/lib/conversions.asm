@@ -1,8 +1,8 @@
 ; TODO: BINTOHEX and BINTOHEX_W
 
-; --------------------------------------
-; BINTOHEX: Compliant version. D0.L is converted to 8 ASCII hex characters.
-; --------------------------------------
+; --------------------------------------------------------
+; BINTOHEX: D0.L is converted to 8 ASCII hex characters.
+; --------------------------------------------------------
 BINTOHEX:
     MOVEM.L D1/D2,-(SP)         ; Save D1, D2
 
@@ -51,10 +51,9 @@ BTH_PRINT:
     RTS
 
 
-; --------------------------------------
-; BINTOHEX_W: Converts D0.W (16-bit value) to 4 ASCII hex characters.
-; Complies with strict assembler limits (shift count <= 7).
-; --------------------------------------
+; --------------------------------------------------------
+; BINTOHEX_W: Converts D0.W to 4 ASCII hex characters.
+; --------------------------------------------------------
 BINTOHEX_W:
     MOVEM.L D1/D2,-(SP)         ; Save D1, D2
 
@@ -101,11 +100,11 @@ BTH_W_PRINT:
     MOVEM.L (SP)+,D1/D2          ; Restore D1, D2
     RTS
 
-; --------------------------------------
+; -------------------------------------------------------------
 ; HEXTOBIN: Converts hex string at A0 to binary (32-bit) in D0.
-; --------------------------------------
+; -------------------------------------------------------------
 HEXTOBIN:
-    MOVEM.L D3/D1/D2/A1,-(SP)   ; Save D3, D1, D2, A1
+    MOVEM.L D2/D3/A1,-(SP)   ; Save D3, D1, D2, A1
 
     MOVEQ   #8,D2               ; D2 = Loop counter (Max digits = 8)
     CLR.L   D0                  ; D0 = Result (cleared)
@@ -203,5 +202,5 @@ HTB_SUCCESS:
     BSET    #0,D1               ; Set D1.0 flag to 1 for Success
 
 HTB_END_RESTORE:
-    MOVEM.L (SP)+,D3/D1/D2/A1   ; Restore registers
+    MOVEM.L (SP)+,D2/D3/A1   ; Restore registers
     RTS
