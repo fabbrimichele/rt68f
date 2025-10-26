@@ -126,9 +126,18 @@ PROCESS_CMD:
     BSR     PUTCHAR
 
     ; Parse Dump
-    BSR     PARSE_DUMP
+    MOVEQ   #DUMP_LEN-1,D1
+    LEA     DUMP_STR,A1
+    BSR     PARSE_CMD
     BTST    #0,D0
     BNE     DUMP_CMD        ; D0.0 = 1 execute DUMP
+
+    ; Parse Write
+    MOVEQ   #WRITE_LEN-1,D1
+    LEA     WRITE_STR,A1
+    BSR     PARSE_CMD
+    BTST    #0,D0
+    BNE     WRITE_CMD        ; D0.0 = 1 execute WRITE
 
 UNKNOWN_CMD:
     ; Print stored command
@@ -165,21 +174,25 @@ DUMP_CELL:
     DBRA    D1,DUMP_LINE    ; Decrement D1, branch if D1 is NOT -1
     BRA     NEW_CMD
 
+WRITE_CMD:
+    MOVE.B  #'W',D0
+    BSR     PUTCHAR
+    BRA     NEW_CMD
+
 ; --------------------------------------
-; PARSE_DUMP: Checks for 'DUMP' command and extracts address argument
-; A0: Points to the start of the command string (IN_BUF)
+; PARSE_CMD: Checks for command and extracts address argument
+; A1: Points to the start of the command to be compared to (e.g. DUMP_STR)
+; D1: Len-1 of the command to be compared to (e.g. DUMP_LEN-1)
 ; Output D0.0: 1 if 'DUMP' found and address parsed, 0 otherwise.
 ; Output A0: If successful, contains the 32-bit starting address for the dump.
 ; --------------------------------------d
-PARSE_DUMP:
+PARSE_CMD:
     MOVEM.L D1/D2/A1,-(SP)      ; SAVED: D1, D2, A1
 
     CLR.L   D0
-    MOVEQ   #DUMP_LEN-1,D1
     LEA     IN_BUF,A0
-    LEA     DUMP_STR,A1
 
-    ; 1. Compare 'DUMP'
+    ; 1. Compare
 CHECK_LOOP:
     MOVE.B  (A0)+,D2
     CMP.B   (A1)+,D2
@@ -240,8 +253,12 @@ MSG_TITLE   DC.B    'RT68F Monitor v0.1',LF,NUL
 MSG_UNKNOWN DC.B    'Error: Unknown command or syntax',LF,NUL
 
 ; Commands
+; They must be null terminated
 DUMP_STR    DC.B    'DUMP',0
 DUMP_LEN    EQU     4
+
+WRITE_STR   DC.B    'WRITE',0
+WRITE_LEN   EQU     5
 
 ; ===========================
 ; Constants
