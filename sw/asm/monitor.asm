@@ -188,11 +188,22 @@ SKIP_WS:
 
     ; 4. Call Hex to Binary conversion
     ; A0 points to the start of the hex address (e.g., 'C000')
-    BSR     HEXTOBIN             ; Result in D0.L (address), Success Flag in D1.0
-    BTST    #0,D1                ; CHECK THE SUCCESS FLAG (D1.0)
-    BEQ     CHECK_FAIL
-    MOVE.L  D0,A0               ; Move the final address from D0 into A0 (our designated output)
+    BSR     HEXTOBIN            ; Result in D0.L (address), Success Flag in D1.0
 
+    ; --- Check HEXTOBIN result ---
+    BTST    #0,D1               ; CHECK THE SUCCESS FLAG (D1.0)
+    BEQ     CHECK_FAIL          ; Failure if illegal char/empty string
+
+    ; --- Check for trailing junk ---
+    ; A0 is currently pointing to the next character after the hex token.
+    MOVE.B  (A0),D2             ; Peek at the character
+    TST.B   D2                  ; Is it NULL?
+    BEQ     HTB_CHECK_END       ; End of line, SUCCESS
+    CMP.B   #' ',D2             ; Is it a space?
+    BNE     CHECK_FAIL          ; If it's *anything else* (like 'X' in 'C000X'), it's junk.
+
+HTB_CHECK_END:
+    MOVE.L  D0,A0               ; Move the final address from D0 into A0
     BSET    #0,D0               ; Set D0.0 flag to TRUE
     BRA     CHECK_DONE
 
@@ -249,22 +260,26 @@ DLY_LOOP:
     RTS
 
 ; --------------------------------------
-; HEXTOBIN: Converts hex string at A0 to binary (32-bit) in D0
-; Returns D1.L = 1 on success, D1.L = 0 on failure/illegal char.
-; A0 advances past the hex token.
+; HEXTOBIN: Converts hex string at A0 to binary (32-bit) in D0.
+; Stops at first non-hex char or after 8 digits.
+; D1.L = 1 on success, D1.L = 0 on failure/empty string.
 ; --------------------------------------
 HEXTOBIN:
     MOVEM.L D1/D2/A1,-(SP)      ; Save D1, D2, A1
 
-    MOVEQ   #8,D2               ; D2 = Max digit count (8)
-    CLR.L   D0                  ; D0 = Result (cleared to 0)
-    CLR.L   D1                  ; D1 = Success Flag (Start at 0)
-    MOVEQ   #0,D3               ; D3 = Digit Counter (Used to check for empty string)
+    MOVEQ   #8,D2               ; D2 = Loop counter (Max digits)
+    CLR.L   D0                  ; D0 = Result (cleared)
+    CLR.L   D1                  ; D1 = Success Flag (0=Failure initially)
+    MOVEQ   #0,D3               ; D3 = Digit Counter (to check for empty string)
 
 NEXT_DIGIT:
     MOVE.B  (A0),D1             ; D1.B = Peek at next char
-    TST.B   D1                  ; Check for NULL terminator
-    BEQ     HTB_TOKEN_END       ; End of string, proceed to success check
+
+    ; Check for end of token (Space, Tab, NULL, or any non-hex)
+    TST.B   D1                  ; Is it NULL?
+    BEQ     HTB_TOKEN_END
+    CMP.B   #' ',D1             ; Is it a Space?
+    BEQ     HTB_TOKEN_END
 
     ; --- 1. Character Classification ---
 
@@ -288,108 +303,67 @@ CHECK_a:
     CMP.B   #'f',D1
     BLE     HTB_DIGIT_FOUND     ; Valid digit (a-f)
 
-    BRA     HTB_ILLEGAL_CHAR    ; Illegal character, stop parsing
+    BRA     HTB_ILLEGAL_CHAR    ; Any other character is illegal
 
 HTB_DIGIT_FOUND:
-    ; Check if 8 digits have already been processed
-    TST.W   D2                  ; D2 = 0 means we've hit 8 digits
-    BEQ     HTB_MAX_DIGITS      ; Max digits hit, stop processing current char
+    ; Check 8-digit limit
+    DBRA    D2,HTB_CALC         ; If D2 > 0, we can process. D2 becomes -1 if 8 processed.
 
-    ; --- 2. Conversion and Arithmetic (Continue only if < 8 digits) ---
-    ADDQ.L  #1,D3               ; Increment digit counter (D3)
+    ; If DBRA falls through, 8 digits were processed (D2 is -1). Stop parsing.
+    BRA     HTB_END_RESTORE     ; Successful stop, but no more processing.
 
-    ; If D1 is '0'-'9', skip ahead to calculation
+    ; --- 2. Conversion and Arithmetic ---
+HTB_CALC:
+    ADDQ.L  #1,D3               ; Increment digit counter
+
+    ; Conversion logic (same as before to get 4-bit value in D1)
     CMP.B   #'0',D1
     BLT     ALPHA_CALC
     CMP.B   #'9',D1
     BLE     DIGIT_CALC
 
 ALPHA_CALC:
-    ; Handle A-F or a-f
     CMP.B   #'A',D1
     BLT     ALPHA_LOWER_CALC
-    SUB.B   #'A'-10,D1          ; D1 = actual value (10-15)
-    BRA     HTB_CALC
+    SUB.B   #'A'-10,D1
+    BRA     HTB_SHIFT
 
 ALPHA_LOWER_CALC:
-    SUB.B   #'a'-10,D1          ; D1 = actual value (10-15)
-    BRA     HTB_CALC
+    SUB.B   #'a'-10,D1
+    BRA     HTB_SHIFT
 
 DIGIT_CALC:
-    SUB.B   #'0',D1             ; D1 = actual value (0-9)
+    SUB.B   #'0',D1
 
-HTB_CALC:
-    LSL.L   #4,D0               ; Shift current result (D0) left by 4 bits
-    OR.B    D1,D0               ; OR the new 4-bit value into the low nibble
+HTB_SHIFT:
+    LSL.L   #4,D0               ; Shift result left
+    OR.B    D1,D0               ; OR in new nibble
 
-    ADDQ.L  #1,A0               ; Advance A0 pointer (consumed a valid digit)
-    DBRA    D2,NEXT_DIGIT       ; Decrement D2 (limit counter), loop
+    ADDQ.L  #1,A0               ; ADVANCE A0 pointer (Consumed the digit)
+    BRA     NEXT_DIGIT          ; Continue loop
 
-    ; --- Exit due to 8-digit limit ---
-HTB_MAX_DIGITS:
-    ; Parsing stopped because 8 digits were found.
-    ; A0 still points to the 9th character, which we must skip.
-
-    ; Fall through to HTB_TOKEN_END to clean up the rest of the hex string.
-
-    ; --- Exit due to End of String or Max Digits ---
-HTB_TOKEN_END:
-    ; Check if any digits were successfully parsed (to avoid success on empty string)
-    TST.L   D3
-    BNE     HTB_SUCCESS         ; If D3 > 0, we had a successful conversion
-
-    ; If D3 = 0, we found NULL immediately or only illegal chars (which fails later)
-    BRA     HTB_ILLEGAL_CHAR
-
-    ; --- Exit due to Illegal Character ---
+    ; --- Exit Paths ---
 HTB_ILLEGAL_CHAR:
     CLR.L   D0                  ; D0 = 0
     CLR.L   D1                  ; D1 = 0 (Failure)
+    ADDQ.L  #1,A0               ; Advance A0 past the illegal character
+    BRA     HTB_END_RESTORE
 
-    ; The character at A0 is not hex. We must consume the rest of the *token*
-    ; (all subsequent hex characters) to leave A0 at the next delimiter (space/NULL).
-    BRA     HTB_CLEANUP_LOOP    ; Start clean-up
+HTB_TOKEN_END:
+    ; Check if any digits were successfully parsed (D3 > 0)
+    TST.L   D3
+    BNE     HTB_SUCCESS
+
+    ; D3 = 0: Empty string or only spaces/NULL at start
+    BRA     HTB_END_RESTORE     ; D1 remains 0 (Failure)
 
 HTB_SUCCESS:
     BSET    #0,D1               ; Set D1.0 flag to 1 for Success
 
-HTB_CLEANUP_LOOP:
-    ; A0 points to the character that caused the exit (illegal char, 9th digit, or NULL)
-    MOVE.B  (A0),D1             ; Peek at the character
-
-    ; If it is a delimiter (space or NULL), we stop
-    CMP.B   #' ',D1
-    BEQ     HTB_END_RESTORE
-    TST.B   D1
-    BEQ     HTB_END_RESTORE
-
-    ; Check if the character is a valid hex character:
-    CMP.B   #'0',D1             ; Check 0-9
-    BLT     CHECK_CLEANUP_A
-    CMP.B   #'9',D1
-    BLE     HTB_ADVANCE         ; Is hex, advance
-
-CHECK_CLEANUP_A:
-    CMP.B   #'A',D1             ; Check A-F
-    BLT     CHECK_CLEANUP_a
-    CMP.B   #'F',D1
-    BLE     HTB_ADVANCE         ; Is hex, advance
-
-CHECK_CLEANUP_a:
-    CMP.B   #'a',D1             ; Check a-f
-    BLT     HTB_END_RESTORE     ; Not hex, stop cleanup
-    CMP.B   #'f',D1
-    BLE     HTB_ADVANCE         ; Is hex, advance
-
-    BRA     HTB_END_RESTORE     ; Should not be reached
-
-HTB_ADVANCE:
-    ADDQ.L  #1,A0               ; Advance A0 past this character
-    BRA     HTB_CLEANUP_LOOP    ; Continue consuming the token
-
 HTB_END_RESTORE:
     MOVEM.L (SP)+,D1/D2/A1      ; Restore registers
     RTS
+
 ; ------------------------------
 ; ROM Data Section
 ; ------------------------------
