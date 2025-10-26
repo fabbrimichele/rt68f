@@ -1,3 +1,5 @@
+; TODO: BINTOHEX and BINTOHEX_W
+
 ; --------------------------------------
 ; BINTOHEX: Compliant version. D0.L is converted to 8 ASCII hex characters.
 ; --------------------------------------
@@ -48,6 +50,56 @@ BTH_PRINT:
     MOVEM.L (SP)+,D1/D2          ; Restore D1, D2
     RTS
 
+
+; --------------------------------------
+; BINTOHEX_W: Converts D0.W (16-bit value) to 4 ASCII hex characters.
+; Complies with strict assembler limits (shift count <= 7).
+; --------------------------------------
+BINTOHEX_W:
+    MOVEM.L D1/D2,-(SP)         ; Save D1, D2
+
+    MOVEQ   #3,D2               ; Loop Counter (4 nibbles - 1 = 3)
+
+BTH_W_LOOP:
+    MOVE.W  D0,D1               ; Copy D0.W to D1.W for processing
+
+    ; --- 1. Isolate the Most Significant Nibble (MSN) of the Word ---
+    ; Goal: Move MSN (bits 15-12) to LSN (bits 3-0). Total shift needed: 12.
+    ; This is done by two small shifts (7 + 5 = 12).
+
+    LSR.W   #7,D1               ; Shift right by 7. (MSN moves to bits 8-5)
+    LSR.W   #5,D1               ; Shift right by 5. (MSN moves to bits 3-0)
+    ; Total shift = 12. Valid shifts used.
+
+    ANDI.L  #$0000000F,D1       ; Mask D1, isolating the 4-bit value (0-15).
+                                ; Using .L is safe as we only care about the lower 4 bits.
+
+    ; --- 2. Convert value (0-15) to ASCII ('0'-'9', 'A'-'F') ---
+    CMP.B   #10,D1
+    BLT.S   BTH_W_DIGIT_CONV
+    ADDI.B  #'A'-10,D1
+    BRA.S   BTH_W_PRINT
+
+BTH_W_DIGIT_CONV:
+    ADDI.B  #'0',D1
+
+BTH_W_PRINT:
+    ; --- 3. Display Character and Restore D0 ---
+    MOVE.L  D0,-(SP)            ; **SAVE D0.L** (the value) to stack
+
+    MOVE.B  D1,D0               ; Pass the ASCII char in D0.B for PUTCHAR
+    BSR     PUTCHAR             ; Display the character
+
+    MOVE.L  (SP)+,D0            ; **RESTORE D0.L** (the value) from stack
+
+    ; --- 4. Consume the MSN and prepare for the next nibble ---
+    ASL.W   #4,D0               ; Shift Left D0.W by 4 bits to remove the displayed MSN.
+                                ; We use .W size here as D0.H doesn't need to be shifted.
+
+    DBRA    D2,BTH_W_LOOP       ; Loop 4 times
+
+    MOVEM.L (SP)+,D1/D2          ; Restore D1, D2
+    RTS
 
 ; --------------------------------------
 ; HEXTOBIN: Converts hex string at A0 to binary (32-bit) in D0.

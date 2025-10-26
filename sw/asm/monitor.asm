@@ -122,16 +122,6 @@ BUFFER_FULL:
 
 PROCESS_CMD:
     MOVE.B  #0,(A5)            ; Null-terminate the string in the buffer
-
-    ; DEBUG: Print the buffer
-    MOVE.B  #LF,D0
-    BSR     PUTCHAR
-    MOVE.B  #'"',D0
-    BSR     PUTCHAR
-    LEA     IN_BUF,A0
-    BSR     PUTS
-    MOVE.B  #'"',D0
-    BSR     PUTCHAR
     MOVE.B  #LF,D0
     BSR     PUTCHAR
 
@@ -141,20 +131,38 @@ PROCESS_CMD:
     BNE     DUMP_CMD        ; D0.0 = 1 execute DUMP
 
 UNKNOWN_CMD:
+    ; Print stored command
+    MOVE.B  #'"',D0
+    BSR     PUTCHAR
+    LEA     IN_BUF,A0
+    BSR     PUTS
+    MOVE.B  #'"',D0
+    BSR     PUTCHAR
+    MOVE.B  #' ',D0
+    BSR     PUTCHAR
+    ; Print error message
     LEA     MSG_UNKNOWN,A0
     BSR     PUTS
-    MOVE.B  #LF,D0
-    BSR     PUTCHAR
     BRA     NEW_CMD
 
 DUMP_CMD:
+    MOVE.W  #(8-1),D1       ; Print 8 lines
+DUMP_LINE:
     MOVE.L  A0,D0
     BSR     BINTOHEX        ; Print address
+    MOVE.B  #':',D0
+    BSR     PUTCHAR
+    MOVE.W  #(8-1),D2       ; Print 8 cells
+DUMP_CELL:
+    MOVE.B  #' ',D0
+    BSR     PUTCHAR
+    MOVE.W  (A0)+,D0
+    BSR     BINTOHEX_W      ; Print mem value
+    DBRA    D2,DUMP_CELL    ; Decrement D1, branch if D1 is NOT -1
 
-    ;MOVE.B  #'+',D0
-    ;BSR     PUTCHAR
-    ;MOVE.W  A0,LED        ; DEBUG
-
+    MOVE.B  #LF,D0
+    BSR     PUTCHAR
+    DBRA    D1,DUMP_LINE    ; Decrement D1, branch if D1 is NOT -1
     BRA     NEW_CMD
 
 ; --------------------------------------
