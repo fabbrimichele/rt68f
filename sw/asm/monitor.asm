@@ -220,13 +220,6 @@ CHECK_DONE:
     INCLUDE 'lib/console_io.asm'
     INCLUDE 'lib/conversions.asm'
 
-DELAY:
-    MOVE.L  #DLY_VAL,D0     ; Load delay value
-DLY_LOOP:
-    SUBQ.L  #1,D0           ; Decrement counter
-    BNE     DLY_LOOP        ; Loop until D0 is zero
-    RTS
-
 ; ------------------------------
 ; ROM Data Section
 ; ------------------------------
@@ -253,6 +246,8 @@ UART_STAT   EQU UART_BASE+2 ; UART-mapped data register address
 
 ; Program Constants
 DLY_VAL     EQU 1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
+
+; ASCII
 CR          EQU 13          ; Carriage Return
 LF          EQU 10          ; Line Feed
 BEL         EQU 7           ; Bell character
@@ -260,6 +255,7 @@ BS          EQU 8           ; Backspace
 DEL         EQU 127         ; Delete/Rubout (0x7F)
 NUL         EQU 0
 
+; Buffer
 IN_BUF          EQU RAM_START           ; IN_BUF starts at 0x800
 IN_BUF_LEN      EQU 80
 IN_BUF_END      EQU IN_BUF+IN_BUF_LEN   ; IN_BUF_END = 0x800 + 80 = 0x850
