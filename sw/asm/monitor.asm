@@ -177,6 +177,37 @@ WRITE_CMD:
     MOVE.W  #$FFFF,(A0)
     BRA     NEW_CMD
 
+; ------------------------------------------------------------
+; CHECK_CMD
+; A1: Points to the start of the command (NULL terminated)
+;     to be compared to (e.g. DUMP_STR).
+; Output
+; D0.0: 1 if command found, 0 otherwise.
+; A0: Points to character in the buffer after the command.
+; ------------------------------------------------------------
+CHECK_CMD:
+    MOVEM.L D1/D2/D3/A1,-(SP)
+
+    CLR.L   D0
+    BSET    #0,D0
+    LEA     IN_BUF,A0
+
+CHK_CMD_LOOP:
+    MOVE.B  (A1)+,D3
+    CMP.B   #NUL,D3
+    BEQ     CHK_CMD_DONE
+    MOVE.B  (A0)+,D2
+    CMP.B   D3,D2
+    BNE     CHK_CMD_FAIL
+    BRA     CHK_CMD_LOOP
+
+CHK_CMD_FAIL:
+    CLR.L   D0
+
+CHK_CMD_DONE:
+    MOVEM.L (SP)+,D1/D2/D3/A1
+    RTS
+
 ; --------------------------------------
 ; PARSE_CMD: Checks for command and extracts address argument
 ; A1: Points to the start of the command (NULL terminated) to be compared to (e.g. DUMP_STR)
@@ -186,19 +217,9 @@ WRITE_CMD:
 PARSE_CMD:
     MOVEM.L D1/D2/D3/A1,-(SP)
 
-    CLR.L   D0
-    LEA     IN_BUF,A0
-
-    ; 1. Compare
-    MOVE.W  #1,LED
-CHECK_LOOP:
-    MOVE.B  (A1)+,D3
-    CMP.B   #NUL,D3
-    BEQ     CHECK_SEP
-    MOVE.B  (A0)+,D2
-    CMP.B   D3,D2
-    BNE     CHECK_FAIL
-    BRA     CHECK_LOOP
+    JSR     CHECK_CMD
+    BTST    #0,D0
+    BEQ     CHECK_FAIL          ; D0.0 equals 0, failure
 
 CHECK_SEP:
     ; 2. Check for separator (Space)
