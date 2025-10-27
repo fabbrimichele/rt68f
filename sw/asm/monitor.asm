@@ -187,9 +187,7 @@ WRITE_CMD:
 ; ------------------------------------------------------------
 CHECK_CMD:
     MOVEM.L D1/D2/D3/A1,-(SP)
-    ; TODO: replace with MOVE.L #1,D0
-    CLR.L   D0
-    BSET    #0,D0
+    MOVE.L #1,D0
     LEA     IN_BUF,A0
 
 CHK_CMD_LOOP:
@@ -214,7 +212,7 @@ CHK_CMD_DONE:
 ; Input
 ; - A0: Points to character in the buffer after the command.
 ; Output
-; - D0.0: 1 if command found, 0 otherwise.
+; - D0.0: 1 if separator found, 0 otherwise.
 ; - A0: Points to character in the buffer after the argument.
 ; ------------------------------------------------------------
 CHECK_SEP:
@@ -237,6 +235,33 @@ CHK_SEP_FAIL:
     CLR.L   D0
 
 CHK_SEP_DONE:
+    MOVEM.L (SP)+,D2
+    RTS
+
+; ------------------------------------------------------------
+; CHECK_TRAIL
+; Check for trailing junk (should be called after all arguments).
+; Input
+; - A0: Points to character in the buffer after the command.
+; Output
+; - D0.0: 1 if string clean, 0 otherwise.
+; ------------------------------------------------------------
+CHECK_TRAIL:
+    MOVEM.L D2,-(SP)
+    MOVE.L #1,D0
+
+CHK_TRL_LOOP:
+    MOVE.B  (A0)+,D2            ; Peek at the character
+    TST.B   D2                  ; Is it NULL?
+    BEQ     CHK_TRL_DONE        ; End of line, SUCCESS
+    CMP.B   #' ',D2             ; Is it a space?
+    BNE     CHK_TRL_FAIL        ; If it's *anything else* (like 'X' in 'C000X'), it's junk.
+    BRA     CHK_TRL_LOOP        ; continue until end of line
+
+CHK_TRL_FAIL:
+    CLR.L   D0
+
+CHK_TRL_DONE:
     MOVEM.L (SP)+,D2
     RTS
 
@@ -263,19 +288,15 @@ PARSE_CMD:
     BSR     HEXTOBIN            ; Result in D0.L (address), Success Flag in D1.0
     BTST    #0,D1               ; CHECK THE SUCCESS FLAG (D1.0)
     BEQ     CHECK_FAIL          ; Failure if illegal char/empty string
+    ; TODO: don't use A0 to return the address, rather use A1
+    MOVE.L  D0,A1               ; Move the final address from D0 into A0
 
-    ; --- Check for trailing junk ---
-    ; A0 is currently pointing to the next character after the hex token.
-HTB_CHECK_LOOP:
-    MOVE.B  (A0)+,D2            ; Peek at the character
-    TST.B   D2                  ; Is it NULL?
-    BEQ     HTB_CHECK_END       ; End of line, SUCCESS
-    CMP.B   #' ',D2             ; Is it a space?
-    BNE     CHECK_FAIL          ; If it's *anything else* (like 'X' in 'C000X'), it's junk.
-    BRA     HTB_CHECK_LOOP      ; continue until end of line
+    JSR     CHECK_TRAIL
+    BTST    #0,D0
+    ; TODO: can jump directly to CHECK_DONE, D0 already set
+    BEQ     CHECK_FAIL          ; D0.0 equals 0, failure
 
-HTB_CHECK_END:
-    MOVE.L  D0,A0               ; Move the final address from D0 into A0
+    ; TODO: BSET shouldn't be required
     BSET    #0,D0               ; Set D0.0 flag to TRUE
     BRA     CHECK_DONE
 
@@ -283,6 +304,7 @@ CHECK_FAIL:
     CLR.L   D0
 
 CHECK_DONE:
+    MOVE.L  A1,A0
     MOVEM.L (SP)+,D1/D2/D3/A1
     RTS
 
