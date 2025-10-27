@@ -62,7 +62,7 @@ LOOP:
     BSR     GETCHAR
 
     CMP.B   #CR,D0          ; Check for Enter
-    BEQ     PROCESS_CMD     ; then start reading new command
+    BEQ     PROCESS_CMD     ; then process command
     CMP.B   #BS,D0          ; Check for Backspace
     BEQ     BS_HANDLER
     CMP.B   #DEL,D0          ; Check for Backspace
@@ -243,7 +243,7 @@ CHK_SEP_DONE:
 ; --------------------------------------
 ; PARSE_CMD: Checks for command and extracts address argument
 ; A1: Points to the start of the command (NULL terminated) to be compared to (e.g. DUMP_STR)
-; Output D0.0: 1 if 'DUMP' found and address parsed, 0 otherwise.
+; Output D0.0: 1 if command found and address parsed, 0 otherwise.
 ; Output A0: If successful, contains the 32-bit starting address for the dump.
 ; --------------------------------------d
 PARSE_CMD:
@@ -251,27 +251,28 @@ PARSE_CMD:
 
     JSR     CHECK_CMD
     BTST    #0,D0
+    ; TODO: can jump directly to CHECK_DONE, D0 already set
     BEQ     CHECK_FAIL          ; D0.0 equals 0, failure
 
     JSR     CHECK_SEP
     BTST    #0,D0
+    ; TODO: can jump directly to CHECK_DONE, D0 already set
     BEQ     CHECK_FAIL          ; D0.0 equals 0, failure
 
-    ; 4. Call Hex to Binary conversion
-    ; A0 points to the start of the hex address (e.g., 'C000')
+    ; TODO: change to return error in D0 and number in D1
     BSR     HEXTOBIN            ; Result in D0.L (address), Success Flag in D1.0
-
-    ; --- Check HEXTOBIN result ---
     BTST    #0,D1               ; CHECK THE SUCCESS FLAG (D1.0)
     BEQ     CHECK_FAIL          ; Failure if illegal char/empty string
 
     ; --- Check for trailing junk ---
     ; A0 is currently pointing to the next character after the hex token.
-    MOVE.B  (A0),D2             ; Peek at the character
+HTB_CHECK_LOOP:
+    MOVE.B  (A0)+,D2            ; Peek at the character
     TST.B   D2                  ; Is it NULL?
     BEQ     HTB_CHECK_END       ; End of line, SUCCESS
     CMP.B   #' ',D2             ; Is it a space?
     BNE     CHECK_FAIL          ; If it's *anything else* (like 'X' in 'C000X'), it's junk.
+    BRA     HTB_CHECK_LOOP      ; continue until end of line
 
 HTB_CHECK_END:
     MOVE.L  D0,A0               ; Move the final address from D0 into A0
