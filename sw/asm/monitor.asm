@@ -187,7 +187,7 @@ WRITE_CMD:
 ; ------------------------------------------------------------
 CHECK_CMD:
     MOVEM.L D1/D2/D3/A1,-(SP)
-
+    ; TODO: replace with MOVE.L #1,D0
     CLR.L   D0
     BSET    #0,D0
     LEA     IN_BUF,A0
@@ -208,6 +208,38 @@ CHK_CMD_DONE:
     MOVEM.L (SP)+,D1/D2/D3/A1
     RTS
 
+; ------------------------------------------------------------
+; CHECK_SEP
+; Check for separator and skip whitespace to find argument.
+; Input
+; - A0: Points to character in the buffer after the command.
+; Output
+; - D0.0: 1 if command found, 0 otherwise.
+; - A0: Points to character in the buffer after the argument.
+; ------------------------------------------------------------
+CHECK_SEP:
+    MOVEM.L D2,-(SP)
+    MOVE.L #1,D0
+
+    ; Check for separator (Space)
+    MOVE.B  (A0),D2             ; Peek at the next character
+    CMP.B   #' ',D2             ; Must be a space
+    BNE     CHK_SEP_FAIL        ; Fail if not space
+
+    ; Skip whitespace to find argument
+CHK_SEP_SKIP_WS:
+    CMP.B   #' ',(A0)+          ; Check for space, and advance A0
+    BEQ     CHK_SEP_SKIP_WS     ; Loop while space
+    SUBQ.L  #1,A0               ; A0 advanced one too far, backtrack
+    BRA     CHK_SEP_DONE
+
+CHK_SEP_FAIL:
+    CLR.L   D0
+
+CHK_SEP_DONE:
+    MOVEM.L (SP)+,D2
+    RTS
+
 ; --------------------------------------
 ; PARSE_CMD: Checks for command and extracts address argument
 ; A1: Points to the start of the command (NULL terminated) to be compared to (e.g. DUMP_STR)
@@ -221,19 +253,9 @@ PARSE_CMD:
     BTST    #0,D0
     BEQ     CHECK_FAIL          ; D0.0 equals 0, failure
 
-CHECK_SEP:
-    ; 2. Check for separator (Space)
-    MOVE.W  #2,LED
-    MOVE.B  (A0),D2             ; Peek at the next character
-    CMP.B   #' ',D2             ; Must be a space
-    BNE     CHECK_FAIL           ; Fail if not space
-
-    ; 3. Skip whitespace to find argument
-SKIP_WS:
-    MOVE.W  #3,LED
-    CMP.B   #' ',(A0)+          ; Check for space, and advance A0
-    BEQ     SKIP_WS             ; Loop while space
-    SUBQ.L  #1,A0               ; A0 advanced one too far, backtrack
+    JSR     CHECK_SEP
+    BTST    #0,D0
+    BEQ     CHECK_FAIL          ; D0.0 equals 0, failure
 
     ; 4. Call Hex to Binary conversion
     ; A0 points to the start of the hex address (e.g., 'C000')
