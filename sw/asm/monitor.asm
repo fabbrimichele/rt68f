@@ -152,10 +152,11 @@ UNKNOWN_CMD:
     BSR     PUTS
     BRA     NEW_CMD
 
+; A1 - Dump address
 DUMP_CMD:
     MOVE.W  #(8-1),D1       ; Print 8 lines
 DUMP_LINE:
-    MOVE.L  A0,D0
+    MOVE.L  A1,D0
     BSR     BINTOHEX        ; Print address
     MOVE.B  #':',D0
     BSR     PUTCHAR
@@ -163,7 +164,7 @@ DUMP_LINE:
 DUMP_CELL:
     MOVE.B  #' ',D0
     BSR     PUTCHAR
-    MOVE.W  (A0)+,D0
+    MOVE.W  (A1)+,D0
     BSR     BINTOHEX_W      ; Print mem value
     DBRA    D2,DUMP_CELL    ; Decrement D1, branch if D1 is NOT -1
 
@@ -172,20 +173,22 @@ DUMP_CELL:
     DBRA    D1,DUMP_LINE    ; Decrement D1, branch if D1 is NOT -1
     BRA     NEW_CMD
 
+; A1 - Write address
 WRITE_CMD:
     ; TODO: additional parameter with the value to be written
-    MOVE.W  #$FFFF,(A0)
+    MOVE.W  #$FFFF,(A1)
     BRA     NEW_CMD
 
 
 ; --------------------------------------
 ; PARSE_CMD: Checks for command and extracts address argument
 ; A1: Points to the start of the command (NULL terminated) to be compared to (e.g. DUMP_STR)
-; Output D0.0: 1 if command found and address parsed, 0 otherwise.
-; Output A0: If successful, contains the 32-bit starting address for the dump.
+; Output
+; - D0.0: 1 if command found and address parsed, 0 otherwise.
+; - A1: If successful, contains the 32-bit starting address for the dump.
 ; --------------------------------------d
 PARSE_CMD:
-    MOVEM.L D1/D2/D3/A1,-(SP)   ; TODO: only A0 should be required
+    MOVEM.L D1/D2/D3/A0,-(SP)   ; TODO: only A0 should be required
     LEA     IN_BUF,A0
 
     JSR     CHECK_CMD           ; Chek expected command
@@ -199,15 +202,13 @@ PARSE_CMD:
     BSR     HEXTOBIN            ; Parse 1st parameter (32 bits)
     BTST    #0,D0               ; D0.0 equals 0, failure
     BEQ     PRS_CMD_DONE        ; Exit on failure
-    ; TODO: don't use A0 to return the address, rather use A1
     MOVE.L  D1,A1               ; Move the final address from D0 into A0
 
     JSR     CHECK_TRAIL         ; Check for trailing junk
                                 ; D0.0 returned with result flag
 
 PRS_CMD_DONE:
-    MOVE.L  A1,A0               ; TODO: shouldn't be required once HEX2BIN is fixed
-    MOVEM.L (SP)+,D1/D2/D3/A1   ; TODO: only A0 should be required
+    MOVEM.L (SP)+,D1/D2/D3/A0   ; TODO: only A0 should be required
     RTS
 
 ; ------------------------------------------------------------
