@@ -162,9 +162,10 @@ DUMP_CELL:
     DBRA    D1,DUMP_LINE    ; Decrement D1, branch if D1 is NOT -1
     BRA     NEW_CMD
 
+; D1 - Value to be written
 ; A1 - Write address
 WRITE_CMD:
-    MOVE.W  A2,(A1)       ; Move only 16 bits (argument is 32 bit long)
+    MOVE.W  D1,(A1)       ; Move only 16 bits (argument is 32 bit long)
     BRA     NEW_CMD
 
 
@@ -203,7 +204,7 @@ PRS_DMP_DONE:
 ; Output
 ; - D0.0: 1 if 'DUMP' found and address parsed, 0 otherwise.
 ; - A1: If successful, contains the 32-bit address.
-; - A2: If successful, contains the 32-bit value.
+; - D1: If successful, contains the 32-bit value.
 ; ------------------------------------------------------------
 PARSE_WRITE:
     MOVEM.L A0,-(SP)
@@ -223,23 +224,16 @@ PARSE_WRITE:
     BEQ     PRS_WRT_DONE        ; Exit on failure
     MOVE.L  D1,A1               ; Move the parsed address from D0 into A1
 
-    ; TODO: something is not working. When 2 arguments are entered, it stucks
-    MOVE.W  #1,LED
     JSR     CHECK_SEP           ; Check for separator
     BTST    #0,D0               ; D0.0 equals 0, failure
     BEQ     PRS_WRT_DONE        ; Exit on failure
 
-    MOVE.W  #2,LED
-    BSR     HEXTOBIN            ; Parse 2st argument (32 bits)
+    BSR     HEXTOBIN            ; Parse 2st argument (32 bits), D1 contains result
     BTST    #0,D0               ; D0.0 equals 0, failure
     BEQ     PRS_WRT_DONE        ; Exit on failure
-    MOVE.L  D1,A2               ; Move the parsed address from D0 into A2
 
-    MOVE.W  #4,LED
     JSR     CHECK_TRAIL         ; Check for trailing junk
                                 ; D0.0 returned with result flag
-    MOVE.W  #8,LED
-
 PRS_WRT_DONE:
     MOVEM.L (SP)+,A0
     RTS
