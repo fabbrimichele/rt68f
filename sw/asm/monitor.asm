@@ -177,6 +177,38 @@ WRITE_CMD:
     MOVE.W  #$FFFF,(A0)
     BRA     NEW_CMD
 
+
+; --------------------------------------
+; PARSE_CMD: Checks for command and extracts address argument
+; A1: Points to the start of the command (NULL terminated) to be compared to (e.g. DUMP_STR)
+; Output D0.0: 1 if command found and address parsed, 0 otherwise.
+; Output A0: If successful, contains the 32-bit starting address for the dump.
+; --------------------------------------d
+PARSE_CMD:
+    MOVEM.L D1/D2/D3/A1,-(SP)
+
+    JSR     CHECK_CMD           ; Chek expected command
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     PRS_CMD_DONE          ; Exit on failure
+
+    JSR     CHECK_SEP           ; Check for separator
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     PRS_CMD_DONE        ; Exit on failure
+
+    BSR     HEXTOBIN            ; Parse 1st parameter (32 bits)
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     PRS_CMD_DONE        ; Exit on failure
+    ; TODO: don't use A0 to return the address, rather use A1
+    MOVE.L  D1,A1               ; Move the final address from D0 into A0
+
+    JSR     CHECK_TRAIL         ; Check for trailing junk
+                                ; D0.0 returned with result flag
+
+PRS_CMD_DONE:
+    MOVE.L  A1,A0               ; TODO: shouldn't be required once HEX2BIN is fixed
+    MOVEM.L (SP)+,D1/D2/D3/A1
+    RTS
+
 ; ------------------------------------------------------------
 ; CHECK_CMD
 ; A1: Points to the start of the command (NULL terminated)
@@ -263,38 +295,6 @@ CHK_TRL_FAIL:
 
 CHK_TRL_DONE:
     MOVEM.L (SP)+,D2
-    RTS
-
-; --------------------------------------
-; PARSE_CMD: Checks for command and extracts address argument
-; A1: Points to the start of the command (NULL terminated) to be compared to (e.g. DUMP_STR)
-; Output D0.0: 1 if command found and address parsed, 0 otherwise.
-; Output A0: If successful, contains the 32-bit starting address for the dump.
-; --------------------------------------d
-PARSE_CMD:
-    MOVEM.L D1/D2/D3/A1,-(SP)
-
-    JSR     CHECK_CMD           ; Chek expected command
-    BTST    #0,D0               ; D0.0 equals 0, failure
-    BEQ     CHECK_DONE          ; Exit on failure
-
-    JSR     CHECK_SEP           ; Check for separator
-    BTST    #0,D0               ; D0.0 equals 0, failure
-    BEQ     CHECK_DONE          ; Exit on failure
-
-    BSR     HEXTOBIN            ; Parse 1st parameter (32 bits)
-    BTST    #0,D0               ; D0.0 equals 0, failure
-    BEQ     CHECK_DONE          ; Exit on failure
-    ; TODO: don't use A0 to return the address, rather use A1
-    MOVE.L  D1,A1               ; Move the final address from D0 into A0
-
-    JSR     CHECK_TRAIL         ; Check for trailing junk
-                                ; D0.0 returned with result flag
-                                ; no need to check it again
-
-CHECK_DONE:
-    MOVE.L  A1,A0               ; TODO: shouldn't be required once HEX2BIN is fixed
-    MOVEM.L (SP)+,D1/D2/D3/A1
     RTS
 
 ; ------------------------------
