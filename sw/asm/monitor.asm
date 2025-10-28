@@ -282,12 +282,11 @@ PARSE_CMD:
     BTST    #0,D0               ; D0.0 equals 0, failure
     BEQ     CHECK_DONE          ; Exit on failure
 
-    ; TODO: change to return error in D0 and number in D1
-    BSR     HEXTOBIN            ; Result in D0.L (address), Success Flag in D1.0
-    BTST    #0,D1               ; CHECK THE SUCCESS FLAG (D1.0)
-    BEQ     CHECK_FAIL          ; Failure if illegal char/empty string
+    BSR     HEXTOBIN            ; Parse 1st parameter (32 bits)
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     CHECK_DONE          ; Exit on failure
     ; TODO: don't use A0 to return the address, rather use A1
-    MOVE.L  D0,A1               ; Move the final address from D0 into A0
+    MOVE.L  D1,A1               ; Move the final address from D0 into A0
 
     JSR     CHECK_TRAIL         ; Check for trailing junk
     ; TODO: shouldn't be required once HEX2BIN is fixed
