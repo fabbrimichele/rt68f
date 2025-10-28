@@ -289,20 +289,20 @@ PARSE_CMD:
     ; TODO: don't use A0 to return the address, rather use A1
     MOVE.L  D0,A1               ; Move the final address from D0 into A0
 
-    JSR     CHECK_TRAIL
-    BTST    #0,D0
-    ; TODO: can jump directly to CHECK_DONE, D0 already set
-    BEQ     CHECK_FAIL          ; D0.0 equals 0, failure
+    JSR     CHECK_TRAIL         ; Check for trailing junk
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     CHECK_DONE          ; Exit on failure
 
-    ; TODO: BSET shouldn't be required
+    ; TODO: shouldn't be required once HEX2BIN is fixed
     BSET    #0,D0               ; Set D0.0 flag to TRUE
     BRA     CHECK_DONE
 
+    ; TODO: shouldn't be required once HEX2BIN is fixed
 CHECK_FAIL:
     CLR.L   D0
 
 CHECK_DONE:
-    MOVE.L  A1,A0
+    MOVE.L  A1,A0               ; TODO: shouldn't be required once HEX2BIN is fixed
     MOVEM.L (SP)+,D1/D2/D3/A1
     RTS
 
