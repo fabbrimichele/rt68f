@@ -164,8 +164,7 @@ DUMP_CELL:
 
 ; A1 - Write address
 WRITE_CMD:
-    ; TODO: additional parameter with the value to be written
-    MOVE.W  #$FFFF,(A1)
+    MOVE.W  A2,(A1)       ; Move only 16 bits (argument is 32 bit long)
     BRA     NEW_CMD
 
 
@@ -188,10 +187,10 @@ PARSE_DUMP:
     BTST    #0,D0               ; D0.0 equals 0, failure
     BEQ     PRS_DMP_DONE        ; Exit on failure
 
-    BSR     HEXTOBIN            ; Parse 1st parameter (32 bits)
+    BSR     HEXTOBIN            ; Parse 1st argument (32 bits)
     BTST    #0,D0               ; D0.0 equals 0, failure
     BEQ     PRS_DMP_DONE        ; Exit on failure
-    MOVE.L  D1,A1               ; Move the final address from D0 into A1
+    MOVE.L  D1,A1               ; Move the parsed address from D0 into A1
 
     JSR     CHECK_TRAIL         ; Check for trailing junk
                                 ; D0.0 returned with result flag
@@ -219,13 +218,28 @@ PARSE_WRITE:
     BTST    #0,D0               ; D0.0 equals 0, failure
     BEQ     PRS_WRT_DONE        ; Exit on failure
 
-    BSR     HEXTOBIN            ; Parse 1st parameter (32 bits)
+    BSR     HEXTOBIN            ; Parse 1st argument (32 bits)
     BTST    #0,D0               ; D0.0 equals 0, failure
     BEQ     PRS_WRT_DONE        ; Exit on failure
-    MOVE.L  D1,A1               ; Move the final address from D0 into A1
+    MOVE.L  D1,A1               ; Move the parsed address from D0 into A1
 
+    ; TODO: something is not working. When 2 arguments are entered, it stucks
+    MOVE.W  #1,LED
+    JSR     CHECK_SEP           ; Check for separator
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     PRS_WRT_DONE        ; Exit on failure
+
+    MOVE.W  #2,LED
+    BSR     HEXTOBIN            ; Parse 2st argument (32 bits)
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     PRS_WRT_DONE        ; Exit on failure
+    MOVE.L  D1,A2               ; Move the parsed address from D0 into A2
+
+    MOVE.W  #4,LED
     JSR     CHECK_TRAIL         ; Check for trailing junk
                                 ; D0.0 returned with result flag
+    MOVE.W  #8,LED
+
 PRS_WRT_DONE:
     MOVEM.L (SP)+,A0
     RTS
