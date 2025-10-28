@@ -289,17 +289,8 @@ PARSE_CMD:
     MOVE.L  D1,A1               ; Move the final address from D0 into A0
 
     JSR     CHECK_TRAIL         ; Check for trailing junk
-    ; TODO: shouldn't be required once HEX2BIN is fixed
-    BTST    #0,D0               ; D0.0 equals 0, failure
-    BEQ     CHECK_DONE          ; Exit on failure
-
-    ; TODO: shouldn't be required once HEX2BIN is fixed
-    BSET    #0,D0               ; Set D0.0 flag to TRUE
-    BRA     CHECK_DONE
-
-    ; TODO: shouldn't be required once HEX2BIN is fixed
-CHECK_FAIL:
-    CLR.L   D0
+                                ; D0.0 returned with result flag
+                                ; no need to check it again
 
 CHECK_DONE:
     MOVE.L  A1,A0               ; TODO: shouldn't be required once HEX2BIN is fixed
