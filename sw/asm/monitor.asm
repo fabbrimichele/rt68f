@@ -121,32 +121,21 @@ BUFFER_FULL:
     BRA     BUFFER_FULL
 
 PROCESS_CMD:
-    MOVE.B  #0,(A5)            ; Null-terminate the string in the buffer
+    MOVE.B  #0,(A5)         ; Null-terminate the string in the buffer
     MOVE.B  #LF,D0
     BSR     PUTCHAR
 
     ; Parse Dump
-    LEA     DUMP_STR,A1
-    BSR     PARSE_CMD
+    BSR     PARSE_DUMP
     BTST    #0,D0
     BNE     DUMP_CMD        ; D0.0 = 1 execute DUMP
 
     ; Parse Write
-    LEA     WRITE_STR,A1
-    BSR     PARSE_CMD
+    BSR     PARSE_WRITE
     BTST    #0,D0
-    BNE     WRITE_CMD        ; D0.0 = 1 execute WRITE
+    BNE     WRITE_CMD       ; D0.0 = 1 execute WRITE
 
 UNKNOWN_CMD:
-    ; Print stored command
-    MOVE.B  #'"',D0
-    BSR     PUTCHAR
-    LEA     IN_BUF,A0
-    BSR     PUTS
-    MOVE.B  #'"',D0
-    BSR     PUTCHAR
-    MOVE.B  #' ',D0
-    BSR     PUTCHAR
     ; Print error message
     LEA     MSG_UNKNOWN,A0
     BSR     PUTS
@@ -180,33 +169,64 @@ WRITE_CMD:
     BRA     NEW_CMD
 
 
-; --------------------------------------
-; PARSE_CMD: Checks for command and extracts address argument
-; A1: Points to the start of the command (NULL terminated) to be compared to (e.g. DUMP_STR)
+; ------------------------------------------------------------
+; PARSE_DUMP: Checks for 'DUMP' and extracts address argument.
 ; Output
-; - D0.0: 1 if command found and address parsed, 0 otherwise.
-; - A1: If successful, contains the 32-bit starting address for the dump.
-; --------------------------------------d
-PARSE_CMD:
+; - D0.0: 1 if 'DUMP' found and address parsed, 0 otherwise.
+; - A1: If successful, contains the 32-bit starting address.
+; ------------------------------------------------------------
+PARSE_DUMP:
     MOVEM.L A0,-(SP)
+    LEA     DUMP_STR,A1
     LEA     IN_BUF,A0
 
     JSR     CHECK_CMD           ; Chek expected command
     BTST    #0,D0               ; D0.0 equals 0, failure
-    BEQ     PRS_CMD_DONE        ; Exit on failure
+    BEQ     PRS_DMP_DONE        ; Exit on failure
 
     JSR     CHECK_SEP           ; Check for separator
     BTST    #0,D0               ; D0.0 equals 0, failure
-    BEQ     PRS_CMD_DONE        ; Exit on failure
+    BEQ     PRS_DMP_DONE        ; Exit on failure
 
     BSR     HEXTOBIN            ; Parse 1st parameter (32 bits)
     BTST    #0,D0               ; D0.0 equals 0, failure
-    BEQ     PRS_CMD_DONE        ; Exit on failure
-    MOVE.L  D1,A1               ; Move the final address from D0 into A0
+    BEQ     PRS_DMP_DONE        ; Exit on failure
+    MOVE.L  D1,A1               ; Move the final address from D0 into A1
 
     JSR     CHECK_TRAIL         ; Check for trailing junk
                                 ; D0.0 returned with result flag
-PRS_CMD_DONE:
+PRS_DMP_DONE:
+    MOVEM.L (SP)+,A0
+    RTS
+
+; ------------------------------------------------------------
+; PARSE_WRITE: Checks for 'WRITE' and extracts address arguments.
+; Output
+; - D0.0: 1 if 'DUMP' found and address parsed, 0 otherwise.
+; - A1: If successful, contains the 32-bit address.
+; - A2: If successful, contains the 32-bit value.
+; ------------------------------------------------------------
+PARSE_WRITE:
+    MOVEM.L A0,-(SP)
+    LEA     WRITE_STR,A1
+    LEA     IN_BUF,A0
+
+    JSR     CHECK_CMD           ; Chek expected command
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     PRS_WRT_DONE        ; Exit on failure
+
+    JSR     CHECK_SEP           ; Check for separator
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     PRS_WRT_DONE        ; Exit on failure
+
+    BSR     HEXTOBIN            ; Parse 1st parameter (32 bits)
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     PRS_WRT_DONE        ; Exit on failure
+    MOVE.L  D1,A1               ; Move the final address from D0 into A1
+
+    JSR     CHECK_TRAIL         ; Check for trailing junk
+                                ; D0.0 returned with result flag
+PRS_WRT_DONE:
     MOVEM.L (SP)+,A0
     RTS
 
