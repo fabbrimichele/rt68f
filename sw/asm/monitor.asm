@@ -185,7 +185,8 @@ WRITE_CMD:
 ; Output A0: If successful, contains the 32-bit starting address for the dump.
 ; --------------------------------------d
 PARSE_CMD:
-    MOVEM.L D1/D2/D3/A1,-(SP)
+    MOVEM.L D1/D2/D3/A1,-(SP)   ; TODO: only A0 should be required
+    LEA     IN_BUF,A0
 
     JSR     CHECK_CMD           ; Chek expected command
     BTST    #0,D0               ; D0.0 equals 0, failure
@@ -206,21 +207,22 @@ PARSE_CMD:
 
 PRS_CMD_DONE:
     MOVE.L  A1,A0               ; TODO: shouldn't be required once HEX2BIN is fixed
-    MOVEM.L (SP)+,D1/D2/D3/A1
+    MOVEM.L (SP)+,D1/D2/D3/A1   ; TODO: only A0 should be required
     RTS
 
 ; ------------------------------------------------------------
 ; CHECK_CMD
-; A1: Points to the start of the command (NULL terminated)
-;     to be compared to (e.g. DUMP_STR).
+; Input
+; - A0: Points to the buffer.
+; - A1: Points to the start of the command (NULL terminated)
+;       to be compared to (e.g. DUMP_STR).
 ; Output
-; D0.0: 1 if command found, 0 otherwise.
-; A0: Points to character in the buffer after the command.
+; - D0.0: 1 if command found, 0 otherwise.
+; - A0: Points to character in the buffer after the command.
 ; ------------------------------------------------------------
 CHECK_CMD:
     MOVEM.L D1/D2/D3/A1,-(SP)
     MOVE.L #1,D0
-    LEA     IN_BUF,A0
 
 CHK_CMD_LOOP:
     MOVE.B  (A1)+,D3
