@@ -193,7 +193,7 @@ PARSE_CMD:
 
     JSR     CHECK_CMD           ; Chek expected command
     BTST    #0,D0               ; D0.0 equals 0, failure
-    BEQ     PRS_CMD_DONE          ; Exit on failure
+    BEQ     PRS_CMD_DONE        ; Exit on failure
 
     JSR     CHECK_SEP           ; Check for separator
     BTST    #0,D0               ; D0.0 equals 0, failure
