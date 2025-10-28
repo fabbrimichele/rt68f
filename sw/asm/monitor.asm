@@ -188,7 +188,7 @@ WRITE_CMD:
 ; - A1: If successful, contains the 32-bit starting address for the dump.
 ; --------------------------------------d
 PARSE_CMD:
-    MOVEM.L D1/D2/D3/A0,-(SP)   ; TODO: only A0 should be required
+    MOVEM.L A0,-(SP)
     LEA     IN_BUF,A0
 
     JSR     CHECK_CMD           ; Chek expected command
@@ -206,9 +206,8 @@ PARSE_CMD:
 
     JSR     CHECK_TRAIL         ; Check for trailing junk
                                 ; D0.0 returned with result flag
-
 PRS_CMD_DONE:
-    MOVEM.L (SP)+,D1/D2/D3/A0   ; TODO: only A0 should be required
+    MOVEM.L (SP)+,A0
     RTS
 
 ; ------------------------------------------------------------
