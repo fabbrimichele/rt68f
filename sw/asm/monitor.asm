@@ -290,6 +290,7 @@ PARSE_CMD:
     MOVE.L  D0,A1               ; Move the final address from D0 into A0
 
     JSR     CHECK_TRAIL         ; Check for trailing junk
+    ; TODO: shouldn't be required once HEX2BIN is fixed
     BTST    #0,D0               ; D0.0 equals 0, failure
     BEQ     CHECK_DONE          ; Exit on failure
 
