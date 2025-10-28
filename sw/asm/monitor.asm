@@ -274,15 +274,13 @@ CHK_TRL_DONE:
 PARSE_CMD:
     MOVEM.L D1/D2/D3/A1,-(SP)
 
-    JSR     CHECK_CMD
-    BTST    #0,D0
-    ; TODO: can jump directly to CHECK_DONE, D0 already set
-    BEQ     CHECK_FAIL          ; D0.0 equals 0, failure
+    JSR     CHECK_CMD           ; Chek expected command
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     CHECK_DONE          ; Exit on failure
 
-    JSR     CHECK_SEP
-    BTST    #0,D0
-    ; TODO: can jump directly to CHECK_DONE, D0 already set
-    BEQ     CHECK_FAIL          ; D0.0 equals 0, failure
+    JSR     CHECK_SEP           ; Check for separator
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     CHECK_DONE          ; Exit on failure
 
     ; TODO: change to return error in D0 and number in D1
     BSR     HEXTOBIN            ; Result in D0.L (address), Success Flag in D1.0
