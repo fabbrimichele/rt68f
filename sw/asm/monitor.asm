@@ -125,15 +125,20 @@ PROCESS_CMD:
     MOVE.B  #LF,D0
     BSR     PUTCHAR
 
-    ; Parse Dump
+    ; Parse DUMP
     BSR     PARSE_DUMP
     BTST    #0,D0
     BNE     DUMP_CMD        ; D0.0 = 1 execute DUMP
 
-    ; Parse Write
+    ; Parse WRITE
     BSR     PARSE_WRITE
     BTST    #0,D0
     BNE     WRITE_CMD       ; D0.0 = 1 execute WRITE
+
+    ; Parse HELP
+    BSR     PARSE_HELP
+    BTST    #0,D0
+    BNE     HELP_CMD       ; D0.0 = 1 execute WRITE
 
 UNKNOWN_CMD:
     ; Print error message
@@ -168,6 +173,10 @@ WRITE_CMD:
     MOVE.W  D1,(A1)       ; Move only 16 bits (argument is 32 bit long)
     BRA     NEW_CMD
 
+HELP_CMD:
+    LEA     MSG_HELP,A0
+    BSR     PUTS
+    BRA     NEW_CMD
 
 ; ------------------------------------------------------------
 ; PARSE_DUMP: Checks for 'DUMP' and extracts address argument.
@@ -235,6 +244,30 @@ PARSE_WRITE:
     JSR     CHECK_TRAIL         ; Check for trailing junk
                                 ; D0.0 returned with result flag
 PRS_WRT_DONE:
+    MOVEM.L (SP)+,A0
+    RTS
+
+; ------------------------------------------------------------
+; PARSE_HELP: Checks for 'HELP', no arguments
+; Output
+; - D0.0: 1 if 'DUMP' found and address parsed, 0 otherwise.
+; ------------------------------------------------------------
+PARSE_HELP:
+    MOVEM.L A0,-(SP)
+    LEA     HELP_STR,A1
+    LEA     IN_BUF,A0
+
+    JSR     CHECK_CMD           ; Chek expected command
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     PRS_HLP_DONE        ; Exit on failure
+
+    ;JSR     CHECK_SEP           ; Check for separator
+    ;BTST    #0,D0               ; D0.0 equals 0, failure
+    ;BEQ     PRS_HLP_DONE        ; Exit on failure
+
+    JSR     CHECK_TRAIL         ; Check for trailing junk
+                                ; D0.0 returned with result flag
+PRS_HLP_DONE:
     MOVEM.L (SP)+,A0
     RTS
 
@@ -340,11 +373,16 @@ CHK_TRL_DONE:
 ; Messages
 MSG_TITLE   DC.B    'RT68F Monitor v0.1',LF,NUL
 MSG_UNKNOWN DC.B    'Error: Unknown command or syntax',LF,NUL
+MSG_HELP    DC.B    'DUMP <ADDR>          - Dump from ADDR (HEX)',LF
+            DC.B    'WRITE <ADDR> <VALUE> - Write to ADDR (HEX) the VALUE (HEX)',LF
+            DC.B    'HELP                 - Print this list of commands',LF
+            DC.B    NUL
 
 ; Commands
 ; They must be null terminated
 DUMP_STR    DC.B    'DUMP',NUL
 WRITE_STR   DC.B    'WRITE',NUL
+HELP_STR    DC.B    'HELP',NUL
 
 ; ===========================
 ; Constants
