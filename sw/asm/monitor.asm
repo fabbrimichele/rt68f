@@ -183,18 +183,25 @@ HELP_CMD:
     BSR     PUTS
     BRA     NEW_CMD
 
-; ------------------------------------------------------------
+; -------------------------------------------------------------------------
 ; Load from UART a binary content to memory.
-; Content format:
-; xxxxxxxx : address to load to
-; yyyyyyyy : content length
-; zz....zz : actual content
-; For example the following file (shown in hex)
-; is loaded from the address 0x00000810,
-; it has length 0x00000002
-; and content 0x55, 0x55
-; 00;00;08;10;00;00;00;02;55;55
-; ------------------------------------------------------------
+;
+; PROTOCOL: Length-Prefixed Binary (Big-Endian)
+;
+; HEADER (8 bytes, sent first):
+; [32-bit Load Address] (A0)
+; [32-bit Content Length] (D2)
+;
+; BODY:
+; [L bytes of raw binary content]
+;
+; Example (File Content in Hex Bytes):
+; 00 00 08 10 ; Load Address: $00000810
+; 00 00 00 02 ; Content Length: 2 bytes
+; 55 55       ; Actual Content: Two bytes ($55, $55)
+;
+; GTKTerm format: 00;00;08;10;00;00;00;02;55;55
+; -------------------------------------------------------------------------
 LOAD_CMD:
     LEA     MSG_LOADING,A0
     BSR     PUTS
