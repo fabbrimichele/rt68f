@@ -140,6 +140,11 @@ PROCESS_CMD:
     BTST    #0,D0
     BNE     HELP_CMD       ; D0.0 = 1 execute WRITE
 
+    ; Parse LOAD
+    BSR     PARSE_LOAD
+    BTST    #0,D0
+    BNE     LOAD_CMD       ; D0.0 = 1 execute WRITE
+
 UNKNOWN_CMD:
     ; Print error message
     LEA     MSG_UNKNOWN,A0
@@ -177,6 +182,46 @@ HELP_CMD:
     LEA     MSG_HELP,A0
     BSR     PUTS
     BRA     NEW_CMD
+
+; ------------------------------------------------------------
+; Load from UART a binary content to memory.
+; Content format:
+; xxxxxxxx : address to load to
+; yyyyyyyy : content length
+; zz....zz : actual content
+; For example the following file (shown in hex)
+; is loaded from the address 0x00000810,
+; it has length 0x00000002
+; and content 0x55, 0x55
+; 00;00;08;10;00;00;00;02;55;55
+; ------------------------------------------------------------
+LOAD_CMD:
+    LEA     MSG_LOADING,A0
+    BSR     PUTS
+
+    ; Read header start address (32 bits)
+    JSR     READ_32BIT_WORD     ; Result in D1.L
+    MOVE.L  D1,A0               ; A0 start address
+    ; Read content length
+    JSR     READ_32BIT_WORD     ; Result in D1.L
+                                ; D1 content lenght
+    CMP     #0,D1
+    BEQ     LOA_CMD_DONE        ; If D1 = 0, exit
+    SUBQ.L  #1,D1               ; Decrement counter (required by DBRA)
+
+    ; Read content
+LOA_CMD_LOOP:
+    JSR     GETCHAR             ; Read byte from UART to D0
+    MOVE.B  D0,(A0)+            ; Copy read byte to memory
+    DBRA    D1,LOA_CMD_LOOP     ; Decrement D1, if != -1 exit
+
+LOA_CMD_DONE:
+    LEA     MSG_LOAD_DONE,A0
+    BSR     PUTS
+    BRA     NEW_CMD
+
+
+; TODO: RUN command
 
 ; ------------------------------------------------------------
 ; PARSE_DUMP: Checks for 'DUMP' and extracts address argument.
@@ -250,7 +295,7 @@ PRS_WRT_DONE:
 ; ------------------------------------------------------------
 ; PARSE_HELP: Checks for 'HELP', no arguments
 ; Output
-; - D0.0: 1 if 'DUMP' found and address parsed, 0 otherwise.
+; - D0.0: 1 if 'HELP' found and address parsed, 0 otherwise.
 ; ------------------------------------------------------------
 PARSE_HELP:
     MOVEM.L A0,-(SP)
@@ -268,6 +313,30 @@ PARSE_HELP:
     JSR     CHECK_TRAIL         ; Check for trailing junk
                                 ; D0.0 returned with result flag
 PRS_HLP_DONE:
+    MOVEM.L (SP)+,A0
+    RTS
+
+; ------------------------------------------------------------
+; PARSE_LOAD: Checks for 'LOAD', no arguments
+; Output
+; - D0.0: 1 if 'LOAD' found and address parsed, 0 otherwise.
+; ------------------------------------------------------------
+PARSE_LOAD:
+    MOVEM.L A0,-(SP)
+    LEA     LOAD_STR,A1
+    LEA     IN_BUF,A0
+
+    JSR     CHECK_CMD           ; Chek expected command
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     PRS_LOA_DONE        ; Exit on failure
+
+    ;JSR     CHECK_SEP           ; Check for separator
+    ;BTST    #0,D0               ; D0.0 equals 0, failure
+    ;BEQ     PRS_LOA_DONE        ; Exit on failure
+
+    JSR     CHECK_TRAIL         ; Check for trailing junk
+                                ; D0.0 returned with result flag
+PRS_LOA_DONE:
     MOVEM.L (SP)+,A0
     RTS
 
@@ -366,23 +435,54 @@ CHK_TRL_DONE:
     INCLUDE 'lib/console_io.asm'
     INCLUDE 'lib/conversions.asm'
 
+; -------------------------------------------------------------
+; READ_32BIT_WORD: Reads 4 bytes from UART and assembles into D1.L
+; Input: None
+; Output: D1.L = 32-bit value
+; Uses: GETCHAR (assumed to return 8-bit char in D0.B)
+; -------------------------------------------------------------
+READ_32BIT_WORD:
+    MOVEM.L D0/D2,-(SP)     ; Save D0 (used for GETCHAR) and D2 (used for loop counter)
+
+    MOVEQ   #4-1,D2         ; D2 = 3 (loop 4 times for 4 bytes)
+    CLR.L   D1              ; D1 = Accumulator (cleared for the 32-bit result)
+
+READ_LOOP:
+    BSR     GETCHAR         ; D0.B = Get one byte from the serial port
+
+    ; 1. Shift the current result (D1) left by 8 bits (makes room for the new byte)
+    LSL.L   #8,D1
+
+    ; 2. OR the new byte (D0.B) into the least significant position of D1
+    OR.B    D0,D1
+
+    DBRA    D2,READ_LOOP    ; Loop 4 times total (D2 counts down from 3)
+
+    MOVEM.L (SP)+,D0/D2      ; Restore registers
+    RTS
+
+
 ; ------------------------------
 ; ROM Data Section
 ; ------------------------------
 
 ; Messages
-MSG_TITLE   DC.B    'RT68F Monitor v0.1',LF,NUL
-MSG_UNKNOWN DC.B    'Error: Unknown command or syntax',LF,NUL
-MSG_HELP    DC.B    'DUMP <ADDR>          - Dump from ADDR (HEX)',LF
-            DC.B    'WRITE <ADDR> <VALUE> - Write to ADDR (HEX) the VALUE (HEX)',LF
-            DC.B    'HELP                 - Print this list of commands',LF
-            DC.B    NUL
+MSG_TITLE       DC.B    'RT68F Monitor v0.1',LF,NUL
+MSG_UNKNOWN     DC.B    'Error: Unknown command or syntax',LF,NUL
+MSG_HELP        DC.B    'DUMP <ADDR>          - Dump from ADDR (HEX)',LF
+                DC.B    'WRITE <ADDR> <VALUE> - Write to ADDR (HEX) the VALUE (HEX)',LF
+                DC.B    'LOAD                 - Load from UART to memory',LF
+                DC.B    'HELP                 - Print this list of commands',LF
+                DC.B    NUL
+MSG_LOADING     DC.B    'Loading...',LF,NUL
+MSG_LOAD_DONE   DC.B    'Done.',LF,NUL
 
 ; Commands
 ; They must be null terminated
 DUMP_STR    DC.B    'DUMP',NUL
 WRITE_STR   DC.B    'WRITE',NUL
 HELP_STR    DC.B    'HELP',NUL
+LOAD_STR    DC.B    'LOAD',NUL
 
 ; ===========================
 ; Constants
