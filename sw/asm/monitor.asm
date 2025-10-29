@@ -227,6 +227,9 @@ LOA_CMD_DONE:
     BSR     PUTS
     BRA     NEW_CMD
 
+; TODO: Load - Add checksum at the end
+; TODO: Load - Print the address where the program has been loaded
+
 
 ; TODO: RUN command
 
