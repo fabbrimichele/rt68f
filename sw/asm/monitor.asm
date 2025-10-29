@@ -211,14 +211,14 @@ HELP_CMD:
 ; Address (Hex) Instruction Opcode (Hex)    Comment
 ; 0810          BRA LOOP    60FE            Branch Always back to $0810 (FE=−2).
 ; GTKTerm format: 00;00;08;10;00;00;00;02;60;FE
-
+; TODO: it doesn't swith the leds on!
 ; Address (Hex) Instruction             Opcode (Hex)    Comment
-; 0810          MOVE.B #$0A,$00010000   13FC            Opcode for MOVE.B Immediate to Absolute Long
-; 0812          000A                    000A            16-bit Immediate Data (where the assembler places the 0A)
-; 0814          00010000                0001 0000       32-bit destination address
-; 0818          BRA LOOP                60FE            Branch Always back to $0818
+; 0900          MOVE.B #$0A,$00010000   13FC            Opcode for MOVE.B Immediate to Absolute Long
+; 0902          000A                    000A            16-bit Immediate Data (where the assembler places the 0A)
+; 0904          00010000                0001 0000       32-bit destination address
+; 0908          BRA LOOP                60FE            Branch Always back to $0818
 ; GTKTerm format:
-; 00;00;08;10;00;00;00;0A;13;FC;00;0A;00;01;00;00;60;FE
+; 00;00;09;00;00;00;00;0A;13;FC;00;0A;00;01;00;00;60;FE
 ; -------------------------------------------------------------------------
 LOAD_CMD:
     LEA     MSG_LOADING,A0
