@@ -138,12 +138,17 @@ PROCESS_CMD:
     ; Parse HELP
     BSR     PARSE_HELP
     BTST    #0,D0
-    BNE     HELP_CMD       ; D0.0 = 1 execute WRITE
+    BNE     HELP_CMD        ; D0.0 = 1 execute HELP
 
     ; Parse LOAD
     BSR     PARSE_LOAD
     BTST    #0,D0
-    BNE     LOAD_CMD       ; D0.0 = 1 execute WRITE
+    BNE     LOAD_CMD        ; D0.0 = 1 execute LOAD
+
+    ; Parse RUN
+    BSR     PARSE_RUN
+    BTST    #0,D0
+    BNE     RUN_CMD         ; D0.0 = 1 execute RUN
 
 UNKNOWN_CMD:
     ; Print error message
@@ -199,8 +204,21 @@ HELP_CMD:
 ; 00 00 08 10 ; Load Address: $00000810
 ; 00 00 00 02 ; Content Length: 2 bytes
 ; 55 55       ; Actual Content: Two bytes ($55, $55)
+; GTKTerm format:
+; 00;00;08;10;00;00;00;02;55;55
 ;
-; GTKTerm format: 00;00;08;10;00;00;00;02;55;55
+; Actual program to write to LED and then loop
+; Address (Hex) Instruction Opcode (Hex)    Comment
+; 0810          BRA LOOP    60FE            Branch Always back to $0810 (FE=−2).
+; GTKTerm format: 00;00;08;10;00;00;00;02;60;FE
+
+; Address (Hex) Instruction             Opcode (Hex)    Comment
+; 0810          MOVE.B #$0A,$00010000   13FC            Opcode for MOVE.B Immediate to Absolute Long
+; 0812          000A                    000A            16-bit Immediate Data (where the assembler places the 0A)
+; 0814          00010000                0001 0000       32-bit destination address
+; 0818          BRA LOOP                60FE            Branch Always back to $0818
+; GTKTerm format:
+; 00;00;08;10;00;00;00;0A;13;FC;00;0A;00;01;00;00;60;FE
 ; -------------------------------------------------------------------------
 LOAD_CMD:
     LEA     MSG_LOADING,A0
@@ -231,7 +249,12 @@ LOA_CMD_DONE:
 ; TODO: Load - Print the address where the program has been loaded
 
 
-; TODO: RUN command
+RUN_CMD:
+    ; JUMP to the specified address
+    ; Exit the running program with reset
+    ; TODO: implement TRAP to let programs exit
+    JMP     (A1)
+    BRA     NEW_CMD             ; Never reach this (it will once implemented TRAP exit)
 
 ; ------------------------------------------------------------
 ; PARSE_DUMP: Checks for 'DUMP' and extracts address argument.
@@ -347,6 +370,36 @@ PARSE_LOAD:
     JSR     CHECK_TRAIL         ; Check for trailing junk
                                 ; D0.0 returned with result flag
 PRS_LOA_DONE:
+    MOVEM.L (SP)+,A0
+    RTS
+
+; ------------------------------------------------------------
+; PARSE_RUN: Checks for 'RUN' and extracts address argument.
+; Output
+; - D0.0: 1 if 'RUN' found and address parsed, 0 otherwise.
+; - A1: If successful, contains the 32-bit starting address.
+; ------------------------------------------------------------
+PARSE_RUN:
+    MOVEM.L A0,-(SP)
+    LEA     RUN_STR,A1
+    LEA     IN_BUF,A0
+
+    JSR     CHECK_CMD           ; Chek expected command
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     PRS_RUN_DONE        ; Exit on failure
+
+    JSR     CHECK_SEP           ; Check for separator
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     PRS_RUN_DONE        ; Exit on failure
+
+    BSR     HEXTOBIN            ; Parse 1st argument (32 bits)
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     PRS_RUN_DONE        ; Exit on failure
+    MOVE.L  D1,A1               ; Move the parsed address from D0 into A1
+
+    JSR     CHECK_TRAIL         ; Check for trailing junk
+                                ; D0.0 returned with result flag
+PRS_RUN_DONE:
     MOVEM.L (SP)+,A0
     RTS
 
@@ -493,6 +546,7 @@ DUMP_STR    DC.B    'DUMP',NUL
 WRITE_STR   DC.B    'WRITE',NUL
 HELP_STR    DC.B    'HELP',NUL
 LOAD_STR    DC.B    'LOAD',NUL
+RUN_STR     DC.B    'RUN',NUL
 
 ; ===========================
 ; Constants
