@@ -6,7 +6,7 @@ UCF = papilio_duo_computing_shield
 ASSEMBLIES = blinker led_on keys uart uart_echo uart_tx_byte uart_hello mem_test monitor
 
 # --- Directories ---
-ASM_SRC_DIR = sw/asm
+ASM_SRC_DIR = sw/fw/asm
 BIN_GEN_DIR = hw/gen
 HEX_SPINAL_DIR = hw/spinal/rt68f/memory
 HEX_CLASS_DIR = target/scala-2.13/classes/rt68f/memory
