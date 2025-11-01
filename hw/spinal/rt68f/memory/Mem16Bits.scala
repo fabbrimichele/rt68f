@@ -68,7 +68,7 @@ case class Mem16Bits(size: Int, readOnly: Boolean = false, initFile: Option[Stri
       } finally source.close()
     }
     assert(romContent.size <= size, s"ROM content file greater than $size")
-    romContent ++ Seq.fill(1024 - romContent.size)(B(0, 16 bits))
+    romContent ++ Seq.fill(size - romContent.size)(B(0, 16 bits))
   }
 }
 

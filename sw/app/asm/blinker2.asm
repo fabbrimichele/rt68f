@@ -1,7 +1,7 @@
     ; ===========================
     ; Program code
     ; ===========================
-    ORG    $0900            ; Start of RAM
+    ORG    $4100            ; Start of RAM
 
 START:
     MOVE.W  #1,D1

@@ -546,14 +546,14 @@ DUMP_STR    DC.B    'DUMP',NUL
 WRITE_STR   DC.B    'WRITE',NUL
 HELP_STR    DC.B    'HELP',NUL
 LOAD_STR    DC.B    'LOAD',NUL
-RUN_STR     DC.B    'RUN',NUL
+RUN_STR     DC.B    'RUN',NUL,NUL
 
 ; ===========================
 ; Constants
 ; ===========================
 ; Memory Map
-RAM_START   EQU $00000800   ; Start of RAM address
-RAM_END     EQU $00001000   ; End of RAM address
+RAM_START   EQU $00004000   ; Start of RAM address
+RAM_END     EQU $00008000   ; End of RAM address (+1)
 LED         EQU $00010000   ; LED-mapped register base address
 UART_BASE   EQU $00012000   ; UART-mapped data register address
 UART_DATA   EQU UART_BASE+0 ; UART-mapped data register address

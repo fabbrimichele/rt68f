@@ -15,12 +15,12 @@ import scala.language.postfixOps
  *
  * SimpleSoC Memory Map
  *
- *   0x0000  - 0x07FF  : 2 KB ROM (16-bit words)
- *   0x0800  - 0x0FFF  : 2 KB RAM (16-bit words)
- *   0x10000           : LED peripheral (lower 4 bits drive LEDs)
- *   0x11000           : KEY peripheral (lower 4 bits reflect key inputs)
- *   0x12000           : UART (data)
- *
+ *   0x00000000 - 0x00003FFF : 16 KB ROM (16-bit words)
+ *   0x00004000 - 0x00007FFF : 16 KB RAM (16-bit words)
+ *   0x00008000 - 0x00008000 : 32 KB Video memory (to be implemented)
+ *   0x00010000              : LED peripheral (lower 4 bits drive LEDs)
+ *   0x00011000              : KEY peripheral (lower 4 bits reflect key inputs)
+ *   0x00012000              : UART (base)
  */
 
 //noinspection TypeAnnotation
@@ -54,9 +54,9 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // --------------------------------
     // ROM: 2 KB @ 0x0000 - 0x07FF
     // --------------------------------
-    val romSizeWords = 2048 / 2 // 2 KB / 2 bytes per 16-bit word
+    val romSizeWords = 16384 / 2 // 16 KB / 2 bytes per 16-bit word
     val rom = Mem16Bits(size = romSizeWords, readOnly = true, initFile = Some(romFilename))
-    val romSel = cpu.io.ADDR < U(0x800, cpu.io.ADDR.getWidth bits)
+    val romSel = cpu.io.ADDR < U(0x3FFF, cpu.io.ADDR.getWidth bits)
 
     // Connect CPU outputs to ROM inputs
     rom.io.bus.AS    := cpu.io.AS
@@ -77,9 +77,9 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // --------------------------------
     // RAM: 2 KB @ 0x0800 - 0x0FFF
     // --------------------------------
-    val ramSizeWords = 2048 / 2 // 2 KB / 2 bytes per 16-bit word
+    val ramSizeWords = 16384 / 2 // 16384 KB / 2 bytes per 16-bit word
     val ram = Mem16Bits(size = ramSizeWords)
-    val ramSel = cpu.io.ADDR >= U(0x800, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x1000, cpu.io.ADDR.getWidth bits)
+    val ramSel = cpu.io.ADDR >= U(0x4000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x7FFF, cpu.io.ADDR.getWidth bits)
 
     // Connect CPU outputs to ROM inputs
     ram.io.bus.AS    := cpu.io.AS
