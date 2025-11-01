@@ -58,7 +58,7 @@ FAIL_LOWER_BYTE:
     BRA     HALT
 
 HALT:
-    STOP    #$2700            ; Halt the CPU
+    TRAP    #14
 
 
     ; ------------------------------
