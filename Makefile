@@ -31,7 +31,7 @@ SPINAL_HEX_FILES = $(patsubst %, $(HEX_SPINAL_DIR)/%.hex, $(ASSEMBLIES))
 .PHONY: all apps clean rom prog-fpga prog-flash disassemble
 
 # --- Targets ---
-all: $(TARGET)_routed.bit
+all: apps $(TARGET)_routed.bit
 
 $(TARGET)_routed.bit: gen/$(TARGET)TopLevel.vhdl
 	hw/xilinx/build_bitstream.sh ${TARGET} ${DEVICE} ${UCF}
