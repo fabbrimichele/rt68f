@@ -25,5 +25,3 @@ DLY_LOOP:
     ; ===========================
 DLY_VAL     EQU     666666      ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
 LED         EQU     $00010000   ; LED-mapped register base address
-
-
