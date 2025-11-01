@@ -52,7 +52,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     cpuDtack := True
 
     // --------------------------------
-    // ROM: 2 KB @ 0x0000 - 0x07FF
+    // ROM: 16 KB @ 0x0000 - 0x4FFFF
     // --------------------------------
     val romSizeWords = 16384 / 2 // 16 KB / 2 bytes per 16-bit word
     val rom = Mem16Bits(size = romSizeWords, readOnly = true, initFile = Some(romFilename))
@@ -75,7 +75,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     }
 
     // --------------------------------
-    // RAM: 2 KB @ 0x0800 - 0x0FFF
+    // RAM: 2 KB @ 0x4000 - 0x7FFF
     // --------------------------------
     val ramSizeWords = 16384 / 2 // 16384 KB / 2 bytes per 16-bit word
     val ram = Mem16Bits(size = ramSizeWords)

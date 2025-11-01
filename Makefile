@@ -11,7 +11,7 @@ ASM_APP_DIR := sw/app/asm
 # Define the target directory for all output files
 TARGET_APP_DIR := target/app
 # Define the memory starting address for the program, used in the header
-PROGRAM_ADDRESS := 00004000
+PROGRAM_ADDRESS := 00004100
 # Define the list of assembly files (e.g., if you have blinker.asm and main.asm)
 ASM_APP_SOURCES := $(wildcard $(ASM_APP_DIR)/*.asm)
 # Target: Create the final .bin files from the list of sources
