@@ -4,7 +4,7 @@
     ; 68000 Vector Table (first 32 entries = 0x0000-0x007C)
     ; Each vector is 32 bits (long)
     ; ------------------------------
-    DC.L   END_RAM      ; 0: Initial Stack Pointer (SP)
+    DC.L   RAM_END      ; 0: Initial Stack Pointer (SP)
     DC.L   START        ; 1: Reset vector (PC start address)
     DC.L   $00000000    ; 2: Bus Error
     DC.L   $00000000    ; 3: Address Error
@@ -154,15 +154,15 @@ MSG_READY:
     ; Constants
     ; ===========================
 DLY_VAL     EQU 1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
-END_RAM     EQU $00001000   ; End of RAM address
+RAM_END     EQU $00008000   ; End of RAM address (+1)
 LED         EQU $00010000   ; LED-mapped register base address
 UART_BASE   EQU $00012000   ; UART-mapped data register address
 UART_DATA   EQU UART_BASE+0 ; UART-mapped data register address
 UART_STAT   EQU UART_BASE+2 ; UART-mapped data register address
 
     ; --- Memory and Peripheral Map Constants (Based on your decoder) ---
-RAM_START       EQU     $000800     ; Base address of RAM (2KB)
-RAM_SIZE        EQU     $0800       ; Total size of RAM in bytes (2048 bytes)
+RAM_START       EQU     $004000     ; Base address of RAM (16KB)
+RAM_SIZE        EQU     $004000     ; Total size of RAM in bytes (16KB)
 
     ; --- Test Data Constants ---
 INIT_WORD       EQU     $DEAD       ; Initial 16-bit word pattern
