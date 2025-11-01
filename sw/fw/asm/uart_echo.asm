@@ -4,7 +4,7 @@
     ; 68000 Vector Table (first 32 entries = 0x0000-0x007C)
     ; Each vector is 32 bits (long)
     ; ------------------------------
-    DC.L   END_RAM      ; 0: Initial Stack Pointer (SP)
+    DC.L   RAM_END      ; 0: Initial Stack Pointer (SP)
     DC.L   START        ; 1: Reset vector (PC start address)
     DC.L   $00000000    ; 2: Bus Error
     DC.L   $00000000    ; 3: Address Error
@@ -42,11 +42,12 @@
     ; Program code
     ; ------------------------------
 START:
-    LEA     MESSAGE,A0      ; A0 holds pointer to the string "Hello World!"
-LOOP:
+    LEA     MSG_READY,A0    ; A0 holds pointer to the message
     BSR     PUTS            ; Call PUTS subroutine
-    JSR     DELAY
-    JMP     LOOP            ; Infinite loop
+LOOP:
+    BSR     GETCHAR
+    BSR     PUTCHAR
+    BRA     LOOP
 
     ; ------------------------------
     ; Subroutines
@@ -75,6 +76,17 @@ PUTCHAR_WAIT:
     MOVE.W  D0,UART_DATA    ; Write the character to the data register
     RTS
 
+    ; GETCHAR - Gets a single character from the UART data register and stores it in D0
+GETCHAR:
+    ; Check UART status (RX Ready)
+GETCHAR_WAIT:
+    MOVE.W  UART_STAT,D2    ; Read status register
+    BTST    #1,D2           ; Check RX ready (Bit 1)
+    BEQ     GETCHAR_WAIT    ; Wait until RX ready
+    ; Read character (to D0)
+    MOVE.W  UART_DATA,D0    ; Read character to D0
+    RTS
+
 DELAY:
     MOVE.L  #DLY_VAL,D0     ; Load delay value
 DLY_LOOP:
@@ -82,18 +94,17 @@ DLY_LOOP:
     BNE     DLY_LOOP        ; Loop until D0 is zero
     RTS
 
-
     ; ------------------------------
     ; Data Section
     ; ------------------------------
-MESSAGE:
-    DC.B    'Hello World!',10,0 ; String with Newline (10) and Null Terminator (0)
+MSG_READY:
+    DC.B    'Ready.',10,0 ; String with Newline (10) and Null Terminator (0)
 
     ; ===========================
     ; Constants
     ; ===========================
 DLY_VAL     EQU 1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
-END_RAM     EQU $00001000   ; End of RAM address
+RAM_END     EQU $00008000   ; End of RAM address (+1)
 LED         EQU $00010000   ; LED-mapped register base address
 UART_BASE   EQU $00012000   ; UART-mapped data register address
 UART_DATA   EQU UART_BASE+0 ; UART-mapped data register address

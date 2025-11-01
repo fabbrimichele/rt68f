@@ -4,7 +4,7 @@
     ; 68000 Vector Table (first 32 entries = 0x0000-0x007C)
     ; Each vector is 32 bits (long)
     ; ------------------------------
-    DC.L   END_RAM      ; 0: Initial Stack Pointer (SP)
+    DC.L   RAM_END      ; 0: Initial Stack Pointer (SP)
     DC.L   START        ; 1: Reset vector (PC start address)
     DC.L   $00000000    ; 2: Bus Error
     DC.L   $00000000    ; 3: Address Error
@@ -44,13 +44,31 @@
     ORG    $0080            ; Start of memory
 
 START:
-    LEA     LED,A0          ; Load LED register address into A0
-    MOVE.W  #1,D1
 
 LOOP:
-    MOVE.W  D1,(A0)         ; Write D1 into LED register
-    ADDQ.W  #1,D1           ; Increment register
     JSR     DELAY           ; Call delay
+    MOVE.W  (KEY),D1        ; Read keyboard
+    MOVE.W  D1,(LED)        ; LED feedback
+    CMP.W   #1,D1           ;
+    BEQ     IS_UP           ;
+    CMP.W   #2,D1           ;
+    BEQ     IS_LEFT        ;
+    CMP.W   #4,D1           ;
+    BEQ     IS_DOWN         ;
+    CMP.W   #8,D1           ;
+    BEQ     IS_RIGHT        ;
+    JMP     LOOP            ;
+IS_UP:
+    MOVE.W  #'U',(UART)     ; Write 'U' to UART data register
+    JMP     LOOP            ; Infinite loop
+IS_LEFT:
+    MOVE.W  #'L',(UART)     ; Write 'L' to UART data register
+    JMP     LOOP            ; Infinite loop
+IS_RIGHT:
+    MOVE.W  #'R',(UART)     ; Write 'R' to UART data register
+    JMP     LOOP            ; Infinite loop
+IS_DOWN:
+    MOVE.W  #'D',(UART)     ; Write 'R' to UART data register
     JMP     LOOP            ; Infinite loop
 
 DELAY:
@@ -65,7 +83,8 @@ DLY_LOOP:
     ; Constants
     ; ===========================
 DLY_VAL     EQU     1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
-END_RAM     EQU     $00001000   ; End of RAM address
+RAM_END     EQU     $00008000   ; End of RAM address (+1)
 LED         EQU     $00010000   ; LED-mapped register base address
-
+KEY         EQU     $00011000   ; Key-mapped register base address
+UART        EQU     $00012000   ; UART register base address
 

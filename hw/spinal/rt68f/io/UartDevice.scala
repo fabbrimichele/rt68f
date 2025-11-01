@@ -10,6 +10,7 @@ import spinal.lib._
 
 import scala.language.postfixOps
 
+// TODO: proper UDS/LDS handling?
 case class UartDevice() extends Component {
   val io = new Bundle {
     val bus = slave(M68kBus())

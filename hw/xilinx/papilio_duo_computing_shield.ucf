@@ -37,22 +37,22 @@ NET reset          LOC="P102" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST | CLOCK_D
 #NET key(0)         LOC="P101" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B6 - key up
 #NET key(1)         LOC="P100" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B7 - key right
 
-#NET vgaHSync     LOC="P99"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C0
-#NET vgaVSync     LOC="P97"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C1
-#NET vgaBlue(0)   LOC="P93"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C2
+NET vga_hSync     LOC="P99"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C0
+NET vga_vSync     LOC="P97"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C1
+NET vga_color_b(0)   LOC="P93"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C2
 #NET AUDIO1_LEFT   LOC="P88"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C3
 #NET AUDIO1_RIGHT  LOC="P85"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C4
-#NET vgaBlue(1)   LOC="P83"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C5
-#NET vgaBlue(2)   LOC="P81"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C6
-#NET vgaBlue(3)   LOC="P79"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C7
-#NET vgaGreen(0)  LOC="P75"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C8
-#NET vgaGreen(1)  LOC="P67"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C9
-#NET vgaGreen(2)  LOC="P62"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C10
-#NET vgaGreen(3)  LOC="P59"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C11
-#NET vgaRed(3)    LOC="P57"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C12
-#NET vgaRed(2)    LOC="P55"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C13
-#NET vgaRed(1)    LOC="P50"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C14
-#NET vgaRed(0)    LOC="P47"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C15
+NET vga_color_b(1)   LOC="P83"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C5
+NET vga_color_b(2)   LOC="P81"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C6
+NET vga_color_b(3)   LOC="P79"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C7
+NET vga_color_g(0)  LOC="P75"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C8
+NET vga_color_g(1)  LOC="P67"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C9
+NET vga_color_g(2)  LOC="P62"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C10
+NET vga_color_g(3)  LOC="P59"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C11
+NET vga_color_r(3)    LOC="P57"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C12
+NET vga_color_r(2)    LOC="P55"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C13
+NET vga_color_r(1)    LOC="P50"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C14
+NET vga_color_r(0)    LOC="P47"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C15
 #NET JOYSTICK2_5   LOC="P98"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D0
 #NET JOYSTICK2_4   LOC="P95"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D1
 #NET JOYSTICK2_3   LOC="P92"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D2
