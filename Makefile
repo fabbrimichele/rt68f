@@ -5,6 +5,19 @@ DEVICE = xc6slx9-tqg144-2
 UCF = papilio_duo_computing_shield
 ASSEMBLIES = blinker led_on keys uart uart_echo uart_tx_byte uart_hello mem_test monitor
 
+# App
+# Define the source directory for app assembly files
+ASM_APP_DIR := sw/app/asm
+# Define the target directory for all output files
+TARGET_APP_DIR := target/app
+# Define the memory starting address for the program, used in the header
+PROGRAM_ADDRESS := 00000900
+# Define the list of assembly files (e.g., if you have blinker.asm and main.asm)
+ASM_APP_SOURCES := $(wildcard $(ASM_APP_DIR)/*.asm)
+# Target: Create the final .bin files from the list of sources
+BIN_APP_TARGETS := $(patsubst $(ASM_APP_DIR)/%.asm, $(TARGET_APP_DIR)/%.bin, $(ASM_APP_SOURCES))
+RAW_FILE_NAME := $(TARGET_APP_DIR)/$*_raw.bin
+
 # --- Directories ---
 ASM_SRC_DIR = sw/fw/asm
 BIN_GEN_DIR = hw/gen
@@ -14,6 +27,8 @@ HEX_CLASS_DIR = target/scala-2.13/classes/rt68f/memory
 # --- Derived File Lists ---
 # List of all hex files in the Spinal directory
 SPINAL_HEX_FILES = $(patsubst %, $(HEX_SPINAL_DIR)/%.hex, $(ASSEMBLIES))
+
+.PHONY: all apps clean rom prog-fpga prog-flash disassemble
 
 # --- Targets ---
 all: $(TARGET)_routed.bit
@@ -52,8 +67,32 @@ $(HEX_CLASS_DIR)/%.hex: $(ASM_SRC_DIR)/%.asm
 	# 4. Copy the hex file to the Scala classes path for resource loading
 	cp $(HEX_SPINAL_DIR)/$*.hex $@
 
-# --- Utility Targets ---
+blinker.bin:
+	mkdir -p target/app
+	vasmm68k_mot -Fbin -o target/app/blinker_raw.bin sw/app/asm/blinker.asm
+	FILE_SIZE=$$(stat -c %s target/app/blinker_raw.bin); \
+	HEX_SIZE=$$(printf "%08X" "$$FILE_SIZE"); \
+	HEADER_HEX="00000900"$$HEX_SIZE; \
+	echo "$$HEADER_HEX" | xxd -r -p | cat - target/app/blinker_raw.bin > target/app/blinker.bin
 
+# 'apps' target: invoked specifically to build all application binaries
+apps: $(BIN_APP_TARGETS)
+
+$(TARGET_APP_DIR)/%.bin: $(ASM_APP_DIR)/%.asm
+	@mkdir -p $(TARGET_APP_DIR)
+	# 1. Assemble to a raw binary image (*_raw.bin)
+	vasmm68k_mot -Fbin -o $(RAW_FILE_NAME) $<
+	# 2. Calculate length and prepend the header. All steps in ONE shell session.
+	SHELL_RAW_FILE="$(RAW_FILE_NAME)"; \
+	FILE_SIZE=$$(stat -c %s $$SHELL_RAW_FILE); \
+	HEX_SIZE=$$(printf "%08X" "$$FILE_SIZE"); \
+	HEADER_HEX="$(PROGRAM_ADDRESS)"$$HEX_SIZE; \
+	echo "$$HEADER_HEX" | xxd -r -p | cat - $$SHELL_RAW_FILE > $@
+	# 3. Clean up the intermediate raw file
+	@rm $(RAW_FILE_NAME)
+
+
+# --- Utility Targets ---
 prog-fpga:
 	echo "Programming FPGA"
 	papilio-prog -v -f target/$(TARGET).bit
