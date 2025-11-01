@@ -8,7 +8,7 @@ import spinal.lib.com.uart.Uart
 import spinal.lib.graphic.RgbConfig
 import spinal.lib.graphic.vga.{Vga, VgaCtrl}
 import spinal.lib.master
-import vga.Dcm25MhzBB
+import vga.{Dcm25MhzBB, VgaDevice}
 
 import scala.language.postfixOps
 
@@ -28,50 +28,18 @@ import scala.language.postfixOps
 
 //noinspection TypeAnnotation
 case class Rt68fTopLevel(romFilename: String) extends Component {
-  val rgbConfig = RgbConfig(4, 4, 4)
-
   val io = new Bundle {
     val reset = in Bool()
     val led = out Bits(4 bits)
     val key = in Bits(4 bits) // Keys disabled in UCF file due to UART conflict.
     val uart = master(Uart()) // Expose UART pins (txd, rxd), must be defined in the ucf
-    val vga = master(Vga(rgbConfig))
+    val vga = master(Vga(VgaDevice.rgbConfig))
   }
 
   val resetCtrl = ResetCtrl()
   resetCtrl.io.button := io.reset
 
   val resetArea = new ResetArea(resetCtrl.io.resetOut, cumulative = false) {
-
-    //  -------------------------- VGA START ------------------------
-    // TODO: Move VGA to its own module
-    val dcm = new Dcm25MhzBB()
-
-    val pixelClock = ClockDomain(
-      clock = dcm.io.clk25,
-      reset = ~dcm.io.locked
-    )
-
-    // Clock domain area for VGA timing logic
-    new ClockingArea(pixelClock) {
-      val ctrl = new VgaCtrl(rgbConfig)
-      ctrl.io.softReset := False
-      ctrl.io.timings.setAs_h640_v480_r60
-      ctrl.io.pixels.valid := True
-
-      ctrl.io.pixels.r := 0
-      ctrl.io.pixels.g := 0
-      ctrl.io.pixels.b := 0
-
-      when(ctrl.io.vga.colorEn) {
-        ctrl.io.pixels.r := 15
-        ctrl.io.pixels.g := 15
-        ctrl.io.pixels.b := 0
-      }
-
-      ctrl.io.vga <> io.vga
-    }
-    //  -------------------------- VGA END --------------------------
 
     // ----------------
     // CPU Core
@@ -133,6 +101,10 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       cpuDataI := ram.io.bus.DATAI
       cpuDtack := ram.io.bus.DTACK
     }
+
+    // -----
+    val vga = VgaDevice()
+    io.vga <> vga.io.vga
 
     // --------------------------------
     // LED device @ 0x10000
