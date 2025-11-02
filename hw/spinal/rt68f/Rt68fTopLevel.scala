@@ -5,22 +5,22 @@ import rt68f.io._
 import rt68f.memory._
 import spinal.core._
 import spinal.lib.com.uart.Uart
-import spinal.lib.graphic.RgbConfig
-import spinal.lib.graphic.vga.{Vga, VgaCtrl}
+import spinal.lib.graphic.vga.Vga
 import spinal.lib.master
-import vga.{Dcm25MhzBB, VgaDevice}
+import vga.VgaDevice
 
 import scala.language.postfixOps
 
 /**
  * Hardware definition
+ *
  * @param romFilename name of the file containing the ROM content
  *
  * SimpleSoC Memory Map
  *
  *   0x00000000 - 0x00003FFF : 16 KB ROM (16-bit words)
  *   0x00004000 - 0x00007FFF : 16 KB RAM (16-bit words)
- *   0x00008000 - 0x00008000 : 32 KB Video memory (to be implemented)
+ *   0x00008000 - 0x0000BFFF : 16 KB Video memory (16-bit words)
  *   0x00010000              : LED peripheral (lower 4 bits drive LEDs)
  *   0x00011000              : KEY peripheral (lower 4 bits reflect key inputs)
  *   0x00012000              : UART (base)
@@ -56,6 +56,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     cpuDataI := B(0, 16 bits)
     cpuDtack := True
 
+
     // --------------------------------
     // ROM: 16 KB @ 0x0000 - 0x4FFFF
     // --------------------------------
@@ -79,8 +80,9 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       cpuDtack := rom.io.bus.DTACK
     }
 
+
     // --------------------------------
-    // RAM: 2 KB @ 0x4000 - 0x7FFF
+    // RAM: 16 KB @ 0x4000 - 0x7FFF
     // --------------------------------
     val ramSizeWords = 16384 / 2 // 16384 KB / 2 bytes per 16-bit word
     val ram = Mem16Bits(size = ramSizeWords)
@@ -102,9 +104,31 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       cpuDtack := ram.io.bus.DTACK
     }
 
-    // -----
+
+    // --------------------------------
+    // Video Memory: 16 KB @ 0x8000 - 0xBFFF
+    // --------------------------------
     val vga = VgaDevice()
     io.vga <> vga.io.vga
+
+    val vgaSel = cpu.io.ADDR >= U(0x8000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0xBFFF, cpu.io.ADDR.getWidth bits)
+
+    // Connect CPU outputs to ROM inputs
+    vga.io.bus.AS    := cpu.io.AS
+    vga.io.bus.UDS   := cpu.io.UDS
+    vga.io.bus.LDS   := cpu.io.LDS
+    vga.io.bus.RW    := cpu.io.RW
+    vga.io.bus.ADDR  := cpu.io.ADDR
+    vga.io.bus.DATAO := cpu.io.DATAO
+
+    vga.io.sel := vgaSel
+
+    // If VGA selected, forward VGA response into CPU aggregated signals
+    when(!cpu.io.AS && vgaSel) {
+      cpuDataI := vga.io.bus.DATAI
+      cpuDtack := vga.io.bus.DTACK
+    }
+
 
     // --------------------------------
     // LED device @ 0x10000
@@ -123,7 +147,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
     ledDev.io.sel := ledDevSel
 
-    // If RAM selected, forward RAM response into CPU aggregated signals
+    // If LED selected, forward LED response into CPU aggregated signals
     when(!cpu.io.AS && ledDevSel) {
       cpuDataI := ledDev.io.bus.DATAI
       cpuDtack := ledDev.io.bus.DTACK
@@ -147,7 +171,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
     keyDev.io.sel := keyDevSel
 
-    // If RAM selected, forward RAM response into CPU aggregated signals
+    // If KEY selected, forward KEY response into CPU aggregated signals
     when(!cpu.io.AS && keyDevSel) {
       cpuDataI := keyDev.io.bus.DATAI
       cpuDtack := keyDev.io.bus.DTACK
@@ -173,7 +197,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
     uartDev.io.sel := uartDevSel
 
-    // If RAM selected, forward RAM response into CPU aggregated signals
+    // If UART selected, forward UART response into CPU aggregated signals
     when(!cpu.io.AS && uartDevSel) {
       cpuDataI := uartDev.io.bus.DATAI
       cpuDtack := uartDev.io.bus.DTACK
