@@ -2,7 +2,7 @@ package rt68f.vga
 
 import rt68f.core.M68kBus
 import rt68f.vga.VgaDevice.rgbConfig
-import spinal.core.{Bits, Bundle, Cat, ClockDomain, ClockingArea, Component, False, IntToBuilder, Mem, True, in, log2Up, when}
+import spinal.core.{Bits, Bundle, Cat, ClockDomain, ClockingArea, Component, False, IntToBuilder, Mem, True, U, in, log2Up, when}
 import spinal.lib.graphic.RgbConfig
 import spinal.lib.graphic.vga.{Vga, VgaCtrl}
 import spinal.lib.{master, slave}
@@ -66,20 +66,23 @@ case class VgaDevice() extends Component {
   // Clock domain area for VGA timing logic
   new ClockingArea(pixelClock) {
     val ctrl = new VgaCtrl(rgbConfig)
+    ctrl.io.vga <> io.vga
+
     ctrl.io.softReset := False
     ctrl.io.timings.setAs_h640_v480_r60
     ctrl.io.pixels.valid := True
 
+    val addressWidth = log2Up(size)
     ctrl.io.pixels.r := 0
     ctrl.io.pixels.g := 0
     ctrl.io.pixels.b := 0
 
-    when(ctrl.io.vga.colorEn) {
-      ctrl.io.pixels.r := 15
-      ctrl.io.pixels.g := 15
-      ctrl.io.pixels.b := 0
-    }
+    val buffer = mem.readSync(U(0, addressWidth bits), clockCrossing = true)
 
-    ctrl.io.vga <> io.vga
+    when(ctrl.io.vga.colorEn) {
+      ctrl.io.pixels.r := buffer(11 downto 8).asUInt
+      ctrl.io.pixels.g := buffer(7 downto 4).asUInt
+      ctrl.io.pixels.b := buffer(3 downto 0).asUInt
+    }
   }
 }
