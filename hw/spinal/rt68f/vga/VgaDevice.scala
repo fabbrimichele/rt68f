@@ -2,9 +2,9 @@ package rt68f.vga
 
 import rt68f.core.M68kBus
 import rt68f.vga.VgaDevice.rgbConfig
-import spinal.core.{Bits, Bundle, Cat, ClockDomain, ClockingArea, Component, False, IntToBuilder, Mem, Reg, True, U, UInt, in, log2Up, when}
+import spinal.core.{Area, Bits, Bool, Bundle, Cat, ClockDomain, ClockingArea, Component, False, IntToBuilder, Mem, Mux, Reg, RegInit, True, U, UInt, in, log2Up, when}
 import spinal.lib.graphic.RgbConfig
-import spinal.lib.graphic.vga.{Vga, VgaCtrl}
+import spinal.lib.graphic.vga.{Vga, VgaTimingsHV}
 import spinal.lib.{master, slave}
 
 import scala.language.postfixOps
@@ -65,52 +65,83 @@ case class VgaDevice() extends Component {
 
   // Clock domain area for VGA timing logic
   new ClockingArea(pixelClock) {
-    val ctrl = new VgaCtrl(rgbConfig)
+    val ctrl = VgaCtrl(rgbConfig)
     ctrl.io.vga <> io.vga
 
     ctrl.io.softReset := False
     ctrl.io.timings.setAs_h640_v480_r60
-    ctrl.io.pixels.valid := True
 
-    // Reading logic
+    // --- Access Exposed Counters and Timings ---
+    val hCount = ctrl.io.hCounter
+    val vCount = ctrl.io.vCounter
+    val colorEn = ctrl.io.vga.colorEn
+    val timings = ctrl.io.timings // Reuse the configured timing struct
+
+    // --- VRAM Read Logic (Offset, Clamped, and Latency Compensated) ---
     val addressWidth = log2Up(size) // 13 bits (for 8192 words)
-    val pixelCountWidth = 17 // ceil(log2(16384 * 8))
+    val lineLength = U(640 / 16)    // 40 words per line
 
-    val pixelCounter = Reg(UInt(pixelCountWidth bits)) init 0
+    // 1. Horizontal Offset: pixelX = hCount - hStart (The pixel currently being displayed)
+    val hStartValue = timings.h.colorStart.resize(12 bits)
+    val pixelX = Mux(
+      hCount >= hStartValue,
+      hCount - hStartValue,
+      U(0, 12 bits)
+    )
 
-    // Reset Counter at the start of the frame
-    when(ctrl.io.frameStart) {
-      pixelCounter := 0
-    }
+    // 2. LATENCY COMPENSATION: pixelX_command = pixelX - 1 (Command address for next cycle)
+    // The command is based on the address one pixel *before* the current display position.
+    val pixelX_command = Mux(
+      hCount > hStartValue,
+      hCount - hStartValue - 1,
+      U(0, 12 bits)
+    )
 
-    // Increment Counter during the active display time
-    when(io.vga.colorEn) {
-      pixelCounter := pixelCounter + 1
-    }
+    // 3. Vertical Offset: pixelY_raw = vCount - vStart
+    val vStartValue = timings.v.colorStart.resize(12 bits)
+    val pixelY_raw = Mux(
+      vCount >= vStartValue,
+      vCount - vStartValue,
+      U(0, 12 bits)
+    )
 
-    // --- VRAM Address Calculation ---
-    // The word address is the pixel counter shifted right by 4 (dropping 4 LSBs).
-    val vramAddress = pixelCounter(pixelCountWidth - 1 downto 4)
+    // 4. VRAM Y Address: Offset Y scaled down (2:1 vertical scaling)
+    val vramY_unclamped = pixelY_raw(pixelY_raw.high downto 1) // Divide by 2 (Max 199)
 
-    // --- VRAM Read ---
+    // 5. Vertical Clamp: Ensure the address does not exceed VRAM height (200 lines).
+    val vramHeight = U(200, vramY_unclamped.getWidth bits)
+    val vramLastLine = U(199, vramY_unclamped.getWidth bits)
+
+    val vramY = Mux(
+      vramY_unclamped >= vramHeight,
+      vramLastLine,
+      vramY_unclamped
+    )
+
+    // 6. VRAM X Word Address: (pixelX_command) divided by 16
+    val vramXWord = pixelX_command(pixelX_command.high downto 4)
+
+    // 7. Linear Address = (Y_clamped * 40) + X_word
+    val vramAddress = ((vramY * lineLength) + vramXWord).resize(addressWidth)
+
+    // VRAM Read: mem.readSync handles the 1-cycle data delay.
     val wordData = mem.readSync(
-      address = vramAddress.resize(addressWidth), // Resize to the 13-bit memory depth
+      address = vramAddress,
       clockCrossing = true
     )
 
-    // --- Pixel Extraction ---
-    // The index of the current pixel within the 16-bit word is the 4 LSBs of the counter.
-    val pixelBitIndex = pixelCounter(3 downto 0)
-    val pixelDataBit = (wordData >> pixelBitIndex).lsb
+    // 8. Pixel Bit Index: lower 4 bits of the *displayed* pixel (pixelX).
+    val pixelBitIndex = pixelX(3 downto 0) - 3 // - 3 is a hack
+    val pixelDataBit = (wordData.asUInt >> pixelBitIndex).lsb
 
-    ctrl.io.pixels.r := 0
-    ctrl.io.pixels.g := 0
-    ctrl.io.pixels.b := 0
+    ctrl.io.rgb.r := 0
+    ctrl.io.rgb.g := 0
+    ctrl.io.rgb.b := 0
 
     when(ctrl.io.vga.colorEn && pixelDataBit) {
-      ctrl.io.pixels.r := 15
-      ctrl.io.pixels.g := 15
-      ctrl.io.pixels.b := 15
+      ctrl.io.rgb.r := 15
+      ctrl.io.rgb.g := 15
+      ctrl.io.rgb.b := 15
     }
   }
 }
