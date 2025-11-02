@@ -2,7 +2,7 @@ package rt68f.vga
 
 import rt68f.core.M68kBus
 import rt68f.vga.VgaDevice.rgbConfig
-import spinal.core.{Bits, Bundle, Cat, ClockDomain, ClockingArea, Component, False, IntToBuilder, Mem, True, U, in, log2Up, when}
+import spinal.core.{Bits, Bundle, Cat, ClockDomain, ClockingArea, Component, False, IntToBuilder, Mem, Reg, True, U, UInt, in, log2Up, when}
 import spinal.lib.graphic.RgbConfig
 import spinal.lib.graphic.vga.{Vga, VgaCtrl}
 import spinal.lib.{master, slave}
@@ -72,17 +72,45 @@ case class VgaDevice() extends Component {
     ctrl.io.timings.setAs_h640_v480_r60
     ctrl.io.pixels.valid := True
 
-    val addressWidth = log2Up(size)
+    // Reading logic
+    val addressWidth = log2Up(size) // 13 bits (for 8192 words)
+    val pixelCountWidth = 17 // ceil(log2(16384 * 8))
+
+    val pixelCounter = Reg(UInt(pixelCountWidth bits)) init 0
+
+    // Reset Counter at the start of the frame
+    when(ctrl.io.frameStart) {
+      pixelCounter := 0
+    }
+
+    // Increment Counter during the active display time
+    when(io.vga.colorEn) {
+      pixelCounter := pixelCounter + 1
+    }
+
+    // --- VRAM Address Calculation ---
+    // The word address is the pixel counter shifted right by 4 (dropping 4 LSBs).
+    val vramAddress = pixelCounter(pixelCountWidth - 1 downto 4)
+
+    // --- VRAM Read ---
+    val wordData = mem.readSync(
+      address = vramAddress.resize(addressWidth), // Resize to the 13-bit memory depth
+      clockCrossing = true
+    )
+
+    // --- Pixel Extraction ---
+    // The index of the current pixel within the 16-bit word is the 4 LSBs of the counter.
+    val pixelBitIndex = pixelCounter(3 downto 0)
+    val pixelDataBit = (wordData >> pixelBitIndex).lsb
+
     ctrl.io.pixels.r := 0
     ctrl.io.pixels.g := 0
     ctrl.io.pixels.b := 0
 
-    val buffer = mem.readSync(U(0, addressWidth bits), clockCrossing = true)
-
-    when(ctrl.io.vga.colorEn) {
-      ctrl.io.pixels.r := buffer(11 downto 8).asUInt
-      ctrl.io.pixels.g := buffer(7 downto 4).asUInt
-      ctrl.io.pixels.b := buffer(3 downto 0).asUInt
+    when(ctrl.io.vga.colorEn && pixelDataBit) {
+      ctrl.io.pixels.r := 15
+      ctrl.io.pixels.g := 15
+      ctrl.io.pixels.b := 15
     }
   }
 }
