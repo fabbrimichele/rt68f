@@ -20,7 +20,7 @@ case class VgaDevice() extends Component {
     val vga = master(Vga(VgaDevice.rgbConfig))
   }
 
-  val size = 16384 / 2  // 16KB = 640x200, 1 bit color
+  val size = 32768 / 2  // 32KB = 640x400, 1 bit color
   val mem = Mem(Bits(16 bits), size)
 
   // ------------ 68000 BUS side ------------
@@ -99,23 +99,20 @@ case class VgaDevice() extends Component {
 
     // 3. Vertical Offset: pixelY_raw = vCount - vStart
     val vStartValue = timings.v.colorStart.resize(12 bits)
-    val pixelY_raw = Mux(
+    val pixelY = Mux(
       vCount >= vStartValue,
       vCount - vStartValue,
       U(0, 12 bits)
     )
 
-    // 4. VRAM Y Address: Offset Y scaled down (2:1 vertical scaling)
-    val vramY_unclamped = pixelY_raw(pixelY_raw.high downto 1) // Divide by 2 (Max 199)
-
     // 5. Vertical Clamp: Ensure the address does not exceed VRAM height (200 lines).
-    val vramHeight = U(200, vramY_unclamped.getWidth bits)
-    val vramLastLine = U(199, vramY_unclamped.getWidth bits)
+    val vramHeight = U(400, pixelY.getWidth bits)
+    val vramLastLine = U(399, pixelY.getWidth bits)
 
     val vramY = Mux(
-      vramY_unclamped >= vramHeight,
+      pixelY >= vramHeight,
       vramLastLine,
-      vramY_unclamped
+      pixelY
     )
 
     // 6. VRAM X Word Address: (pixelX_command) divided by 16

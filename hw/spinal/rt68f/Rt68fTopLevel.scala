@@ -106,12 +106,12 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
 
     // --------------------------------
-    // Video Memory: 16 KB @ 0x8000 - 0xBFFF
+    // VGA: 32 KB @ 0x8000 - 0xFFFF
     // --------------------------------
     val vga = VgaDevice()
     io.vga <> vga.io.vga
 
-    val vgaSel = cpu.io.ADDR >= U(0x8000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0xBFFF, cpu.io.ADDR.getWidth bits)
+    val vgaSel = cpu.io.ADDR >= U(0x8000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0xFFFF, cpu.io.ADDR.getWidth bits)
 
     // Connect CPU outputs to ROM inputs
     vga.io.bus.AS    := cpu.io.AS
