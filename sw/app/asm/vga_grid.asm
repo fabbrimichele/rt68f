@@ -4,14 +4,18 @@
     ORG    $4100            ; Start of RAM
 
 START:
+    ; Clear screen
+    MOVE.W  #0,D0           ; Fill pattern blank
+    BSR     FILL            ; Clear screen
+
     ; Horizontal grid
-    MOVE.L  #39,D0          ; line length
+    MOVE.W  #39,D0          ; line length
+    MOVE.W  #24,D1          ; Number of lines - 1
     LEA     VGA,A0
-    MOVE.B  #24,D1           ; Number of lines - 1
 HR_GRD_LOOP:
     BSR     HOR_LINE
-    ;ADD     #16,A0          ; next line address
-    ;DBRA    D1,HR_GRD_LOOP  ; Decrease and continue
+    ADD.L   #(80*16),A0   ; next line after 16 lines (here we count bytes not words)
+    DBRA    D1,HR_GRD_LOOP  ; Decrease, check and branch
 
 END:
     TRAP    #14
@@ -25,16 +29,32 @@ HOR_LINE:
     MOVEM.L D0/A0,-(SP)
 HOR_LINE_LOOP:
     MOVE.W  #$FFFF,(A0)+    ; write solid line (16 pixels)
-    DBRA    D0,HOR_LINE
-HOR_LINE_DONE:
-    MOVEM.L (SP)+,D0/A0
+    DBRA    D0,HOR_LINE_LOOP
+
+    MOVEM.L (SP)+,D0/A0     ; Done
     RTS
 
+
+; Fill the screen with a pattern (16 bits pattern)
+; Input:
+; D0 pattern (e.g. 5555)
+FILL:
+    MOVEM.L D0/D1/A0,-(SP)
+    LEA     VGA,A0
+    MOVE.W  #(4000-1),D1    ; Video memory length - 1
+FILL_LOOP:
+    MOVE.W  D0,(A0)+        ; write solid line (16 pixels)
+    DBRA    D1,FILL_LOOP
+
+    MOVEM.L (SP)+,D0/D1/A0     ; Done
+    RTS
+
+
 ; TODO: write a full vertical grid
-; TODO: write a full horizontal grid
 ; TODO: change the monitor to store private data at the end of RAM and move
 ;       the stack pointer below, this way programs can start from RAM start
 ;       and don't need to be moved if the Monitor requires more RAM.
+
 
 
     ; ===========================
