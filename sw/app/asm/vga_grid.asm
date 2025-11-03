@@ -9,14 +9,15 @@ START:
     BSR     FILL            ; Clear screen
 
     ; Horizontal grid
-    MOVE.W  #39,D0          ; line length
+    MOVE.W  #39,D0          ; Line length
     MOVE.W  #24,D1          ; Number of lines - 1
     LEA     VGA,A0
 HR_GRD_LOOP:
     BSR     HOR_LINE
-    ADD.L   #(80*16),A0   ; next line after 16 lines (here we count bytes not words)
+    ADD.L   #(80*16),A0     ; Next line after 16 lines (here we count bytes not words)
     DBRA    D1,HR_GRD_LOOP  ; Decrease, check and branch
-
+    LEA     (80*399+VGA),A0 ; Last line (at 399)
+    BSR     HOR_LINE
 END:
     TRAP    #14
 
