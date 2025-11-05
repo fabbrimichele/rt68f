@@ -129,7 +129,7 @@ case class VgaDevice() extends Component {
     )
 
     // 8. Pixel Bit Index: lower 4 bits of the *displayed* pixel (pixelX).
-    val pixelBitIndex = pixelX(3 downto 0) - 3 // - 3 is a hack
+    val pixelBitIndex = pixelX(3 downto 0) - 2 // - 2 is a hack
     val pixelDataBit = (wordData.asUInt >> pixelBitIndex).lsb
 
     ctrl.io.rgb.r := 0

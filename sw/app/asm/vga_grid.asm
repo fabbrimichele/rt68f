@@ -14,10 +14,20 @@ START:
     LEA     VGA,A0
 HR_GRD_LOOP:
     BSR     HOR_LINE
-    ADD.L   #(80*16),A0     ; Next line after 16 lines (here we count bytes not words)
+    ADD.W   #(80*16),A0     ; Next line after 16 lines (here we count bytes not words)
     DBRA    D1,HR_GRD_LOOP  ; Decrease, check and branch
     LEA     (80*399+VGA),A0 ; Last line (at 399)
     BSR     HOR_LINE
+
+    ; Vertical grid
+    MOVE.W  #400,D0         ; Line length (in pixels)
+    MOVE.W  #48,D1          ; Number of lines - 1
+    LEA     VGA,A0          ; First column
+VR_GRD_LOOP:
+    BSR     VER_LINE
+    ADD.W   #2,A0           ; Next line after 16 lines (here we count in bytes not words)
+    DBRA    D1,VR_GRD_LOOP  ; Decrease, check and branch
+
 END:
     TRAP    #14
 
@@ -31,7 +41,20 @@ HOR_LINE:
 HOR_LINE_LOOP:
     MOVE.W  #$FFFF,(A0)+    ; write solid line (16 pixels)
     DBRA    D0,HOR_LINE_LOOP
+    MOVEM.L (SP)+,D0/A0     ; Done
+    RTS
 
+; Draw a vertical line (only at 16 * x pos)
+; Input:
+; A0 start address
+; D0 line length
+; D2 pattern
+VER_LINE:
+    MOVEM.L D0/A0,-(SP)
+VER_LINE_LOOP:
+    OR.W    #$8000,(A0)     ; Pixel in pos 1
+    ADD.L   #80,A0          ; Next line
+    DBRA    D0,VER_LINE_LOOP
     MOVEM.L (SP)+,D0/A0     ; Done
     RTS
 
