@@ -3,7 +3,7 @@ package rt68f.vga
 import rt68f.core.M68kBus
 import rt68f.vga.VgaDevice.rgbConfig
 import spinal.core._
-import spinal.lib.graphic.RgbConfig
+import spinal.lib.graphic.{Rgb, RgbConfig}
 import spinal.lib.graphic.vga.Vga
 import spinal.lib.{master, slave}
 
@@ -28,7 +28,8 @@ case class VgaDevice() extends Component {
   // Registers
   // ctrlReg(0): background color
   // ctrlReg(1): foreground color
-  val ctrlReg = Vec.fill(2)(Reg(UInt(16 bits)))
+  val regWidth = 16 bits
+  val ctrlReg = Vec.fill(2)(Reg(UInt(regWidth)))
   ctrlReg(0).init(U(0x0000))  // Initialize background color to black
   ctrlReg(1).init(U(0x0FFF))  // Initialize foreground color to white
 
@@ -147,21 +148,20 @@ case class VgaDevice() extends Component {
     val shiftAmount = U(15) - pixelBitIndex // MSB first
     val pixelDataBit = (wordData.asUInt >> shiftAmount).lsb
 
-    ctrl.io.rgb.r := 0
-    ctrl.io.rgb.g := 0
-    ctrl.io.rgb.b := 0
+    ctrl.io.rgb.clear()
 
-    // TODO: make a function to map register to Rgb class
     when(ctrl.io.vga.colorEn && !pastVramLines) {
       when(pixelDataBit) {
-        ctrl.io.rgb.r := ctrlReg(1)(11 downto 8)
-        ctrl.io.rgb.g := ctrlReg(1)(7 downto 4)
-        ctrl.io.rgb.b := ctrlReg(1)(3 downto 0)
+        setIoRgb(ctrlReg(1))
       } otherwise {
-        ctrl.io.rgb.r := ctrlReg(0)(11 downto 8)
-        ctrl.io.rgb.g := ctrlReg(0)(7 downto 4)
-        ctrl.io.rgb.b := ctrlReg(0)(3 downto 0)
+        setIoRgb(ctrlReg(0))
       }
+    }
+
+    def setIoRgb(color: UInt): Unit = {
+      ctrl.io.rgb.r := color(11 downto 8)
+      ctrl.io.rgb.g := color(7 downto 4)
+      ctrl.io.rgb.b := color(3 downto 0)
     }
   }
 }
