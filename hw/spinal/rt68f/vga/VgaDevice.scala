@@ -3,7 +3,7 @@ package rt68f.vga
 import rt68f.core.M68kBus
 import rt68f.vga.VgaDevice.rgbConfig
 import spinal.core._
-import spinal.lib.graphic.RgbConfig
+import spinal.lib.graphic.{Rgb, RgbConfig}
 import spinal.lib.graphic.vga.Vga
 import spinal.lib.{master, slave}
 
@@ -15,19 +15,45 @@ object VgaDevice {
 
 case class VgaDevice() extends Component {
   val io = new Bundle {
-    val bus   = slave(M68kBus())
-    val sel   = in Bool() // chip select from decoder
-    val vga = master(Vga(VgaDevice.rgbConfig))
+    val bus     = slave(M68kBus())
+    val sel     = in Bool() // memory select from decoder
+    val regSel  = in Bool() // registry select from decoder
+    val vga     = master(Vga(VgaDevice.rgbConfig))
   }
 
+  // Frame buffer
   val size = 32768 / 2  // 32KB = 640x400, 1 bit color
   val mem = Mem(Bits(16 bits), size)
+
+  // Registers
+  // ctrlReg(0): background color
+  // ctrlReg(1): foreground color
+  val regWidth = 16 bits
+  val ctrlReg = Vec.fill(2)(Reg(UInt(regWidth)))
+  ctrlReg(0).init(U(0x0000))  // Initialize background color to black
+  ctrlReg(1).init(U(0x0FFF))  // Initialize foreground color to white
 
   // ------------ 68000 BUS side ------------
   // Default response
   io.bus.DATAI := 0
   io.bus.DTACK := True
 
+  // Registers read/write
+  when(!io.bus.AS && io.regSel) {
+    io.bus.DTACK := False // acknowledge access (active low)
+    val wordAddr = io.bus.ADDR(1 downto 1)
+
+    when(io.bus.RW) {
+      // Read
+      io.bus.DATAI := ctrlReg(wordAddr).asBits
+    } otherwise {
+      // Write
+      // TODO: handle UDS/LDS
+      ctrlReg(wordAddr) := io.bus.DATAO.asUInt
+    }
+  }
+
+  // Frame buffer read/write
   when(!io.bus.AS && io.sel) {
     io.bus.DTACK := False // active
     val wordAddr = io.bus.ADDR(log2Up(size) downto 1)
@@ -122,14 +148,13 @@ case class VgaDevice() extends Component {
     val shiftAmount = U(15) - pixelBitIndex // MSB first
     val pixelDataBit = (wordData.asUInt >> shiftAmount).lsb
 
-    ctrl.io.rgb.r := 0
-    ctrl.io.rgb.g := 0
-    ctrl.io.rgb.b := 0
+    ctrl.io.rgb.clear()
 
-    when(ctrl.io.vga.colorEn && pixelDataBit && !pastVramLines) {
-      ctrl.io.rgb.r := 15
-      ctrl.io.rgb.g := 15
-      ctrl.io.rgb.b := 15
+    when(ctrl.io.vga.colorEn && !pastVramLines) {
+      val selectedColor = ctrlReg(pixelDataBit.asUInt)
+      ctrl.io.rgb.r := selectedColor(11 downto 8)
+      ctrl.io.rgb.g := selectedColor(7 downto 4)
+      ctrl.io.rgb.b := selectedColor(3 downto 0)
     }
   }
 }
