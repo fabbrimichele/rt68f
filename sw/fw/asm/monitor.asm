@@ -527,7 +527,7 @@ READ_LOOP:
 ; Messages
 MSG_TITLE       DC.B    'RT68F Monitor v0.1',LF,NUL
 MSG_UNKNOWN     DC.B    'Error: Unknown command or syntax',LF,NUL
-MSG_HELP        DC.B    'DUMP <ADDR>          - Dump from ADDR (HEX)',LF
+MSG_HELP        DC.B    'DUMP  <ADDR>         - Dump from ADDR (HEX)',LF
                 DC.B    'WRITE <ADDR> <VALUE> - Write to ADDR (HEX) the VALUE (HEX)',LF
                 DC.B    'LOAD                 - Load from UART to memory',LF
                 DC.B    'HELP                 - Print this list of commands',LF
@@ -546,14 +546,26 @@ RUN_STR     DC.B    'RUN',NUL,NUL
 ; ===========================
 ; Constants
 ; ===========================
+MON_MEM_LEN EQU 256                     ; RAM allocated for the monitor
+
 ; Memory Map
-RAM_START   EQU $00004000   ; Start of RAM address
-RAM_END     EQU $00008000   ; End of RAM address (+1)
-LED         EQU $00010000   ; LED-mapped register base address
-UART_BASE   EQU $00012000   ; UART-mapped data register address
-UART_DATA   EQU UART_BASE+0 ; UART-mapped data register address
-UART_STAT   EQU UART_BASE+2 ; UART-mapped data register address
+RAM_START       EQU $00004000               ; Start of RAM address
+RAM_END         EQU $00008000               ; End of RAM address (+1)
+SP_START        EQU (RAM_END-MON_MEM_LEN)   ; After SP, allocates monitor RAM
+MON_MEM_START   EQU SP_START                ;
+LED             EQU $00010000               ; LED-mapped register base address
+UART_BASE       EQU $00012000               ; UART-mapped data register address
+UART_DATA       EQU UART_BASE+0             ; UART-mapped data register address
+UART_STAT       EQU UART_BASE+2             ; UART-mapped data register address
 ; NOTE: do not remove spaces around +
+
+; Monitor RAM
+; Allocated after the stack point, if the monitor needs
+; more memory it's sufficient to move the stack pointer
+; Buffer
+IN_BUF          EQU MON_MEM_START           ; IN_BUF start after the stack pointer
+IN_BUF_LEN      EQU 80                      ; BUFFER LEN should be less than MON_MEM_LEN EQU
+IN_BUF_END      EQU IN_BUF+IN_BUF_LEN       ;
 
 ; Program Constants
 DLY_VAL     EQU 1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
@@ -565,8 +577,3 @@ BEL         EQU 7           ; Bell character
 BS          EQU 8           ; Backspace
 DEL         EQU 127         ; Delete/Rubout (0x7F)
 NUL         EQU 0
-
-; Buffer
-IN_BUF          EQU RAM_START           ; IN_BUF starts at 0x800
-IN_BUF_LEN      EQU 80
-IN_BUF_END      EQU IN_BUF+IN_BUF_LEN   ; IN_BUF_END = 0x800 + 80 = 0x850

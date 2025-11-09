@@ -1,7 +1,7 @@
     ; ------------------------------
     ; Program code
     ; ------------------------------
-    ORG    $4100            ; Start of RAM
+    ORG    $4000            ; Start of RAM
 
 START:
     MOVEA.L #RAM_START,A0       ; A0 = Base address of RAM
