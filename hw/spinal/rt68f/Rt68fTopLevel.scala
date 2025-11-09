@@ -5,22 +5,22 @@ import rt68f.io._
 import rt68f.memory._
 import spinal.core._
 import spinal.lib.com.uart.Uart
-import spinal.lib.graphic.RgbConfig
-import spinal.lib.graphic.vga.{Vga, VgaCtrl}
+import spinal.lib.graphic.vga.Vga
 import spinal.lib.master
-import vga.Dcm25MhzBB
+import vga.VgaDevice
 
 import scala.language.postfixOps
 
 /**
  * Hardware definition
+ *
  * @param romFilename name of the file containing the ROM content
  *
  * SimpleSoC Memory Map
  *
  *   0x00000000 - 0x00003FFF : 16 KB ROM (16-bit words)
  *   0x00004000 - 0x00007FFF : 16 KB RAM (16-bit words)
- *   0x00008000 - 0x00008000 : 32 KB Video memory (to be implemented)
+ *   0x00008000 - 0x0000BFFF : 16 KB Video memory (16-bit words)
  *   0x00010000              : LED peripheral (lower 4 bits drive LEDs)
  *   0x00011000              : KEY peripheral (lower 4 bits reflect key inputs)
  *   0x00012000              : UART (base)
@@ -28,50 +28,18 @@ import scala.language.postfixOps
 
 //noinspection TypeAnnotation
 case class Rt68fTopLevel(romFilename: String) extends Component {
-  val rgbConfig = RgbConfig(4, 4, 4)
-
   val io = new Bundle {
     val reset = in Bool()
     val led = out Bits(4 bits)
     val key = in Bits(4 bits) // Keys disabled in UCF file due to UART conflict.
     val uart = master(Uart()) // Expose UART pins (txd, rxd), must be defined in the ucf
-    val vga = master(Vga(rgbConfig))
+    val vga = master(Vga(VgaDevice.rgbConfig))
   }
 
   val resetCtrl = ResetCtrl()
   resetCtrl.io.button := io.reset
 
   val resetArea = new ResetArea(resetCtrl.io.resetOut, cumulative = false) {
-
-    //  -------------------------- VGA START ------------------------
-    // TODO: Move VGA to its own module
-    val dcm = new Dcm25MhzBB()
-
-    val pixelClock = ClockDomain(
-      clock = dcm.io.clk25,
-      reset = ~dcm.io.locked
-    )
-
-    // Clock domain area for VGA timing logic
-    new ClockingArea(pixelClock) {
-      val ctrl = new VgaCtrl(rgbConfig)
-      ctrl.io.softReset := False
-      ctrl.io.timings.setAs_h640_v480_r60
-      ctrl.io.pixels.valid := True
-
-      ctrl.io.pixels.r := 0
-      ctrl.io.pixels.g := 0
-      ctrl.io.pixels.b := 0
-
-      when(ctrl.io.vga.colorEn) {
-        ctrl.io.pixels.r := 15
-        ctrl.io.pixels.g := 15
-        ctrl.io.pixels.b := 0
-      }
-
-      ctrl.io.vga <> io.vga
-    }
-    //  -------------------------- VGA END --------------------------
 
     // ----------------
     // CPU Core
@@ -87,6 +55,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // Default responses
     cpuDataI := B(0, 16 bits)
     cpuDtack := True
+
 
     // --------------------------------
     // ROM: 16 KB @ 0x0000 - 0x4FFFF
@@ -111,8 +80,9 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       cpuDtack := rom.io.bus.DTACK
     }
 
+
     // --------------------------------
-    // RAM: 2 KB @ 0x4000 - 0x7FFF
+    // RAM: 16 KB @ 0x4000 - 0x7FFF
     // --------------------------------
     val ramSizeWords = 16384 / 2 // 16384 KB / 2 bytes per 16-bit word
     val ram = Mem16Bits(size = ramSizeWords)
@@ -134,6 +104,32 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       cpuDtack := ram.io.bus.DTACK
     }
 
+
+    // --------------------------------
+    // VGA: 32 KB @ 0x8000 - 0xFFFF
+    // --------------------------------
+    val vga = VgaDevice()
+    io.vga <> vga.io.vga
+
+    val vgaSel = cpu.io.ADDR >= U(0x8000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0xFFFF, cpu.io.ADDR.getWidth bits)
+
+    // Connect CPU outputs to ROM inputs
+    vga.io.bus.AS    := cpu.io.AS
+    vga.io.bus.UDS   := cpu.io.UDS
+    vga.io.bus.LDS   := cpu.io.LDS
+    vga.io.bus.RW    := cpu.io.RW
+    vga.io.bus.ADDR  := cpu.io.ADDR
+    vga.io.bus.DATAO := cpu.io.DATAO
+
+    vga.io.sel := vgaSel
+
+    // If VGA selected, forward VGA response into CPU aggregated signals
+    when(!cpu.io.AS && vgaSel) {
+      cpuDataI := vga.io.bus.DATAI
+      cpuDtack := vga.io.bus.DTACK
+    }
+
+
     // --------------------------------
     // LED device @ 0x10000
     // --------------------------------
@@ -151,7 +147,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
     ledDev.io.sel := ledDevSel
 
-    // If RAM selected, forward RAM response into CPU aggregated signals
+    // If LED selected, forward LED response into CPU aggregated signals
     when(!cpu.io.AS && ledDevSel) {
       cpuDataI := ledDev.io.bus.DATAI
       cpuDtack := ledDev.io.bus.DTACK
@@ -175,7 +171,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
     keyDev.io.sel := keyDevSel
 
-    // If RAM selected, forward RAM response into CPU aggregated signals
+    // If KEY selected, forward KEY response into CPU aggregated signals
     when(!cpu.io.AS && keyDevSel) {
       cpuDataI := keyDev.io.bus.DATAI
       cpuDtack := keyDev.io.bus.DTACK
@@ -201,7 +197,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
     uartDev.io.sel := uartDevSel
 
-    // If RAM selected, forward RAM response into CPU aggregated signals
+    // If UART selected, forward UART response into CPU aggregated signals
     when(!cpu.io.AS && uartDevSel) {
       cpuDataI := uartDev.io.bus.DATAI
       cpuDtack := uartDev.io.bus.DTACK
