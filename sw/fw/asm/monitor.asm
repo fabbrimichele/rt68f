@@ -243,15 +243,20 @@ LOA_CMD_DONE:
 
 ; TODO: Load - Add checksum at the end
 ; TODO: Load - Print the address where the program has been loaded
-
+;              or save it and change RUN to start from there
 
 RUN_CMD:
     ; JUMP to the specified address
     JMP     (A1)
 
 FBCLR_CMD:
-    ; TODO: clear framebuffer
-    BRA     NEW_CMD
+    LEA     FB_START,A0         ; Framebuffer pointer
+    MOVE.W  #((FB_LEN/2)-1),D1  ; Framebuffer size in words - 1 (DBRA)
+    MOVE.W  #0,D0
+FBCLR_CMD_LOOP:
+    MOVE.W  D0,(A0)+            ; Clear FB
+    DBRA    D1,FBCLR_CMD_LOOP   ; Decrement D1, if != -1 loop
+    BRA     NEW_CMD             ; Done
 
 ; ------------------------------------------------------------
 ; PARSE_DUMP: Checks for 'DUMP' and extracts address argument.
@@ -582,6 +587,9 @@ RAM_START       EQU $00004000               ; Start of RAM address
 RAM_END         EQU $00008000               ; End of RAM address (+1)
 SP_START        EQU (RAM_END-MON_MEM_LEN)   ; After SP, allocates monitor RAM
 MON_MEM_START   EQU SP_START                ;
+FB_START        EQU $00008000               ; Start of Framebuffer
+FB_END          EQU $00010000               ; End of Framebuffer (+1)
+FB_LEN          EQU (FB_END-FB_START)       ; Framebuffer length
 LED             EQU $00010000               ; LED-mapped register base address
 UART_BASE       EQU $00012000               ; UART-mapped data register address
 UART_DATA       EQU UART_BASE+0             ; UART-mapped data register address
