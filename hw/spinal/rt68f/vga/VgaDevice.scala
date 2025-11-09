@@ -76,23 +76,16 @@ case class VgaDevice() extends Component {
     val vCount = ctrl.io.vCounter
     val timings = ctrl.io.timings // Reuse the configured timing struct
 
-    // 1. Horizontal Offset: pixelX = hCount - hStart (The pixel currently being displayed)
+    // 1. Horizontal Offset: pixelX = hCount - hStart - 1
+    // The pixel currently being displayed plus compensation for mem read
     val hStartValue = timings.h.colorStart.resize(12 bits)
     val pixelX = Mux(
-      hCount >= hStartValue,
-      hCount - hStartValue,
-      U(0, 12 bits)
-    )
-
-    // 2. LATENCY COMPENSATION: pixelX_command = pixelX - 1 (Command address for next cycle)
-    // The command is based on the address one pixel *before* the current display position.
-    val pixelX_command = Mux(
       hCount > hStartValue,
       hCount - hStartValue - 1,
       U(0, 12 bits)
     )
 
-    // 3. Vertical Offset: pixelY_raw = vCount - vStart
+    // 3. Vertical Offset: pixelY = vCount - vStart
     val vStartValue = timings.v.colorStart.resize(12 bits)
     val pixelY = Mux(
       vCount >= vStartValue,
@@ -110,8 +103,8 @@ case class VgaDevice() extends Component {
       pixelY
     )
 
-    // 6. VRAM X Word Address: (pixelX_command) divided by 16
-    val vramXWord = pixelX_command(pixelX_command.high downto 4)
+    // 6. VRAM X Word Address: (pixelX) divided by 16
+    val vramXWord = pixelX(pixelX.high downto 4)
 
     // 7. Linear Address = (Y_clamped * 40) + X_word
     val lineLength = U(640 / 16)    // 40 words per line
@@ -125,10 +118,8 @@ case class VgaDevice() extends Component {
     )
 
     // 8. Pixel Bit Index: lower 4 bits of the *displayed* pixel (pixelX).
-    // TODO: read is one clock late, perhaps a better approach would be
-    //       anticipate the read instead of delay the pixel shift.
-    val pixelBitIndex = pixelX(3 downto 0) - 1 // read is one clock late
-    val shiftAmount = U(15) - pixelBitIndex
+    val pixelBitIndex = pixelX(3 downto 0) // read is one clock late
+    val shiftAmount = U(15) - pixelBitIndex // MSB first
     val pixelDataBit = (wordData.asUInt >> shiftAmount).lsb
 
     ctrl.io.rgb.r := 0

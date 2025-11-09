@@ -1,10 +1,9 @@
 package rt68f.vga
 
-import spinal.core.in.Bool
 import spinal.core.{Area, Bool, Bundle, Component, False, IntToBuilder, Reg, RegInit, True, UInt, in, out, when}
 import spinal.lib.graphic.{Rgb, RgbConfig}
 import spinal.lib.graphic.vga.{Vga, VgaTimings, VgaTimingsHV}
-import spinal.lib.{Fragment, master, slave}
+import spinal.lib._
 
 import scala.language.postfixOps
 
