@@ -129,8 +129,11 @@ case class VgaDevice() extends Component {
     )
 
     // 8. Pixel Bit Index: lower 4 bits of the *displayed* pixel (pixelX).
-    val pixelBitIndex = pixelX(3 downto 0) - 2 // - 2 is a hack
-    val pixelDataBit = (wordData.asUInt >> pixelBitIndex).lsb
+    // TODO: read is one clock late, perhaps a better approach would be
+    //       anticipate the read instead of delay the pixel shift.
+    val pixelBitIndex = pixelX(3 downto 0) - 1 // read is one clock late
+    val shiftAmount = U(15) - pixelBitIndex
+    val pixelDataBit = (wordData.asUInt >> shiftAmount).lsb
 
     ctrl.io.rgb.r := 0
     ctrl.io.rgb.g := 0

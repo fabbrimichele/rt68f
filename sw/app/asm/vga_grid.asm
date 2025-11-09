@@ -21,12 +21,15 @@ HR_GRD_LOOP:
 
     ; Vertical grid
     MOVE.W  #400,D0         ; Line length (in pixels)
-    MOVE.W  #48,D1          ; Number of lines - 1
+    MOVE.W  #$8000,D1       ; Pattern
+    MOVE.W  #38,D2          ; Number of lines - 1
     LEA     VGA,A0          ; First column
 VR_GRD_LOOP:
     BSR     VER_LINE
     ADD.W   #2,A0           ; Next line after 16 lines (here we count in bytes not words)
-    DBRA    D1,VR_GRD_LOOP  ; Decrease, check and branch
+    DBRA    D2,VR_GRD_LOOP  ; Decrease, check and branch
+    MOVE.W  #$0001,D1       ; Last line pattern (it's the last column of the word)
+    BSR     VER_LINE
 
 END:
     TRAP    #14
@@ -48,11 +51,11 @@ HOR_LINE_LOOP:
 ; Input:
 ; A0 start address
 ; D0 line length
-; D2 pattern
+; D1 pattern
 VER_LINE:
     MOVEM.L D0/A0,-(SP)
 VER_LINE_LOOP:
-    OR.W    #$8000,(A0)     ; Pixel in pos 1
+    OR.W    D1,(A0)         ; Draw pattern
     ADD.L   #80,A0          ; Next line
     DBRA    D0,VER_LINE_LOOP
     MOVEM.L (SP)+,D0/A0     ; Done

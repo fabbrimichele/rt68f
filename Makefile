@@ -75,6 +75,16 @@ blinker.bin:
 	HEADER_HEX="00000900"$$HEX_SIZE; \
 	echo "$$HEADER_HEX" | xxd -r -p | cat - target/app/blinker_raw.bin > target/app/blinker.bin
 
+
+# TODO: make it generic
+build-and-run: apps
+	printf "LOAD\r" > /dev/ttyUSB2
+	sleep 0.5
+	cat target/app/vga_grid.bin > /dev/ttyUSB2
+	sleep 0.5
+	printf "RUN 4100\r" > /dev/ttyUSB2
+
+
 # 'apps' target: invoked specifically to build all application binaries
 apps: $(BIN_APP_TARGETS)
 
