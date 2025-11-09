@@ -106,9 +106,8 @@ case class VgaDevice() extends Component {
     )
 
     // 5. Vertical Clamp: Ensure the address does not exceed VRAM height (200 lines).
-    val vramHeight = U(400, pixelY.getWidth bits)
     val vramLastLine = U(399, pixelY.getWidth bits)
-    val pastVramLines = pixelY >= vramHeight
+    val pastVramLines = pixelY > vramLastLine
 
     val vramY = Mux(
       pastVramLines,
