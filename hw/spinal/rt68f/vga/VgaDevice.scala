@@ -26,11 +26,11 @@ case class VgaDevice() extends Component {
   val mem = Mem(Bits(16 bits), size)
 
   // Registers
-  // confReg(0): background color
-  // confReg(1): foreground color
-  val confReg = Vec.fill(2)(Reg(UInt(16 bits)))
-  confReg(0).init(U(0x0000))  // Initialize background color to black
-  confReg(1).init(U(0x0FFF))  // Initialize foreground color to white
+  // ctrlReg(0): background color
+  // ctrlReg(1): foreground color
+  val ctrlReg = Vec.fill(2)(Reg(UInt(16 bits)))
+  ctrlReg(0).init(U(0x0000))  // Initialize background color to black
+  ctrlReg(1).init(U(0x0FFF))  // Initialize foreground color to white
 
   // ------------ 68000 BUS side ------------
   // Default response
@@ -44,11 +44,11 @@ case class VgaDevice() extends Component {
 
     when(io.bus.RW) {
       // Read
-      io.bus.DATAI := confReg(wordAddr).asBits
+      io.bus.DATAI := ctrlReg(wordAddr).asBits
     } otherwise {
       // Write
       // TODO: handle UDS/LDS
-      confReg(wordAddr) := io.bus.DATAO.asUInt
+      ctrlReg(wordAddr) := io.bus.DATAO.asUInt
     }
   }
 
@@ -154,13 +154,13 @@ case class VgaDevice() extends Component {
     // TODO: make a function to map register to Rgb class
     when(ctrl.io.vga.colorEn && !pastVramLines) {
       when(pixelDataBit) {
-        ctrl.io.rgb.r := confReg(1)(11 downto 8)
-        ctrl.io.rgb.g := confReg(1)(7 downto 4)
-        ctrl.io.rgb.b := confReg(1)(3 downto 0)
+        ctrl.io.rgb.r := ctrlReg(1)(11 downto 8)
+        ctrl.io.rgb.g := ctrlReg(1)(7 downto 4)
+        ctrl.io.rgb.b := ctrlReg(1)(3 downto 0)
       } otherwise {
-        ctrl.io.rgb.r := confReg(0)(11 downto 8)
-        ctrl.io.rgb.g := confReg(0)(7 downto 4)
-        ctrl.io.rgb.b := confReg(0)(3 downto 0)
+        ctrl.io.rgb.r := ctrlReg(0)(11 downto 8)
+        ctrl.io.rgb.g := ctrlReg(0)(7 downto 4)
+        ctrl.io.rgb.b := ctrlReg(0)(3 downto 0)
       }
     }
   }

@@ -112,8 +112,8 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val vga = VgaDevice()
     io.vga <> vga.io.vga
 
-    val vgaSel = cpu.io.ADDR >= U(0x8000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0xFFFF, cpu.io.ADDR.getWidth bits)
-    val vgaRegSel = cpu.io.ADDR >= U(0x13000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x13004, cpu.io.ADDR.getWidth bits)
+    val vgaFbSel = cpu.io.ADDR >= U(0x8000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0xFFFF, cpu.io.ADDR.getWidth bits)
+    val vgaCtrlSel = cpu.io.ADDR >= U(0x13000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x13004, cpu.io.ADDR.getWidth bits)
 
     // Connect CPU outputs to ROM inputs
     vga.io.bus.AS    := cpu.io.AS
@@ -123,11 +123,11 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     vga.io.bus.ADDR  := cpu.io.ADDR
     vga.io.bus.DATAO := cpu.io.DATAO
 
-    vga.io.sel := vgaSel
-    vga.io.regSel := vgaRegSel
+    vga.io.sel := vgaFbSel
+    vga.io.regSel := vgaCtrlSel
 
     // If VGA selected, forward VGA response into CPU aggregated signals
-    when(!cpu.io.AS && (vgaSel || vgaRegSel)) {
+    when(!cpu.io.AS && (vgaFbSel || vgaCtrlSel)) {
       cpuDataI := vga.io.bus.DATAI
       cpuDtack := vga.io.bus.DTACK
     }
