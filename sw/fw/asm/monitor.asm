@@ -2,8 +2,8 @@
 ; 68000 Vector Table (first 32 entries = 0x0000-0x007C)
 ; Each vector is 32 bits (long)
 ; ------------------------------
-    ORG    $0000        ; Start of memory
-    DC.L   RAM_END          ; 0: Initial Stack Pointer (SP)
+    ORG    $0000            ; Start of memory
+    DC.L   SP_START         ; 0: Initial Stack Pointer (SP)
     DC.L   START            ; 1: Reset vector (PC start address)
     DC.L   $00000000        ; 2: Bus Error
     DC.L   $00000000        ; 3: Address Error

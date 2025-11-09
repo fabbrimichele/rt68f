@@ -68,24 +68,17 @@ VER_LINE_LOOP:
 FILL:
     MOVEM.L D0/D1/A0,-(SP)
     LEA     VGA,A0
-    MOVE.W  #(4000-1),D1    ; Video memory length - 1
+    MOVE.W  #(VGA_LEN-1),D1     ; Video memory length - 1
 FILL_LOOP:
-    MOVE.W  D0,(A0)+        ; write solid line (16 pixels)
+    MOVE.W  D0,(A0)+            ; write solid line (16 pixels)
     DBRA    D1,FILL_LOOP
 
-    MOVEM.L (SP)+,D0/D1/A0     ; Done
+    MOVEM.L (SP)+,D0/D1/A0      ; Done
     RTS
-
-
-; TODO: write a full vertical grid
-; TODO: change the monitor to store private data at the end of RAM and move
-;       the stack pointer below, this way programs can start from RAM start
-;       and don't need to be moved if the Monitor requires more RAM.
-
-
 
     ; ===========================
     ; Constants
     ; ===========================
 DLY_VAL     EQU     1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
-VGA         EQU     $00008000   ; VGA framebuffer base address (32KB)
+VGA         EQU     $00008000   ; VGA framebuffer base address
+VGA_LEN     EQU     $4000       ; VGA framebuffer length in words

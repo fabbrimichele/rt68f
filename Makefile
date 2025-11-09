@@ -82,7 +82,7 @@ build-and-run: apps
 	sleep 0.5
 	cat target/app/vga_grid.bin > /dev/ttyUSB2
 	sleep 0.5
-	printf "RUN 4100\r" > /dev/ttyUSB2
+	printf "RUN 4000\r" > /dev/ttyUSB2
 
 
 # 'apps' target: invoked specifically to build all application binaries
