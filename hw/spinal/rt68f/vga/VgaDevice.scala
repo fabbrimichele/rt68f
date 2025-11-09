@@ -2,7 +2,7 @@ package rt68f.vga
 
 import rt68f.core.M68kBus
 import rt68f.vga.VgaDevice.rgbConfig
-import spinal.core.{Area, Bits, Bool, Bundle, Cat, ClockDomain, ClockingArea, Component, False, IntToBuilder, Mem, Mux, Reg, RegInit, True, U, UInt, in, log2Up, when}
+import spinal.core._
 import spinal.lib.graphic.RgbConfig
 import spinal.lib.graphic.vga.{Vga, VgaTimingsHV}
 import spinal.lib.{master, slave}
@@ -74,12 +74,7 @@ case class VgaDevice() extends Component {
     // --- Access Exposed Counters and Timings ---
     val hCount = ctrl.io.hCounter
     val vCount = ctrl.io.vCounter
-    val colorEn = ctrl.io.vga.colorEn
     val timings = ctrl.io.timings // Reuse the configured timing struct
-
-    // --- VRAM Read Logic (Offset, Clamped, and Latency Compensated) ---
-    val addressWidth = log2Up(size) // 13 bits (for 8192 words)
-    val lineLength = U(640 / 16)    // 40 words per line
 
     // 1. Horizontal Offset: pixelX = hCount - hStart (The pixel currently being displayed)
     val hStartValue = timings.h.colorStart.resize(12 bits)
@@ -119,6 +114,8 @@ case class VgaDevice() extends Component {
     val vramXWord = pixelX_command(pixelX_command.high downto 4)
 
     // 7. Linear Address = (Y_clamped * 40) + X_word
+    val lineLength = U(640 / 16)    // 40 words per line
+    val addressWidth = log2Up(size) // 13 bits (for 8192 words)
     val vramAddress = ((vramY * lineLength) + vramXWord).resize(addressWidth)
 
     // VRAM Read: mem.readSync handles the 1-cycle data delay.
