@@ -151,17 +151,10 @@ case class VgaDevice() extends Component {
     ctrl.io.rgb.clear()
 
     when(ctrl.io.vga.colorEn && !pastVramLines) {
-      when(pixelDataBit) {
-        setIoRgb(ctrlReg(1))
-      } otherwise {
-        setIoRgb(ctrlReg(0))
-      }
-    }
-
-    def setIoRgb(color: UInt): Unit = {
-      ctrl.io.rgb.r := color(11 downto 8)
-      ctrl.io.rgb.g := color(7 downto 4)
-      ctrl.io.rgb.b := color(3 downto 0)
+      val selectedColor = ctrlReg(pixelDataBit.asUInt)
+      ctrl.io.rgb.r := selectedColor(11 downto 8)
+      ctrl.io.rgb.g := selectedColor(7 downto 4)
+      ctrl.io.rgb.b := selectedColor(3 downto 0)
     }
   }
 }
