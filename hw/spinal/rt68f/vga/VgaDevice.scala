@@ -15,19 +15,44 @@ object VgaDevice {
 
 case class VgaDevice() extends Component {
   val io = new Bundle {
-    val bus   = slave(M68kBus())
-    val sel   = in Bool() // chip select from decoder
-    val vga = master(Vga(VgaDevice.rgbConfig))
+    val bus     = slave(M68kBus())
+    val sel     = in Bool() // memory select from decoder
+    val regSel  = in Bool() // registry select from decoder
+    val vga     = master(Vga(VgaDevice.rgbConfig))
   }
 
+  // Frame buffer
   val size = 32768 / 2  // 32KB = 640x400, 1 bit color
   val mem = Mem(Bits(16 bits), size)
+
+  // Registers
+  // confReg(0): background color
+  // confReg(1): foreground color
+  val confReg = Vec.fill(2)(Reg(UInt(16 bits)))
+  confReg(0).init(U(0x0000))  // Initialize background color to black
+  confReg(1).init(U(0x0FFF))  // Initialize foreground color to white
 
   // ------------ 68000 BUS side ------------
   // Default response
   io.bus.DATAI := 0
   io.bus.DTACK := True
 
+  // Registers read/write
+  when(!io.bus.AS && io.regSel) {
+    io.bus.DTACK := False // acknowledge access (active low)
+    val wordAddr = io.bus.ADDR(1 downto 1)
+
+    when(io.bus.RW) {
+      // Read
+      io.bus.DATAI := confReg(wordAddr).asBits
+    } otherwise {
+      // Write
+      // TODO: handle UDS/LDS
+      confReg(wordAddr) := io.bus.DATAO.asUInt
+    }
+  }
+
+  // Frame buffer read/write
   when(!io.bus.AS && io.sel) {
     io.bus.DTACK := False // active
     val wordAddr = io.bus.ADDR(log2Up(size) downto 1)
@@ -126,10 +151,17 @@ case class VgaDevice() extends Component {
     ctrl.io.rgb.g := 0
     ctrl.io.rgb.b := 0
 
-    when(ctrl.io.vga.colorEn && pixelDataBit && !pastVramLines) {
-      ctrl.io.rgb.r := 15
-      ctrl.io.rgb.g := 15
-      ctrl.io.rgb.b := 15
+    // TODO: make a function to map register to Rgb class
+    when(ctrl.io.vga.colorEn && !pastVramLines) {
+      when(pixelDataBit) {
+        ctrl.io.rgb.r := confReg(1)(11 downto 8)
+        ctrl.io.rgb.g := confReg(1)(7 downto 4)
+        ctrl.io.rgb.b := confReg(1)(3 downto 0)
+      } otherwise {
+        ctrl.io.rgb.r := confReg(0)(11 downto 8)
+        ctrl.io.rgb.g := confReg(0)(7 downto 4)
+        ctrl.io.rgb.b := confReg(0)(3 downto 0)
+      }
     }
   }
 }
