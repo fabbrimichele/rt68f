@@ -141,6 +141,11 @@ PROCESS_CMD:
     BTST    #0,D0
     BNE     RUN_CMD         ; D0.0 = 1 execute RUN
 
+    ; Parse FBCLR
+    BSR     PARSE_FBCLR
+    BTST    #0,D0
+    BNE     FBCLR_CMD       ; D0.0 = 1 execute FBCLR
+
 UNKNOWN_CMD:
     ; Print error message
     LEA     MSG_UNKNOWN,A0
@@ -244,6 +249,10 @@ RUN_CMD:
     ; JUMP to the specified address
     JMP     (A1)
 
+FBCLR_CMD:
+    ; TODO: clear framebuffer
+    BRA     NEW_CMD
+
 ; ------------------------------------------------------------
 ; PARSE_DUMP: Checks for 'DUMP' and extracts address argument.
 ; Output
@@ -327,10 +336,6 @@ PARSE_HELP:
     BTST    #0,D0               ; D0.0 equals 0, failure
     BEQ     PRS_HLP_DONE        ; Exit on failure
 
-    ;JSR     CHECK_SEP           ; Check for separator
-    ;BTST    #0,D0               ; D0.0 equals 0, failure
-    ;BEQ     PRS_HLP_DONE        ; Exit on failure
-
     JSR     CHECK_TRAIL         ; Check for trailing junk
                                 ; D0.0 returned with result flag
 PRS_HLP_DONE:
@@ -390,6 +395,27 @@ PARSE_RUN:
 PRS_RUN_DONE:
     MOVEM.L (SP)+,A0
     RTS
+
+; ------------------------------------------------------------
+; PARSE_FBCLR: Checks for 'FBCLR', no arguments
+; Output
+; - D0.0: 1 if 'FBCLR' found and address parsed, 0 otherwise.
+; ------------------------------------------------------------
+PARSE_FBCLR:
+    MOVEM.L A0,-(SP)
+    LEA     FBCLR_STR,A1
+    LEA     IN_BUF,A0
+
+    JSR     CHECK_CMD           ; Chek expected command
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     PRS_FBCLR_DONE      ; Exit on failure
+
+    JSR     CHECK_TRAIL         ; Check for trailing junk
+
+PRS_FBCLR_DONE:
+    MOVEM.L (SP)+,A0
+    RTS
+
 
 ; ------------------------------------------------------------
 ; CHECK_CMD
@@ -530,6 +556,8 @@ MSG_UNKNOWN     DC.B    'Error: Unknown command or syntax',LF,NUL
 MSG_HELP        DC.B    'DUMP  <ADDR>         - Dump from ADDR (HEX)',LF
                 DC.B    'WRITE <ADDR> <VALUE> - Write to ADDR (HEX) the VALUE (HEX)',LF
                 DC.B    'LOAD                 - Load from UART to memory',LF
+                DC.B    'RUN   <ADDR>         - Run program at ADDR (HEX)',LF
+                DC.B    'FBCLR                - Clear framebuffer',LF
                 DC.B    'HELP                 - Print this list of commands',LF
                 DC.B    NUL
 MSG_LOADING     DC.B    'Loading...',LF,NUL
@@ -542,6 +570,7 @@ WRITE_STR   DC.B    'WRITE',NUL
 HELP_STR    DC.B    'HELP',NUL
 LOAD_STR    DC.B    'LOAD',NUL
 RUN_STR     DC.B    'RUN',NUL,NUL
+FBCLR_STR   DC.B    'FBCLR',NUL
 
 ; ===========================
 ; Constants
