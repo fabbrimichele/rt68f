@@ -4,7 +4,7 @@ import rt68f.core.M68kBus
 import rt68f.vga.VgaDevice.rgbConfig
 import spinal.core._
 import spinal.lib.graphic.RgbConfig
-import spinal.lib.graphic.vga.{Vga, VgaTimingsHV}
+import spinal.lib.graphic.vga.Vga
 import spinal.lib.{master, slave}
 
 import scala.language.postfixOps
