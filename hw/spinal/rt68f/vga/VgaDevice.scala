@@ -103,11 +103,11 @@ case class VgaDevice() extends Component {
     val timings = ctrl.io.timings // Reuse the configured timing struct
 
     // 1. Horizontal Offset: pixelX = hCount - hStart - 1
-    // The pixel currently being displayed plus compensation for mem read
+    // The pixel currently being displayed plus compensation for mem read (1 clock cycle)
     val hStartValue = timings.h.colorStart.resize(12 bits)
     val pixelX = Mux(
-      hCount > hStartValue,
-      hCount - hStartValue - 1,
+      hCount >= hStartValue - 1,
+      hCount - hStartValue,
       U(0, 12 bits)
     )
 
@@ -143,10 +143,20 @@ case class VgaDevice() extends Component {
       clockCrossing = true
     )
 
-    // 8. Pixel Bit Index: lower 4 bits of the *displayed* pixel (pixelX).
+    val shiftRegister = Reg(Bits(16 bits)) init(0)
+
     val pixelBitIndex = pixelX(3 downto 0) // read is one clock late
-    val shiftAmount = U(15) - pixelBitIndex // MSB first
-    val pixelDataBit = (wordData.asUInt >> shiftAmount).lsb
+    when (pixelBitIndex === 1) {
+      // Copy to the register 1 clock later to
+      // compensate for the RAM, perhaps it would
+      // be a better idea to have 2 pixelX,
+      // one for the RAM and one for the pixels
+      shiftRegister := wordData
+    } otherwise {
+      shiftRegister := shiftRegister |<< 1
+    }
+
+    val pixelDataBit = shiftRegister.msb
 
     ctrl.io.rgb.clear()
 
