@@ -145,7 +145,7 @@ case class VgaDevice() extends Component {
 
     val shiftRegister = Reg(Bits(16 bits)) init(0)
 
-    val pixelBitIndex = pixelX(3 downto 0) // read is one clock late
+    val pixelBitIndex = pixelX(3 downto 0)
     when (pixelBitIndex === 1) {
       // Copy to the register 1 clock later to
       // compensate for the RAM, perhaps it would
