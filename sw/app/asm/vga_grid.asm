@@ -14,21 +14,22 @@ START:
     LEA     VGA,A0
 HR_GRD_LOOP:
     BSR     HOR_LINE
-    ADD.W   #(80*16),A0     ; Next line after 16 lines (here we count bytes not words)
+    ADD.L   #(80*16),A0     ; Next line after 16 lines (here we count bytes not words)
     DBRA    D1,HR_GRD_LOOP  ; Decrease, check and branch
     LEA     (80*399+VGA),A0 ; Last line (at 399)
     BSR     HOR_LINE
 
     ; Vertical grid
-    MOVE.W  #400,D0         ; Line length (in pixels)
+    MOVE.W  #399,D0         ; Line length (in pixels)
     MOVE.W  #$8000,D1       ; Pattern
-    MOVE.W  #38,D2          ; Number of lines - 1
+    MOVE.W  #39,D2          ; Number of lines - 1
     LEA     VGA,A0          ; First column
 VR_GRD_LOOP:
     BSR     VER_LINE
-    ADD.W   #2,A0           ; Next line after 16 lines (here we count in bytes not words)
+    ADD.L   #2,A0           ; Next line after 16 lines (here we count in bytes not words)
     DBRA    D2,VR_GRD_LOOP  ; Decrease, check and branch
-    MOVE.W  #$0001,D1       ; Last line pattern (it's the last column of the word)
+    SUB.L   #2,A0           ; Last line pattern (it's the last column of the word)
+    MOVE.W  #$0001,D1
     BSR     VER_LINE
 
 END:
