@@ -24,7 +24,7 @@ import scala.language.postfixOps
  *   0x00010000              : LED peripheral (lower 4 bits drive LEDs)
  *   0x00011000              : KEY peripheral (lower 4 bits reflect key inputs)
  *   0x00012000              : UART (base)
- *   0x00013000              ; VGA configuration (TODO: rename to control?)
+ *   0x00013000              ; VGA Control (color palette)
  */
 
 //noinspection TypeAnnotation
@@ -113,7 +113,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     io.vga <> vga.io.vga
 
     val vgaFbSel = cpu.io.ADDR >= U(0x8000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0xFFFF, cpu.io.ADDR.getWidth bits)
-    val vgaCtrlSel = cpu.io.ADDR >= U(0x13000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x13004, cpu.io.ADDR.getWidth bits)
+    val vgaCtrlSel = cpu.io.ADDR >= U(0x13000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x13008, cpu.io.ADDR.getWidth bits)
 
     // Connect CPU outputs to ROM inputs
     vga.io.bus.AS    := cpu.io.AS

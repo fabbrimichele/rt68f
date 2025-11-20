@@ -26,12 +26,16 @@ case class VgaDevice() extends Component {
   val mem = Mem(Bits(16 bits), size)
 
   // Registers
-  // ctrlReg(0): background color
-  // ctrlReg(1): foreground color
+  // ctrlReg(0): color 0 (background color)
+  // ctrlReg(1): color 1 (foreground color)
+  // ctrlReg(2): color 2
+  // ctrlReg(3): color 3
   val regWidth = 16 bits
-  val ctrlReg = Vec.fill(2)(Reg(UInt(regWidth)))
+  val ctrlReg = Vec.fill(4)(Reg(UInt(regWidth)))
   ctrlReg(0).init(U(0x0000))  // Initialize background color to black
   ctrlReg(1).init(U(0x0FFF))  // Initialize foreground color to white
+  ctrlReg(2).init(U(0x0F00))  // Initialize color 2 to red
+  ctrlReg(3).init(U(0x00F0))  // Initialize color 3 to green
 
   // ------------ 68000 BUS side ------------
   // Default response
@@ -41,7 +45,7 @@ case class VgaDevice() extends Component {
   // Registers read/write
   when(!io.bus.AS && io.regSel) {
     io.bus.DTACK := False // acknowledge access (active low)
-    val wordAddr = io.bus.ADDR(1 downto 1)
+    val wordAddr = io.bus.ADDR(2 downto 1)
 
     when(io.bus.RW) {
       // Read
@@ -119,7 +123,8 @@ case class VgaDevice() extends Component {
     )
 
     // 5. Vertical Clamp: Ensure the address does not exceed VRAM height (200 lines).
-    val vramLastLine = U(399, pixelY.getWidth bits)
+    //val vramLastLine = U(399, pixelY.getWidth bits)
+    val vramLastLine = U(199, pixelY.getWidth bits)
     val pastVramLines = pixelY > vramLastLine
 
     val vramY = Mux(
@@ -131,10 +136,12 @@ case class VgaDevice() extends Component {
     // 6. VRAM X Word Address: (pixelX) divided by 16
     //    RAM needs to be read one pixel earlier to
     //    compensate for the read requiring one clock.
-    val vramXWord = (pixelX + 1)(pixelX.high downto 4)
+    //val vramXWord = (pixelX + 1)(pixelX.high downto 4) // 640x400x2 = pixel/16 -> 1 bits per pixel, 1 word = 16 pixels
+    val vramXWord = (pixelX + 1)(pixelX.high downto 2) // 640x200x4 = pixelX/8 -> 2 bits per pixel, 1 word = 8 pixels
 
     // 7. Linear Address = (Y_clamped * 40) + X_word
-    val lineLength = U(640 / 16)    // 40 words per line
+    //val lineLength = U(640 / 16)    // 640x400, 2 colors = 16 pixels per word = 40 words per line
+    val lineLength = U(640 / 8)    // 640x200, 4 colors = 8 pixels per word = 80 words per line
     val addressWidth = log2Up(size) // 13 bits (for 8192 words)
     val vramAddress = ((vramY * lineLength) + vramXWord).resize(addressWidth)
 
@@ -146,14 +153,15 @@ case class VgaDevice() extends Component {
 
     val shiftRegister = Reg(Bits(16 bits)) init(0)
 
-    val pixelBitIndex = pixelX(3 downto 0)
+    // val pixelBitIndex = pixelX(3 downto 0) // 640x400, 2 colors
+    val pixelBitIndex = pixelX(1 downto 0) // 640x200, 4 colors
     when (pixelBitIndex === 0) {
       shiftRegister := wordData
     } otherwise {
-      shiftRegister := shiftRegister |<< 1
+      shiftRegister := shiftRegister |<< 2
     }
 
-    val pixelDataBit = shiftRegister.msb
+    val pixelDataBit = shiftRegister(15 downto 14)
 
     ctrl.io.rgb.clear()
 

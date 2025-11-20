@@ -83,8 +83,7 @@ blinker.bin:
 build-and-run: apps
 	printf "LOAD\r" > /dev/ttyUSB2
 	sleep 0.5
-	#cat target/app/vga_grid.bin > /dev/ttyUSB2
-	cat target/app/vga_image.bin > /dev/ttyUSB2
+	cat target/app/vga4col_grid.bin > /dev/ttyUSB2
 	sleep 0.5
 	printf "RUN 4000\r" > /dev/ttyUSB2
 
@@ -96,6 +95,14 @@ build-img-bin:
 	dd if=$(TARGET_APP_DIR)/img.tmp bs=1 count=32000 > $(TARGET_APP_DIR)/img.bin
 	HEADER_HEX="$(VGA_ADDRESS)00007D00"; \
 	echo "$$HEADER_HEX" | xxd -r -p | cat - $(TARGET_APP_DIR)/img.bin > $(TARGET_APP_DIR)/img_with_header.bin
+
+build-img4col-bin:
+	@mkdir -p $(TARGET_APP_DIR)
+	convert $(ASM_APP_DIR)/img4col.png -depth 2 -colors 4 -compress none GRAY:$(TARGET_APP_DIR)/img.tmp
+	dd if=$(TARGET_APP_DIR)/img.tmp bs=1 count=32000 > $(TARGET_APP_DIR)/img.bin
+	HEADER_HEX="$(VGA_ADDRESS)00007D00"; \
+	echo "$$HEADER_HEX" | xxd -r -p | cat - $(TARGET_APP_DIR)/img.bin > $(TARGET_APP_DIR)/img_with_header.bin
+
 
 load-img-bin:
 	printf "FBCLR\r" > /dev/ttyUSB2
