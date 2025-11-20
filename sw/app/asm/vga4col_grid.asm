@@ -9,7 +9,8 @@ START:
     BSR     FILL            ; Clear screen
 
     LEA     VGA,A0
-    MOVE.W  #39,D0          ; Line length
+    MOVE.W  #80,D0          ; Line length
+    MOVE.W  #$FA55,D5       ; Line pattern 2 bits per pixel
     BSR     HOR_LINE
 
     JMP     END
@@ -42,14 +43,15 @@ END:
     TRAP    #14
 
 
-; Draw a horizontal line (in steps of 16 pixels)
+; Draw a horizontal line (in steps of 8 pixels, 2 bits per pixel)
 ; Input:
 ; A0 start address
-; D0 (line length / 16) - 1
+; D0 (line length / 8) - 1
+; D5 pattern 2 bits per pixel
 HOR_LINE:
     MOVEM.L D0/A0,-(SP)
 HOR_LINE_LOOP:
-    MOVE.W  #$FFFF,(A0)+    ; write solid line (16 pixels)
+    MOVE.W  D5,(A0)+    ; write solid line (16 pixels)
     DBRA    D0,HOR_LINE_LOOP
     MOVEM.L (SP)+,D0/A0     ; Done
     RTS

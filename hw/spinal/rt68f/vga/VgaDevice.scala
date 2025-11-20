@@ -137,7 +137,7 @@ case class VgaDevice() extends Component {
     //    RAM needs to be read one pixel earlier to
     //    compensate for the read requiring one clock.
     //val vramXWord = (pixelX + 1)(pixelX.high downto 4) // 640x400x2 = pixel/16 -> 1 bits per pixel, 1 word = 16 pixels
-    val vramXWord = (pixelX + 1)(pixelX.high downto 2) // 640x200x4 = pixelX/8 -> 2 bits per pixel, 1 word = 8 pixels
+    val vramXWord = (pixelX + 1)(pixelX.high downto 3) // 640x200x4 = pixelX/8 -> 2 bits per pixel, 1 word = 8 pixels
 
     // 7. Linear Address = (Y_clamped * 40) + X_word
     //val lineLength = U(640 / 16)    // 640x400, 2 colors = 16 pixels per word = 40 words per line
@@ -153,8 +153,8 @@ case class VgaDevice() extends Component {
 
     val shiftRegister = Reg(Bits(16 bits)) init(0)
 
-    // val pixelBitIndex = pixelX(3 downto 0) // 640x400, 2 colors
-    val pixelBitIndex = pixelX(1 downto 0) // 640x200, 4 colors
+    //val pixelBitIndex = pixelX(3 downto 0) // 640x400, 2 colors -> 16 pixels per word
+    val pixelBitIndex = pixelX(2 downto 0) // 640x200, 4 colors -> 8 pixels per word
     when (pixelBitIndex === 0) {
       shiftRegister := wordData
     } otherwise {
