@@ -21,6 +21,10 @@ case class VgaDevice() extends Component {
     val vga     = master(Vga(VgaDevice.rgbConfig))
   }
 
+  // TODO: add a CTRL register to switch between:
+  //  - Actual resolution: 640x400 2 colors and 640x200 4 colors (consider also 320x200)
+  //  - Monitor resolution: 640x480 (no black bands) and 640x400
+
   // Frame buffer
   val size = 32768 / 2  // 32KB = 640x400, 1 bit color
   val mem = Mem(Bits(16 bits), size)
@@ -124,13 +128,14 @@ case class VgaDevice() extends Component {
 
     // 5. Vertical Clamp: Ensure the address does not exceed VRAM height (200 lines).
     //val vramLastLine = U(399, pixelY.getWidth bits)
-    val vramLastLine = U(199, pixelY.getWidth bits)
+    val vramLastLine = U(399, pixelY.getWidth bits)
     val pastVramLines = pixelY > vramLastLine
 
     val vramY = Mux(
       pastVramLines,
       vramLastLine,
-      pixelY
+      //pixelY
+      pixelY(11 downto 1)
     )
 
     // 6. VRAM X Word Address: (pixelX) divided by 16
