@@ -27,7 +27,7 @@ case class VgaDevice() extends Component {
   //  - Actual resolution: 640x400 2 colors and 640x200 4 colors (consider also 320x200)
   //  - Monitor resolution: 640x480 (no black bands) and 640x400
 
-  // Frame buffer
+  // Framebuffer
   val size = 32768 / 2  // 32KB = 640x400, 1 bit color
   val mem = Mem(Bits(16 bits), size)
 
@@ -36,11 +36,15 @@ case class VgaDevice() extends Component {
   // palette(1): color 1 (foreground color)
   // palette(2): color 2
   // palette(3): color 3
+  // TODO: use 12 bits
   val palette = Vec.fill(4)(Reg(UInt(16 bits)))
   palette(0).init(U(0x0000))  // Initialize background color to black
   palette(1).init(U(0x0FFF))  // Initialize foreground color to white
   palette(2).init(U(0x0F00))  // Initialize color 2 to red
   palette(3).init(U(0x00F0))  // Initialize color 3 to green
+
+  // Control register
+  val controlReg = Reg(Bits(16 bits)) init 0
 
   // ------------ 68000 BUS side ------------
   // Default response
@@ -59,6 +63,20 @@ case class VgaDevice() extends Component {
       // Write
       // TODO: handle UDS/LDS
       palette(wordAddr) := io.bus.DATAO.asUInt
+    }
+  }
+
+  // Control read/write
+  when(!io.bus.AS && io.controlSel) {
+    io.bus.DTACK := False // acknowledge access (active low)
+
+    when(io.bus.RW) {
+      // Read
+      io.bus.DATAI := controlReg
+    } otherwise {
+      // Write
+      // TODO: handle UDS/LDS
+      controlReg := io.bus.DATAO
     }
   }
 
