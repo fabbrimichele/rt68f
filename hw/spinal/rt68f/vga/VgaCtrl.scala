@@ -7,6 +7,7 @@ import spinal.lib._
 
 import scala.language.postfixOps
 
+//noinspection TypeAnnotation
 case class VgaCtrl(rgbConfig: RgbConfig, timingsWidth: Int = 12) extends Component {
   val io = new Bundle {
     val softReset   = in Bool() default(False)
