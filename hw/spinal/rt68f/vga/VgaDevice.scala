@@ -54,8 +54,8 @@ case class VgaDevice() extends Component {
   // TODO: select it from the control register
   //       Note this is probably not enough, I might need a Mux
   //       to switch between values in several places in the code
-  //val mode = VgaDevice.Modes.mode640x200x4
-  val mode = VgaDevice.Modes.mode640x400x2
+  val mode = VgaDevice.Modes.mode640x200x4
+  //val mode = VgaDevice.Modes.mode640x400x2
 
   // Framebuffer
   val size = 32768 / 2  // 32KB = 640x400, 1 bit color
