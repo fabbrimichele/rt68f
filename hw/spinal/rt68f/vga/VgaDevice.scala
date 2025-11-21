@@ -13,12 +13,13 @@ object VgaDevice {
   val rgbConfig = RgbConfig(4, 4, 4)
 }
 
+//noinspection TypeAnnotation
 case class VgaDevice() extends Component {
   val io = new Bundle {
-    val bus     = slave(M68kBus())
-    val sel     = in Bool() // memory select from decoder
-    val regSel  = in Bool() // registry select from decoder
-    val vga     = master(Vga(VgaDevice.rgbConfig))
+    val bus             = slave(M68kBus())
+    val framebufferSel  = in Bool() // framebuffer select from decoder
+    val paletteSel      = in Bool() // registry select from decoder
+    val vga             = master(Vga(VgaDevice.rgbConfig))
   }
 
   // TODO: add a CTRL register to switch between:
@@ -29,40 +30,39 @@ case class VgaDevice() extends Component {
   val size = 32768 / 2  // 32KB = 640x400, 1 bit color
   val mem = Mem(Bits(16 bits), size)
 
-  // Registers
-  // ctrlReg(0): color 0 (background color)
-  // ctrlReg(1): color 1 (foreground color)
-  // ctrlReg(2): color 2
-  // ctrlReg(3): color 3
-  val regWidth = 16 bits
-  val ctrlReg = Vec.fill(4)(Reg(UInt(regWidth)))
-  ctrlReg(0).init(U(0x0000))  // Initialize background color to black
-  ctrlReg(1).init(U(0x0FFF))  // Initialize foreground color to white
-  ctrlReg(2).init(U(0x0F00))  // Initialize color 2 to red
-  ctrlReg(3).init(U(0x00F0))  // Initialize color 3 to green
+  // Palette (implemented with registers)
+  // palette(0): color 0 (background color)
+  // palette(1): color 1 (foreground color)
+  // palette(2): color 2
+  // palette(3): color 3
+  val palette = Vec.fill(4)(Reg(UInt(16 bits)))
+  palette(0).init(U(0x0000))  // Initialize background color to black
+  palette(1).init(U(0x0FFF))  // Initialize foreground color to white
+  palette(2).init(U(0x0F00))  // Initialize color 2 to red
+  palette(3).init(U(0x00F0))  // Initialize color 3 to green
 
   // ------------ 68000 BUS side ------------
   // Default response
   io.bus.DATAI := 0
   io.bus.DTACK := True
 
-  // Registers read/write
-  when(!io.bus.AS && io.regSel) {
+  // Palette read/write
+  when(!io.bus.AS && io.paletteSel) {
     io.bus.DTACK := False // acknowledge access (active low)
     val wordAddr = io.bus.ADDR(2 downto 1)
 
     when(io.bus.RW) {
       // Read
-      io.bus.DATAI := ctrlReg(wordAddr).asBits
+      io.bus.DATAI := palette(wordAddr).asBits
     } otherwise {
       // Write
       // TODO: handle UDS/LDS
-      ctrlReg(wordAddr) := io.bus.DATAO.asUInt
+      palette(wordAddr) := io.bus.DATAO.asUInt
     }
   }
 
   // Frame buffer read/write
-  when(!io.bus.AS && io.sel) {
+  when(!io.bus.AS && io.framebufferSel) {
     io.bus.DTACK := False // active
     val wordAddr = io.bus.ADDR(log2Up(size) downto 1)
 
@@ -171,7 +171,7 @@ case class VgaDevice() extends Component {
     ctrl.io.rgb.clear()
 
     when(ctrl.io.vga.colorEn && !pastVramLines) {
-      val selectedColor = ctrlReg(pixelDataBit.asUInt)
+      val selectedColor = palette(pixelDataBit.asUInt)
       ctrl.io.rgb.r := selectedColor(11 downto 8)
       ctrl.io.rgb.g := selectedColor(7 downto 4)
       ctrl.io.rgb.b := selectedColor(3 downto 0)
