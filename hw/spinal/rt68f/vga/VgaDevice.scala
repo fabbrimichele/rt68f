@@ -17,8 +17,9 @@ object VgaDevice {
 case class VgaDevice() extends Component {
   val io = new Bundle {
     val bus             = slave(M68kBus())
-    val framebufferSel  = in Bool() // framebuffer select from decoder
-    val paletteSel      = in Bool() // palette select from decoder
+    val framebufferSel  = in Bool() // Framebuffer select from decoder
+    val paletteSel      = in Bool() // Palette select from decoder
+    val controlSel      = in Bool() // Control select from decoder // TODO: use it...
     val vga             = master(Vga(VgaDevice.rgbConfig))
   }
 

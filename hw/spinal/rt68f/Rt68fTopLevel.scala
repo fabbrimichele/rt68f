@@ -20,11 +20,12 @@ import scala.language.postfixOps
  *
  *   0x00000000 - 0x00003FFF : 16 KB ROM (16-bit words)
  *   0x00004000 - 0x00007FFF : 16 KB RAM (16-bit words)
- *   0x00008000 - 0x0000FFFF : 32 KB Video memory (16-bit words)
+ *   0x00008000 - 0x0000FFFF : 32 KB Video Framebuffer (16-bit words)
  *   0x00010000              : LED peripheral (lower 4 bits drive LEDs)
  *   0x00011000              : KEY peripheral (lower 4 bits reflect key inputs)
  *   0x00012000              : UART (base)
- *   0x00013000              ; VGA Control (color palette)
+ *   0x00013000              ; VGA Palette (4 words, it'll be 256)
+ *   0x00013100              ; VGA Control (1 word, it might increase)
  */
 
 //noinspection TypeAnnotation
@@ -114,6 +115,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
     val vgaFramebufferSel = cpu.io.ADDR >= U(0x8000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0xFFFF, cpu.io.ADDR.getWidth bits)
     val vgaPaletteSel = cpu.io.ADDR >= U(0x13000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x13008, cpu.io.ADDR.getWidth bits)
+    val vgaControlSel = cpu.io.ADDR === U(0x13100, cpu.io.ADDR.getWidth bits)
 
     // Connect CPU outputs to ROM inputs
     vga.io.bus.AS    := cpu.io.AS
@@ -125,9 +127,10 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
     vga.io.framebufferSel := vgaFramebufferSel
     vga.io.paletteSel := vgaPaletteSel
+    vga.io.controlSel := vgaControlSel
 
     // If VGA selected, forward VGA response into CPU aggregated signals
-    when(!cpu.io.AS && (vgaFramebufferSel || vgaPaletteSel)) {
+    when(!cpu.io.AS && (vgaFramebufferSel || vgaPaletteSel || vgaControlSel)) {
       cpuDataI := vga.io.bus.DATAI
       cpuDtack := vga.io.bus.DTACK
     }
