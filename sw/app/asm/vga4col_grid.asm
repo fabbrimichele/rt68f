@@ -28,6 +28,11 @@ VR_GRD_LOOP:
     BSR     VER_LINE
     ADD.L   #2,A0           ; Next line after 16 lines (here we count in bytes not words)
     DBRA    D2,VR_GRD_LOOP  ; Decrease, check and branch
+    MOVE.W  #399,D0         ; Line length (in pixels*bits)
+
+    ; TODO: there is a bug, either in the SW or in the HW
+    ;       when drawing the last vertical line, a spurious
+    ;       line is drawn at the center of the screen
     SUB.L   #2,A0           ; Last line pattern (it's the last column of the word)
     MOVE.W  #$0002,D1
     BSR     VER_LINE
