@@ -1,34 +1,39 @@
 package rt68f.vga
 
 import rt68f.core.M68kBus
+import rt68f.vga.VgaDevice.Modes.{M0_640X400C02, M1_640X200C04}
 import rt68f.vga.VgaDevice.rgbConfig
 import spinal.core._
 import spinal.lib.graphic.{Rgb, RgbConfig}
 import spinal.lib.graphic.vga.Vga
-import spinal.lib.{master, slave}
+import spinal.lib.{BufferCC, master, slave}
 
 import scala.language.postfixOps
 
 case class VgaMode(
-  yScale: Int,
-  xWordScale: Int,
-  pixelsPerWord: Int,
-  bitsPerPixel: Int,
+  yScale: Int,        // 0 for 400 lines (no scale), 1 for 200 lines (vertical doubling)
+  xWordScale: Int,    // Address bit to shift to convert pixel X to VRAM word address
+  pixelsPerWord: Int, // 16 or 8
+  bitsPerPixel: Int,  // 1 or 2
 )
 
 object VgaDevice {
   val rgbConfig = RgbConfig(4, 4, 4)
 
   object Modes {
+    // Mode 0: 640x400, 2 colors (1 bit per pixel)
+    val M0_640X400C02 = 0
+    val M1_640X200C04 = 1
     val mode640x400x2 = VgaMode(
       yScale = 0,
-      xWordScale = 4,
+      xWordScale = 4,     // 2^4 = 16 pixels per word
       pixelsPerWord = 16,
       bitsPerPixel = 1,
     )
+    // Mode 1: 640x200, 4 colors (2 bits per pixel, requires vertical doubling)
     val mode640x200x4 = VgaMode(
-      yScale = 1,
-      xWordScale = 3,
+      yScale = 1,         // Doubling: Y/2
+      xWordScale = 3,     // 2^3 = 8 pixels per word
       pixelsPerWord = 8,
       bitsPerPixel = 2,
     )
@@ -47,15 +52,10 @@ case class VgaDevice() extends Component {
   }
 
   // TODO: add a CTRL register to switch between:
-  //  - Actual resolution: 640x400 2 colors and 640x200 4 colors (consider also 320x200)
   //  - Monitor resolution: 640x480 (no black bands) and 640x400
 
-  // Vga mode
-  // TODO: select it from the control register
-  //       Note this is probably not enough, I might need a Mux
-  //       to switch between values in several places in the code
-  val mode = VgaDevice.Modes.mode640x200x4
-  //val mode = VgaDevice.Modes.mode640x400x2
+  //val mode = VgaDevice.Modes.mode640x200x4
+  val mode = VgaDevice.Modes.mode640x400x2
 
   // Framebuffer
   val size = 32768 / 2  // 32KB = 640x400, 1 bit color
@@ -74,7 +74,7 @@ case class VgaDevice() extends Component {
   palette(3).init(U(0x00F0))  // Initialize color 3 to green
 
   // Control register
-  val controlReg = Reg(Bits(16 bits)) init 0
+  val controlReg = Reg(Bits(16 bits)) init 1 // Default 640x200, 4 colors
 
   // ------------ 68000 BUS side ------------
   // Default response
@@ -148,6 +148,13 @@ case class VgaDevice() extends Component {
 
   // Clock domain area for VGA timing logic
   new ClockingArea(pixelClock) {
+    // --- Synchronize mode parameters from 32MHz to 25MHz ---
+    // --- CDC: Synchronize the entire 16-bit control register ---
+    val syncedControlReg = BufferCC(controlReg)
+    // TODO: sync palette as well?
+
+    val modeSelect = syncedControlReg(0).asUInt
+
     val ctrl = VgaCtrl(rgbConfig)
     ctrl.io.vga <> io.vga
 
@@ -178,22 +185,33 @@ case class VgaDevice() extends Component {
     // 5. Vertical Clamp: Ensure the address does not exceed VRAM height (200 lines).
     val vramLastLine = U(399, pixelY.getWidth bits)
     val pastVramLines = pixelY > vramLastLine
+    val scaledPixelY = modeSelect.mux(
+      M0_640X400C02 -> pixelY,
+      M1_640X200C04 -> pixelY(11 downto 1).resized
+    )
 
     val vramY = Mux(
       pastVramLines,
       vramLastLine,
-      pixelY(11 downto mode.yScale)
+      scaledPixelY
     )
 
     // 6. VRAM X Word Address: (pixelX) divided by 16
     //    RAM needs to be read one pixel earlier to
     //    compensate for the read requiring one clock.
     //val vramXWord = (pixelX + 1)(pixelX.high downto 4) // 640x400x2 = pixel/16 -> 1 bits per pixel, 1 word = 16 pixels
-    val vramXWord = (pixelX + 1)(pixelX.high downto mode.xWordScale) // 640x200x4 = pixelX/8 -> 2 bits per pixel, 1 word = 8 pixels
+    //val vramXWord = (pixelX + 1)(pixelX.high downto mode.xWordScale) // 640x200x4 = pixelX/8 -> 2 bits per pixel, 1 word = 8 pixels
+    val vramXWord = modeSelect.mux(
+      M0_640X400C02 -> (pixelX + 1)(pixelX.high downto 4).resize(9),
+      M1_640X200C04 -> (pixelX + 1)(pixelX.high downto 3)
+    )
 
     // 7. Linear Address = (Y_clamped * 40) + X_word
     //val lineLength = U(640 / 16)    // 640x400, 2 colors = 16 pixels per word = 40 words per line
-    val lineLength = U(640 / mode.pixelsPerWord)    // 640x200, 4 colors = 8 pixels per word = 80 words per line
+    val lineLength = modeSelect.mux(
+      M0_640X400C02 -> U(640 / 16),
+      M1_640X200C04 -> U(640 / 8)
+    )
     val addressWidth = log2Up(size) // 13 bits (for 8192 words)
     val vramAddress = ((vramY * lineLength) + vramXWord).resize(addressWidth)
 
@@ -205,28 +223,34 @@ case class VgaDevice() extends Component {
 
     val shiftRegister = Reg(Bits(16 bits)) init 0
 
-    //val pixelBitIndex = pixelX(3 downto 0) // 640x400, 2 colors -> 16 pixels per word
-    val pixelBitIndex = pixelX((mode.xWordScale - 1) downto 0) // 640x200, 4 colors -> 8 pixels per word
+    val pixelBitIndex = modeSelect.mux(
+      M0_640X400C02 -> pixelX(3 downto 0),
+      M1_640X200C04 -> pixelX(2 downto 0).resized
+    )
+
+    val bitsPerPixel = modeSelect.mux(
+      M0_640X400C02 -> U(1, 2 bits),
+      M1_640X200C04 -> U(2, 2 bits),
+    )
+
     when (pixelBitIndex === 0) {
       shiftRegister := wordData
     } otherwise {
-      shiftRegister := shiftRegister |<< mode.bitsPerPixel
+      shiftRegister := shiftRegister |<< bitsPerPixel
     }
 
-    // val pixelDataBit = shiftRegister(15 downto 15)
-    val pixelDataBit = shiftRegister(15 downto (16 - mode.bitsPerPixel))
+
+    val pixelColorIndex = modeSelect.mux(
+      M0_640X400C02 -> shiftRegister.msb.asUInt.resized,
+      M1_640X200C04 -> shiftRegister(15 downto 14).asUInt
+    )
+    val pixelColor = palette(pixelColorIndex)
 
     ctrl.io.rgb.clear()
-
-    // TODO: something is not working...
-    //  try to load the image 4 color it
-    //  should be shown dithered but there are
-    //  black columns
     when(ctrl.io.vga.colorEn && !pastVramLines) {
-      val selectedColor = palette(pixelDataBit.asUInt.resized)
-      ctrl.io.rgb.r := selectedColor(11 downto 8)
-      ctrl.io.rgb.g := selectedColor(7 downto 4)
-      ctrl.io.rgb.b := selectedColor(3 downto 0)
+      ctrl.io.rgb.r := pixelColor(11 downto 8)
+      ctrl.io.rgb.g := pixelColor(7 downto 4)
+      ctrl.io.rgb.b := pixelColor(3 downto 0)
     }
   }
 }
