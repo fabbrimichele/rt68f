@@ -114,7 +114,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     io.vga <> vga.io.vga
 
     val vgaFramebufferSel = cpu.io.ADDR >= U(0x8000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0xFFFF, cpu.io.ADDR.getWidth bits)
-    val vgaPaletteSel = cpu.io.ADDR >= U(0x13000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x13008, cpu.io.ADDR.getWidth bits)
+    val vgaPaletteSel = cpu.io.ADDR >= U(0x13000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x130020, cpu.io.ADDR.getWidth bits)
     val vgaControlSel = cpu.io.ADDR === U(0x13100, cpu.io.ADDR.getWidth bits)
 
     // Connect CPU outputs to ROM inputs
