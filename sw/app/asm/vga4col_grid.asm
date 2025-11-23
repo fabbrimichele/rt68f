@@ -20,21 +20,16 @@ HR_GRD_LOOP:
     BSR     HOR_LINE
 
     ; Vertical grid
-    MOVE.W  #399,D0         ; Line length (in pixels*bits)
+    MOVE.W  #199,D0         ; Line length (in pixels)
     MOVE.W  #$8000,D1       ; Pattern (red line in position 0)
     MOVE.W  #39,D2          ; Number of lines - 1
     LEA     VGA,A0          ; First column
 VR_GRD_LOOP:
     BSR     VER_LINE
-    ADD.L   #2,A0           ; Next line after 16 lines (here we count in bytes not words)
+    ADD.L   #4,A0           ; Next line after 16 lines (here we count in bytes not words)
     DBRA    D2,VR_GRD_LOOP  ; Decrease, check and branch
-    MOVE.W  #399,D0         ; Line length (in pixels*bits)
-
-    ; TODO: there is a bug, either in the SW or in the HW
-    ;       when drawing the last vertical line, a spurious
-    ;       line is drawn at the center of the screen
     SUB.L   #2,A0           ; Last line pattern (it's the last column of the word)
-    MOVE.W  #$0002,D1
+    MOVE.W  #$0002,D1       ; Pattern (red line in position 0)
     BSR     VER_LINE
 
 END:
@@ -61,8 +56,8 @@ HOR_LINE_LOOP:
 VER_LINE:
     MOVEM.L D0/A0,-(SP)
 VER_LINE_LOOP:
-    OR.W    D1,(A0)         ; Draw pattern
-    ADD.L   #80,A0          ; Next line
+    OR.W    D1,(A0)         ; Draw pattern TODO: Would it be more efficient to use bytes
+    ADD.L   #160,A0          ; Next line
     DBRA    D0,VER_LINE_LOOP
     MOVEM.L (SP)+,D0/A0     ; Done
     RTS
