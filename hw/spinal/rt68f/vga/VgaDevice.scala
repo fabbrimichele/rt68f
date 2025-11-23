@@ -136,11 +136,8 @@ case class VgaDevice() extends Component {
   // Clock domain area for VGA timing logic
   new ClockingArea(pixelClock) {
     // --- Synchronize mode parameters from 32MHz to 25MHz ---
-    // --- CDC: Synchronize the entire 16-bit control register ---
+    val syncedPalette = BufferCC(palette)
     val syncedControlReg = BufferCC(controlReg)
-    // TODO: sync palette as well?
-    //  this might cause a bug, when changing to lower resolution (MODE2) the background is dark blue
-
     val modeSelect = syncedControlReg(1 downto 0).asUInt
 
     val ctrl = VgaCtrl(rgbConfig)
@@ -247,7 +244,7 @@ case class VgaDevice() extends Component {
       M2_320X200C16 -> shiftRegister(15 downto 12).asUInt,
       M3_320X200C16 -> shiftRegister(15 downto 12).asUInt,
     )
-    val pixelColor = palette(pixelColorIndex)
+    val pixelColor = syncedPalette(pixelColorIndex)
 
     ctrl.io.rgb.clear()
     when(ctrl.io.vga.colorEn && !pastVramLines) {
