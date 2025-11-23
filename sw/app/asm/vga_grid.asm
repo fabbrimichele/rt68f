@@ -4,6 +4,9 @@
     ORG    $4000            ; Start of RAM
 
 START:
+    ; Set Screen mode to 640x400 2 colors
+    MOVE.W  #0,VGA_CTRL
+
     ; Clear screen
     MOVE.W  #0,D0           ; Fill pattern blank
     BSR     FILL            ; Clear screen
@@ -83,3 +86,5 @@ FILL_LOOP:
 DLY_VAL     EQU     1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
 VGA         EQU     $00008000   ; VGA framebuffer base address
 VGA_LEN     EQU     $4000       ; VGA framebuffer length in words
+VGA_CTRL    EQU     $00013100   ; VGA Control (screen mode)
+VGA_PALETTE EQU     $00013000   ; VGA Control (screen mode)
