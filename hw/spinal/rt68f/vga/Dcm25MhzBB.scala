@@ -2,6 +2,7 @@ package rt68f.vga
 
 import spinal.core._
 
+//noinspection TypeAnnotation
 class Dcm25MhzBB extends BlackBox {
     val io = new Bundle {
         val clk  = in Bool()

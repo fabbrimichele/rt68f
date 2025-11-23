@@ -78,14 +78,17 @@ blinker.bin:
 	HEADER_HEX="00000900"$$HEX_SIZE; \
 	echo "$$HEADER_HEX" | xxd -r -p | cat - target/app/blinker_raw.bin > target/app/blinker.bin
 
-
-# TODO: make it generic
-build-and-run: apps
+BIN_FILE ?= vga_grid.bin
+load: apps
+	# 1. Send LOAD command to prepare the device
+	@echo "--- Loading $(BIN_FILE) to /dev/ttyUSB2 ---"
 	printf "LOAD\r" > /dev/ttyUSB2
 	sleep 0.5
-	#cat target/app/vga_grid.bin > /dev/ttyUSB2
-	cat target/app/vga_image.bin > /dev/ttyUSB2
+	# 2. Transfer the contents of the chosen binary file
+	cat target/app/$(BIN_FILE) > /dev/ttyUSB2
 	sleep 0.5
+	# 3. Send RUN command
+	@echo "--- Running application at 0x4000 ---"
 	printf "RUN 4000\r" > /dev/ttyUSB2
 
 
@@ -96,6 +99,16 @@ build-img-bin:
 	dd if=$(TARGET_APP_DIR)/img.tmp bs=1 count=32000 > $(TARGET_APP_DIR)/img.bin
 	HEADER_HEX="$(VGA_ADDRESS)00007D00"; \
 	echo "$$HEADER_HEX" | xxd -r -p | cat - $(TARGET_APP_DIR)/img.bin > $(TARGET_APP_DIR)/img_with_header.bin
+
+ # TODO: use the script to parse the image, or just copy the image from sw/app/asm/img.tmp
+build-img4col-bin:
+	@mkdir -p $(TARGET_APP_DIR)
+	#convert $(ASM_APP_DIR)/img4col.png -depth 2 GRAY:$(TARGET_APP_DIR)/img.tmp
+	#convert $(ASM_APP_DIR)/img4col.png +dither -remap $(ASM_APP_DIR)/palette.png -depth 2 -compress none GRAY:img.tmp
+	dd if=$(TARGET_APP_DIR)/img.tmp bs=1 count=32000 > $(TARGET_APP_DIR)/img.bin
+	HEADER_HEX="$(VGA_ADDRESS)00007D00"; \
+	echo "$$HEADER_HEX" | xxd -r -p | cat - $(TARGET_APP_DIR)/img.bin > $(TARGET_APP_DIR)/img_with_header.bin
+
 
 load-img-bin:
 	printf "FBCLR\r" > /dev/ttyUSB2
