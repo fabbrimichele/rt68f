@@ -139,6 +139,7 @@ case class VgaDevice() extends Component {
     // --- CDC: Synchronize the entire 16-bit control register ---
     val syncedControlReg = BufferCC(controlReg)
     // TODO: sync palette as well?
+    //  this might cause a bug, when changing to lower resolution (MODE2) the background is dark blue
 
     val modeSelect = syncedControlReg(1 downto 0).asUInt
 
@@ -172,6 +173,8 @@ case class VgaDevice() extends Component {
     // 5. Vertical Clamp: Ensure the address does not exceed VRAM height (200 lines).
     val vramLastLine = U(399, pixelY.getWidth bits)
     val pastVramLines = pixelY > vramLastLine
+
+    // scaledPixelY is only used to determine RAM address
     val scaledPixelY = modeSelect.mux(
       M0_640X400C02 -> pixelY,
       M1_640X200C04 -> pixelY(11 downto 1).resized,
@@ -233,7 +236,11 @@ case class VgaDevice() extends Component {
       shiftRegister := shiftRegister |<< bitsPerPixel
     }
 
-
+    // todo: It's still not working properly
+    //       the first half of the screen work properly,
+    //       including going to a new line after 320
+    //       but at the same time it writes in the second half
+    //       I need to repeat each pixel twice
     val pixelColorIndex = modeSelect.mux(
       M0_640X400C02 -> shiftRegister.msb.asUInt.resize(4),
       M1_640X200C04 -> shiftRegister(15 downto 14).asUInt.resize(4),
