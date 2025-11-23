@@ -10,13 +10,6 @@ import spinal.lib.{BufferCC, master, slave}
 
 import scala.language.postfixOps
 
-case class VgaMode(
-  yScale: Int,        // 0 for 400 lines (no scale), 1 for 200 lines (vertical doubling)
-  xWordScale: Int,    // Address bit to shift to convert pixel X to VRAM word address
-  pixelsPerWord: Int, // 16 or 8
-  bitsPerPixel: Int,  // 1 or 2
-)
-
 object VgaDevice {
   val rgbConfig = RgbConfig(4, 4, 4)
 
@@ -24,19 +17,6 @@ object VgaDevice {
     // Mode 0: 640x400, 2 colors (1 bit per pixel)
     val M0_640X400C02 = 0
     val M1_640X200C04 = 1
-    val mode640x400x2 = VgaMode(
-      yScale = 0,
-      xWordScale = 4,     // 2^4 = 16 pixels per word
-      pixelsPerWord = 16,
-      bitsPerPixel = 1,
-    )
-    // Mode 1: 640x200, 4 colors (2 bits per pixel, requires vertical doubling)
-    val mode640x200x4 = VgaMode(
-      yScale = 1,         // Doubling: Y/2
-      xWordScale = 3,     // 2^3 = 8 pixels per word
-      pixelsPerWord = 8,
-      bitsPerPixel = 2,
-    )
   }
 }
 
@@ -54,18 +34,11 @@ case class VgaDevice() extends Component {
   // TODO: add a CTRL register to switch between:
   //  - Monitor resolution: 640x480 (no black bands) and 640x400
 
-  //val mode = VgaDevice.Modes.mode640x200x4
-  val mode = VgaDevice.Modes.mode640x400x2
-
   // Framebuffer
   val size = 32768 / 2  // 32KB = 640x400, 1 bit color
   val mem = Mem(Bits(16 bits), size)
 
   // Palette (implemented with registers)
-  // palette(0): color 0 (background color)
-  // palette(1): color 1 (foreground color)
-  // palette(2): color 2
-  // palette(3): color 3
   // TODO: use 12 bits
   val palette = Vec.fill(4)(Reg(UInt(16 bits)))
   palette(0).init(U(0x0000))  // Initialize background color to black
@@ -199,15 +172,12 @@ case class VgaDevice() extends Component {
     // 6. VRAM X Word Address: (pixelX) divided by 16
     //    RAM needs to be read one pixel earlier to
     //    compensate for the read requiring one clock.
-    //val vramXWord = (pixelX + 1)(pixelX.high downto 4) // 640x400x2 = pixel/16 -> 1 bits per pixel, 1 word = 16 pixels
-    //val vramXWord = (pixelX + 1)(pixelX.high downto mode.xWordScale) // 640x200x4 = pixelX/8 -> 2 bits per pixel, 1 word = 8 pixels
     val vramXWord = modeSelect.mux(
       M0_640X400C02 -> (pixelX + 1)(pixelX.high downto 4).resize(9),
       M1_640X200C04 -> (pixelX + 1)(pixelX.high downto 3)
     )
 
     // 7. Linear Address = (Y_clamped * 40) + X_word
-    //val lineLength = U(640 / 16)    // 640x400, 2 colors = 16 pixels per word = 40 words per line
     val lineLength = modeSelect.mux(
       M0_640X400C02 -> U(640 / 16),
       M1_640X200C04 -> U(640 / 8)
