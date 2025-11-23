@@ -175,8 +175,8 @@ case class VgaDevice() extends Component {
     val scaledPixelY = modeSelect.mux(
       M0_640X400C02 -> pixelY,
       M1_640X200C04 -> pixelY(11 downto 1).resized,
-      M2_320X200C16 -> pixelY(11 downto 1).resized, // TODO
-      M3_320X200C16 -> pixelY(11 downto 1).resized  // TODO
+      M2_320X200C16 -> pixelY(11 downto 1).resized,
+      M3_320X200C16 -> pixelY(11 downto 1).resized,
     )
 
     val vramY = Mux(
@@ -189,18 +189,18 @@ case class VgaDevice() extends Component {
     //    RAM needs to be read one pixel earlier to
     //    compensate for the read requiring one clock.
     val vramXWord = modeSelect.mux(
-      M0_640X400C02 -> (pixelX + 1)(pixelX.high downto 4).resize(9),
-      M1_640X200C04 -> (pixelX + 1)(pixelX.high downto 3),
-      M2_320X200C16 -> (pixelX + 1)(pixelX.high downto 3), // TODO
-      M3_320X200C16 -> (pixelX + 1)(pixelX.high downto 3),  // TODO
+      M0_640X400C02 -> (pixelX + 1)(pixelX.high downto 4).resize(10), // 16 pixels per word
+      M1_640X200C04 -> (pixelX + 1)(pixelX.high downto 3).resize(10), // 8 pixels per word
+      M2_320X200C16 -> (pixelX + 1)(pixelX.high downto 2),            // 4 pixels per word
+      M3_320X200C16 -> (pixelX + 1)(pixelX.high downto 2),            // 4 pixels per word
     )
 
     // 7. Linear Address = (Y_clamped * 40) + X_word
     val lineLength = modeSelect.mux(
       M0_640X400C02 -> U(640 / 16),
       M1_640X200C04 -> U(640 / 8),
-      M2_320X200C16 -> U(640 / 8), // TODO
-      M3_320X200C16 -> U(640 / 8),  // TODO
+      M2_320X200C16 -> U(640 / 4),
+      M3_320X200C16 -> U(640 / 4),
     )
     val addressWidth = log2Up(size) // 13 bits (for 8192 words)
     val vramAddress = ((vramY * lineLength) + vramXWord).resize(addressWidth)
@@ -216,15 +216,15 @@ case class VgaDevice() extends Component {
     val pixelBitIndex = modeSelect.mux(
       M0_640X400C02 -> pixelX(3 downto 0),
       M1_640X200C04 -> pixelX(2 downto 0).resized,
-      M2_320X200C16 -> pixelX(2 downto 0).resized, // TODO
-      M3_320X200C16 -> pixelX(2 downto 0).resized,  // TODO
+      M2_320X200C16 -> pixelX(1 downto 0).resized,
+      M3_320X200C16 -> pixelX(1 downto 0).resized,
     )
 
     val bitsPerPixel = modeSelect.mux(
-      M0_640X400C02 -> U(1, 2 bits),
-      M1_640X200C04 -> U(2, 2 bits),
-      M2_320X200C16 -> U(2, 2 bits), // TODO
-      M3_320X200C16 -> U(2, 2 bits),  // TODO
+      M0_640X400C02 -> U(1, 3 bits),
+      M1_640X200C04 -> U(2, 3 bits),
+      M2_320X200C16 -> U(4, 3 bits),
+      M3_320X200C16 -> U(4, 3 bits),
     )
 
     when (pixelBitIndex === 0) {
@@ -237,8 +237,8 @@ case class VgaDevice() extends Component {
     val pixelColorIndex = modeSelect.mux(
       M0_640X400C02 -> shiftRegister.msb.asUInt.resize(4),
       M1_640X200C04 -> shiftRegister(15 downto 14).asUInt.resize(4),
-      M2_320X200C16 -> shiftRegister(15 downto 14).asUInt.resize(4), // TODO
-      M3_320X200C16 -> shiftRegister(15 downto 14).asUInt.resize(4),  // TODO
+      M2_320X200C16 -> shiftRegister(15 downto 12).asUInt,
+      M3_320X200C16 -> shiftRegister(15 downto 12).asUInt,
     )
     val pixelColor = palette(pixelColorIndex)
 
