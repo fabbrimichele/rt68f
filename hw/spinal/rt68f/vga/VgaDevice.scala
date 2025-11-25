@@ -14,9 +14,10 @@ object VgaDevice {
   val rgbConfig = RgbConfig(4, 4, 4)
 
   object Modes {
-    // Mode 0: 640x400, 2 colors (1 bit per pixel)
-    val M0_640X400C02 = 0
-    val M1_640X200C04 = 1
+    val M0_640X400C02 = 0 // Mode 0: 640x400, 2 colors (1 bit per pixel)
+    val M1_640X200C04 = 1 // Mode 1: 640x200, 4 colors (2 bit per pixel)
+    val M2_320X200C16 = 2 // Mode 2: 320x200, 16 colors (4 bit per pixel)
+    val M3_320X200C16 = 3 // Mode 3: Same a Mode 2 TODO: see if there is a mode that makes sense
   }
 }
 
@@ -40,11 +41,24 @@ case class VgaDevice() extends Component {
 
   // Palette (implemented with registers)
   // TODO: use 12 bits
-  val palette = Vec.fill(4)(Reg(UInt(16 bits)))
-  palette(0).init(U(0x0000))  // Initialize background color to black
-  palette(1).init(U(0x0FFF))  // Initialize foreground color to white
-  palette(2).init(U(0x0F00))  // Initialize color 2 to red
-  palette(3).init(U(0x00F0))  // Initialize color 3 to green
+  // TODO: Find TOS default palette
+  val palette = Vec.fill(16)(Reg(UInt(16 bits)))
+  palette(0).init(U(0x0000))  // Black (background)
+  palette(1).init(U(0x0FFF))  // White (foreground)
+  palette(2).init(U(0x0F00))  // Red
+  palette(3).init(U(0x00F0))  // Green
+  palette(4).init(U(0x0F00))  // Blue
+  palette(5).init(U(0x00AA))  // Cyan
+  palette(6).init(U(0x0A0A))  // Magenta
+  palette(7).init(U(0x0A50))  // Brown
+  palette(8).init(U(0x0AAA))  // Light Gray
+  palette(9).init(U(0x0555))  // Dark Grey
+  palette(10).init(U(0x0F55))  // Light Red
+  palette(11).init(U(0x05F5))  // Light Green
+  palette(12).init(U(0x055F))  // Light Blue
+  palette(13).init(U(0x05FF))  // Light Cyan
+  palette(14).init(U(0x0F5F))  // Light Magenta
+  palette(15).init(U(0x0FF5))  // Yellow
 
   // Control register
   val controlReg = Reg(Bits(16 bits)) init 1 // Default 640x200, 4 colors
@@ -57,7 +71,7 @@ case class VgaDevice() extends Component {
   // Palette read/write
   when(!io.bus.AS && io.paletteSel) {
     io.bus.DTACK := False // acknowledge access (active low)
-    val wordAddr = io.bus.ADDR(2 downto 1)
+    val wordAddr = io.bus.ADDR(4 downto 1)
 
     when(io.bus.RW) {
       // Read
@@ -197,8 +211,8 @@ case class VgaDevice() extends Component {
 
 
   val pixelColorIndex = modeSelect.mux(
-    M0_640X400C02 -> shiftRegister.msb.asUInt.resized,
-    M1_640X200C04 -> shiftRegister(15 downto 14).asUInt
+    M0_640X400C02 -> shiftRegister.msb.asUInt.resize(4),
+    M1_640X200C04 -> shiftRegister(15 downto 14).asUInt.resize(4),
   )
   val pixelColor = palette(pixelColorIndex)
 
