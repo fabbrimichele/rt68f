@@ -155,7 +155,7 @@ case class VgaDevice() extends Component {
     val hStartValue = timings.h.colorStart.resize(12 bits)
     val pixelX = Mux(
       hCount >= hStartValue,
-      hCount - hStartValue,
+      (hCount - hStartValue)(11 downto 1), // TODO: this is valid only for 320x200
       U(0, 12 bits)
     )
 
@@ -227,9 +227,24 @@ case class VgaDevice() extends Component {
       M3_320X200C16 -> U(4, 3 bits),
     )
 
+    // Inside the ClockingArea(pixelClock)
+    val isMode320 = modeSelect === M2_320X200C16 || modeSelect === M3_320X200C16
+    val pixelRepeater = RegInit(False) // False for the first cycle, True for the second
+    when(isMode320) {
+      // Toggle the repeater flag every cycle to create the 2-cycle pulse
+      pixelRepeater := !pixelRepeater
+    } otherwise {
+      pixelRepeater := False // No repetition/gating for 640-wide modes
+    }
+
+    // TODO: there is a problem with the shift when 320x200
+    //       the pixel clock is still running for 640x400,
+    //       so one shift should be skipped, the problem is
+    //       the pixelRepeater doesn't work, the first pixel
+    //       is 1.5 pixels and the last 0.5
     when (pixelBitIndex === 0) {
       shiftRegister := wordData
-    } otherwise {
+    } elsewhen(!pixelRepeater) {
       shiftRegister := shiftRegister |<< bitsPerPixel
     }
 
