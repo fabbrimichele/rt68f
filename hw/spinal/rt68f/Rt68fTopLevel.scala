@@ -7,7 +7,7 @@ import spinal.core._
 import spinal.lib.com.uart.Uart
 import spinal.lib.graphic.vga.Vga
 import spinal.lib.master
-import vga.VgaDevice
+import vga.{Dcm25MhzBB, VgaDevice}
 
 import scala.language.postfixOps
 
@@ -41,7 +41,16 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
   val resetCtrl = ResetCtrl()
   resetCtrl.io.button := io.reset
 
-  val resetArea = new ResetArea(resetCtrl.io.resetOut, cumulative = false) {
+  val clk25 = ClockDomain(
+    clock = new Dcm25MhzBB().io.clk25,
+    reset = resetCtrl.io.resetOut,
+    frequency = FixedFrequency(25 MHz)
+  )
+
+  // Clock domain area for CPU and VGA
+  // They share the same clock to avoid
+  // issues accessing the shared memory.
+  new ClockingArea(clk25) {
 
     // ----------------
     // CPU Core
