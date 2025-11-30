@@ -49,14 +49,14 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     frequency = FixedFrequency(25.143 MHz)
   )
 
-  val clk8 = ClockDomain(
+  val clk16 = ClockDomain(
     clock = dcm25Mhz8Mhz.io.CLK_OUT2,
     reset = resetCtrl.io.resetOut,
     frequency = FixedFrequency(16 MHz)
   )
 
   // Clock domain area for CPU
-  new ClockingArea(clk8) {
+  new ClockingArea(clk16) {
     // ----------------
     // CPU Core
     // ----------------
