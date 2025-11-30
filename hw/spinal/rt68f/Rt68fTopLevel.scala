@@ -43,12 +43,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
   val dcm = new Dcm32_25_16()
 
-  val clk25 = ClockDomain(
-    clock = dcm.io.CLK_OUT1,
-    reset = resetCtrl.io.resetOut,
-    frequency = FixedFrequency(25.143 MHz)
-  )
-
   val clk16 = ClockDomain(
     clock = dcm.io.CLK_OUT2,
     reset = resetCtrl.io.resetOut,
@@ -71,13 +65,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // Default responses
     cpuDataI := B(0, 16 bits)
     cpuDtack := True
-
-    io.vga.color.r := B(0, 4 bits).asUInt
-    io.vga.color.g := B(0, 4 bits).asUInt
-    io.vga.color.b := B(0, 4 bits).asUInt
-    io.vga.vSync := False
-    io.vga.hSync := False
-    io.vga.colorEn := False
 
     // --------------------------------
     // ROM: 16 KB @ 0x0000 - 0x4FFFF
@@ -126,7 +113,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       cpuDtack := ram.io.bus.DTACK
     }
 
-    /*
+
     // --------------------------------
     // VGA: 32 KB @ 0x8000 - 0xFFFF
     // --------------------------------
@@ -148,13 +135,14 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     vga.io.framebufferSel := vgaFramebufferSel
     vga.io.paletteSel := vgaPaletteSel
     vga.io.controlSel := vgaControlSel
+    vga.io.pixelClock := dcm.io.CLK_OUT1 // 25.175 MHz
 
     // If VGA selected, forward VGA response into CPU aggregated signals
     when(!cpu.io.AS && (vgaFramebufferSel || vgaPaletteSel || vgaControlSel)) {
       cpuDataI := vga.io.bus.DATAI
       cpuDtack := vga.io.bus.DTACK
     }
-    */
+
 
     // --------------------------------
     // LED device @ 0x10000
