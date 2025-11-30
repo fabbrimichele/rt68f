@@ -7,7 +7,7 @@ import spinal.core._
 import spinal.lib.com.uart.Uart
 import spinal.lib.graphic.vga.Vga
 import spinal.lib.master
-import vga.{Dcm25MhzBB, VgaDevice}
+import vga.VgaDevice
 
 import scala.language.postfixOps
 
@@ -41,7 +41,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
   val resetCtrl = ResetCtrl()
   resetCtrl.io.button := io.reset
 
-  val dcm25Mhz8Mhz = new Dcm25Mhz8Mhz()
+  val dcm25Mhz8Mhz = new Dcm32_25_16()
 
   val clk25 = ClockDomain(
     clock = dcm25Mhz8Mhz.io.CLK_OUT1,

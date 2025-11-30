@@ -19,7 +19,7 @@ use ieee.numeric_std.all;
 library unisim;
 use unisim.vcomponents.all;
 
-entity dcm32_25_8 is
+entity dcm32_25_16 is
     port
     (-- Clock in ports
      CLK_IN1           : in     std_logic;
@@ -30,9 +30,9 @@ entity dcm32_25_8 is
      RESET             : in     std_logic;
      LOCKED            : out    std_logic
     );
-end dcm32_25_8;
+end dcm32_25_16;
 
-architecture xilinx of dcm32_25_8 is
+architecture xilinx of dcm32_25_16 is
     -- Output clock buffering
     signal clkfb             : std_logic;
     signal clk0              : std_logic;
