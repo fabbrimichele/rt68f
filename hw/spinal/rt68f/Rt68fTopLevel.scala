@@ -41,16 +41,16 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
   val resetCtrl = ResetCtrl()
   resetCtrl.io.button := io.reset
 
-  val dcm25Mhz8Mhz = new Dcm32_25_16()
+  val dcm = new Dcm32_25_16()
 
   val clk25 = ClockDomain(
-    clock = dcm25Mhz8Mhz.io.CLK_OUT1,
+    clock = dcm.io.CLK_OUT1,
     reset = resetCtrl.io.resetOut,
     frequency = FixedFrequency(25.143 MHz)
   )
 
   val clk16 = ClockDomain(
-    clock = dcm25Mhz8Mhz.io.CLK_OUT2,
+    clock = dcm.io.CLK_OUT2,
     reset = resetCtrl.io.resetOut,
     frequency = FixedFrequency(16 MHz)
   )
