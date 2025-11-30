@@ -29,7 +29,7 @@ class Tg68000BB extends BlackBox {
 
   // Map the clock domain
   // Mapped in the wrapper
-  mapClockDomain(clock = io.clk, reset = io.reset, resetActiveLevel = LOW)
+  mapClockDomain(clock = io.clk, reset = io.reset, resetActiveLevel = LOW, enable = io.clkena_in)
 
   setDefinitionName("TG68") // This tells SpinalHDL which Verilog module to instantiate
   addRTLPath("hw/vhdl/TG68.vhd") // Merge the file to the generated 'mergeRTL.v' file

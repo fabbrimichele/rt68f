@@ -41,17 +41,22 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
   val resetCtrl = ResetCtrl()
   resetCtrl.io.button := io.reset
 
+  val dcm25Mhz8Mhz = new Dcm25Mhz8Mhz()
+
   val clk25 = ClockDomain(
-    clock = new Dcm25MhzBB().io.clk25,
+    clock = dcm25Mhz8Mhz.io.CLK_OUT1,
     reset = resetCtrl.io.resetOut,
-    frequency = FixedFrequency(25 MHz)
+    frequency = FixedFrequency(25.143 MHz)
   )
 
-  // Clock domain area for CPU and VGA
-  // They share the same clock to avoid
-  // issues accessing the shared memory.
-  new ClockingArea(clk25) {
+  val clk8 = ClockDomain(
+    clock = dcm25Mhz8Mhz.io.CLK_OUT2,
+    reset = resetCtrl.io.resetOut,
+    frequency = FixedFrequency(16 MHz)
+  )
 
+  // Clock domain area for CPU
+  new ClockingArea(clk8) {
     // ----------------
     // CPU Core
     // ----------------
@@ -67,6 +72,12 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     cpuDataI := B(0, 16 bits)
     cpuDtack := True
 
+    io.vga.color.r := B(0, 4 bits).asUInt
+    io.vga.color.g := B(0, 4 bits).asUInt
+    io.vga.color.b := B(0, 4 bits).asUInt
+    io.vga.vSync := False
+    io.vga.hSync := False
+    io.vga.colorEn := False
 
     // --------------------------------
     // ROM: 16 KB @ 0x0000 - 0x4FFFF
@@ -115,7 +126,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       cpuDtack := ram.io.bus.DTACK
     }
 
-
+    /*
     // --------------------------------
     // VGA: 32 KB @ 0x8000 - 0xFFFF
     // --------------------------------
@@ -143,7 +154,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       cpuDataI := vga.io.bus.DATAI
       cpuDtack := vga.io.bus.DTACK
     }
-
+    */
 
     // --------------------------------
     // LED device @ 0x10000
