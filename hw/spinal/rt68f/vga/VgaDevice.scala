@@ -120,6 +120,10 @@ case class VgaDevice() extends Component {
   )
 
   new ClockingArea(clk25) {
+    // Configuration
+    val lastLine = 400
+    val latency = 1
+
     val controlRegCC = BufferCC(controlReg)
     val paletteCC =  BufferCC(palette)
     val modeSelect = controlRegCC(0).asUInt
@@ -137,7 +141,6 @@ case class VgaDevice() extends Component {
     val timings = ctrl.io.timings
 
     // -- Framebuffer read ---
-    val latency = 1
     // Depending on the number of bits per pixel, the
     // address will ignore the least significant bits.
     // In other words the extra bits are used to divide
@@ -172,7 +175,6 @@ case class VgaDevice() extends Component {
       U(0, 12 bits)
     )
 
-    val lastLine = 400
     val colEn = ctrl.io.vga.colorEn && ((vCount - timings.v.colorStart) < lastLine)
 
     val pixelBitIndex = pixelX(3 downto 0)
