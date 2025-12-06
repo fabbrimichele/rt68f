@@ -126,7 +126,7 @@ case class VgaDevice() extends Component {
 
     val controlRegCC = BufferCC(controlReg)
     val paletteCC =  BufferCC(palette)
-    val modeSelect = controlRegCC(0).asUInt
+    val mode = controlRegCC(0).asUInt
 
     val ctrl = VgaCtrl(rgbConfig)
     ctrl.io.vga <> io.vga
@@ -150,7 +150,13 @@ case class VgaDevice() extends Component {
     // 4-bit color -> fbReadAddress(fbReadAddress.high downto 1)
     val fbReadAddrCounter = Reg(UInt(log2Up(fbWidth) + 4 bits)) init 0
     // For the time being 1-bit per color
-    val fbReadAddr = fbReadAddrCounter(fbReadAddrCounter.high downto 4).resize(log2Up(fbWidth))
+    val fbReadAddr = mode.mux(
+      M0_640X400C02 -> fbReadAddrCounter(fbReadAddrCounter.high downto 4).resize(log2Up(fbWidth)),
+      M1_640X200C04 -> fbReadAddrCounter(fbReadAddrCounter.high downto 3).resize(log2Up(fbWidth))
+    )
+
+    // TODO: repeat each line when M1_640X200C04
+
     when (frameStart) {
       fbReadAddrCounter := 0
     } elsewhen(
@@ -177,22 +183,34 @@ case class VgaDevice() extends Component {
 
     val colEn = ctrl.io.vga.colorEn && ((vCount - timings.v.colorStart) < lastLine)
 
-    val pixelBitIndex = pixelX(3 downto 0)
+    val bitsPerPixel = mode.mux(
+      M0_640X400C02 -> U(1, 2 bits),
+      M1_640X200C04 -> U(2, 2 bits),
+    )
+
+    val pixelBitIndex = mode.mux(
+      M0_640X400C02 -> pixelX(3 downto 0),
+      M1_640X200C04 -> pixelX(2 downto 0).resized
+    )
 
     when (pixelBitIndex === 0) {
       shiftRegister := wordData
     } otherwise  {
-      shiftRegister := shiftRegister |<< 1
+      shiftRegister := shiftRegister |<< bitsPerPixel
     }
 
-    val pixelIndex = shiftRegister.msb
-    val pixelColor = paletteCC(pixelIndex.asUInt.resized)
+    val pixelColorIndex = mode.mux(
+      M0_640X400C02 -> shiftRegister.msb.asUInt.resized,
+      M1_640X200C04 -> shiftRegister(15 downto 14).asUInt,
+    )
+    val pixelColor = paletteCC(pixelColorIndex)
 
-    ctrl.io.rgb.clear()
     when(colEn) {
       ctrl.io.rgb.r := pixelColor(11 downto 8)
       ctrl.io.rgb.g := pixelColor(7 downto 4)
       ctrl.io.rgb.b := pixelColor(3 downto 0)
+    } otherwise {
+      ctrl.io.rgb.clear()
     }
   }
 }
