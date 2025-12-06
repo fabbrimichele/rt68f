@@ -7,7 +7,7 @@ import spinal.core._
 import spinal.lib.com.uart.Uart
 import spinal.lib.graphic.vga.Vga
 import spinal.lib.master
-import vga.{Dcm25MhzBB, VgaDevice}
+import vga.VgaDevice
 
 import scala.language.postfixOps
 
@@ -41,17 +41,16 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
   val resetCtrl = ResetCtrl()
   resetCtrl.io.button := io.reset
 
-  val clk25 = ClockDomain(
-    clock = new Dcm25MhzBB().io.clk25,
+  val dcm = new Dcm32_25_16()
+
+  val clk16 = ClockDomain(
+    clock = dcm.io.CLK_OUT2,
     reset = resetCtrl.io.resetOut,
-    frequency = FixedFrequency(25 MHz)
+    frequency = FixedFrequency(16 MHz)
   )
 
-  // Clock domain area for CPU and VGA
-  // They share the same clock to avoid
-  // issues accessing the shared memory.
-  new ClockingArea(clk25) {
-
+  // Clock domain area for CPU
+  new ClockingArea(clk16) {
     // ----------------
     // CPU Core
     // ----------------
@@ -66,7 +65,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // Default responses
     cpuDataI := B(0, 16 bits)
     cpuDtack := True
-
 
     // --------------------------------
     // ROM: 16 KB @ 0x0000 - 0x4FFFF
@@ -137,6 +135,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     vga.io.framebufferSel := vgaFramebufferSel
     vga.io.paletteSel := vgaPaletteSel
     vga.io.controlSel := vgaControlSel
+    vga.io.pixelClock := dcm.io.CLK_OUT1 // 25.175 MHz
 
     // If VGA selected, forward VGA response into CPU aggregated signals
     when(!cpu.io.AS && (vgaFramebufferSel || vgaPaletteSel || vgaControlSel)) {

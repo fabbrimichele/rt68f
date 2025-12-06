@@ -28,6 +28,7 @@ case class VgaDevice() extends Component {
     val framebufferSel  = in Bool() // Framebuffer select from decoder
     val paletteSel      = in Bool() // Palette select from decoder
     val controlSel      = in Bool() // Control select from decoder
+    val pixelClock      = in Bool() // Pixel clock must be 25.175 Mhz
     val vga             = master(Vga(VgaDevice.rgbConfig))
   }
 
@@ -112,100 +113,111 @@ case class VgaDevice() extends Component {
   }
 
   // ------------ VGA side ------------
-  val modeSelect = controlReg(0).asUInt
-
-  val ctrl = VgaCtrl(rgbConfig)
-  ctrl.io.vga <> io.vga
-
-  ctrl.io.softReset := False
-  ctrl.io.timings.setAs_h640_v480_r60
-
-  // --- Access Exposed Counters and Timings ---
-  val hCount = ctrl.io.hCounter
-  val vCount = ctrl.io.vCounter
-  val timings = ctrl.io.timings // Reuse the configured timing struct
-
-  // 1. Horizontal Offset: pixelX = hCount - hStart
-  val hStartValue = timings.h.colorStart.resize(12 bits)
-  val pixelX = Mux(
-    hCount >= hStartValue,
-    hCount - hStartValue,
-    U(0, 12 bits)
+  val clk25 = ClockDomain(
+    clock = io.pixelClock,
+    reset = ClockDomain.current.reset,
+    frequency = FixedFrequency(25.143 MHz),
   )
 
-  // 3. Vertical Offset: pixelY = vCount - vStart
-  val vStartValue = timings.v.colorStart.resize(12 bits)
-  val pixelY = Mux(
-    vCount >= vStartValue,
-    vCount - vStartValue,
-    U(0, 12 bits)
-  )
+  new ClockingArea(clk25) {
+    val controlRegCC = BufferCC(controlReg)
+    val paletteCC =  BufferCC(palette)
 
-  // 5. Vertical Clamp: Ensure the address does not exceed VRAM height (200 lines).
-  val vramLastLine = U(399, pixelY.getWidth bits)
-  val pastVramLines = pixelY > vramLastLine
-  val scaledPixelY = modeSelect.mux(
-    M0_640X400C02 -> pixelY,
-    M1_640X200C04 -> pixelY(11 downto 1).resized
-  )
+    val modeSelect = controlRegCC(0).asUInt
 
-  val vramY = Mux(
-    pastVramLines,
-    vramLastLine,
-    scaledPixelY
-  )
+    val ctrl = VgaCtrl(rgbConfig)
+    ctrl.io.vga <> io.vga
 
-  // 6. VRAM X Word Address: (pixelX) divided by 16
-  //    RAM needs to be read one pixel earlier to
-  //    compensate for the read requiring one clock.
-  val vramXWord = modeSelect.mux(
-    M0_640X400C02 -> (pixelX + 1)(pixelX.high downto 4).resize(9),
-    M1_640X200C04 -> (pixelX + 1)(pixelX.high downto 3)
-  )
+    ctrl.io.softReset := False
+    ctrl.io.timings.setAs_h640_v480_r60
 
-  // 7. Linear Address = (Y_clamped * 40) + X_word
-  val lineLength = modeSelect.mux(
-    M0_640X400C02 -> U(640 / 16),
-    M1_640X200C04 -> U(640 / 8)
-  )
-  val addressWidth = log2Up(size) // 13 bits (for 8192 words)
-  val vramAddress = ((vramY * lineLength) + vramXWord).resize(addressWidth)
+    // --- Access Exposed Counters and Timings ---
+    val hCount = ctrl.io.hCounter
+    val vCount = ctrl.io.vCounter
+    val timings = ctrl.io.timings // Reuse the configured timing struct
 
-  // VRAM Read: mem.readSync handles the 1-cycle data delay.
-  val wordData = mem.readSync(
-    address = vramAddress,
-    clockCrossing = true
-  )
+    // 1. Horizontal Offset: pixelX = hCount - hStart
+    val hStartValue = timings.h.colorStart.resize(12 bits)
+    val pixelX = Mux(
+      hCount >= hStartValue,
+      hCount - hStartValue,
+      U(0, 12 bits)
+    )
 
-  val shiftRegister = Reg(Bits(16 bits)) init 0
+    // 3. Vertical Offset: pixelY = vCount - vStart
+    val vStartValue = timings.v.colorStart.resize(12 bits)
+    val pixelY = Mux(
+      vCount >= vStartValue,
+      vCount - vStartValue,
+      U(0, 12 bits)
+    )
 
-  val pixelBitIndex = modeSelect.mux(
-    M0_640X400C02 -> pixelX(3 downto 0),
-    M1_640X200C04 -> pixelX(2 downto 0).resized
-  )
+    // 5. Vertical Clamp: Ensure the address does not exceed VRAM height (200 lines).
+    val vramLastLine = U(399, pixelY.getWidth bits)
+    val pastVramLines = pixelY > vramLastLine
+    val scaledPixelY = modeSelect.mux(
+      M0_640X400C02 -> pixelY,
+      M1_640X200C04 -> pixelY(11 downto 1).resized
+    )
 
-  val bitsPerPixel = modeSelect.mux(
-    M0_640X400C02 -> U(1, 2 bits),
-    M1_640X200C04 -> U(2, 2 bits),
-  )
+    val vramY = Mux(
+      pastVramLines,
+      vramLastLine,
+      scaledPixelY
+    )
 
-  when (pixelBitIndex === 0) {
-    shiftRegister := wordData
-  } otherwise {
-    shiftRegister := shiftRegister |<< bitsPerPixel
-  }
+    // 6. VRAM X Word Address: (pixelX) divided by 16
+    //    RAM needs to be read one pixel earlier to
+    //    compensate for the read requiring one clock.
+    val vramXWord = modeSelect.mux(
+      M0_640X400C02 -> (pixelX + 1)(pixelX.high downto 4).resize(9),
+      M1_640X200C04 -> (pixelX + 1)(pixelX.high downto 3)
+    )
+
+    // 7. Linear Address = (Y_clamped * 40) + X_word
+    val lineLength = modeSelect.mux(
+      M0_640X400C02 -> U(640 / 16),
+      M1_640X200C04 -> U(640 / 8)
+    )
+    val addressWidth = log2Up(size) // 13 bits (for 8192 words)
+    val vramAddress = ((vramY * lineLength) + vramXWord).resize(addressWidth)
+
+    // VRAM Read: mem.readSync handles the 1-cycle data delay.
+    val wordData = mem.readSync(
+      address = vramAddress,
+      clockCrossing = true
+    )
+
+    val shiftRegister = Reg(Bits(16 bits)) init 0
+
+    val pixelBitIndex = modeSelect.mux(
+      M0_640X400C02 -> pixelX(3 downto 0),
+      M1_640X200C04 -> pixelX(2 downto 0).resized
+    )
+
+    val bitsPerPixel = modeSelect.mux(
+      M0_640X400C02 -> U(1, 2 bits),
+      M1_640X200C04 -> U(2, 2 bits),
+    )
+
+    when(pixelBitIndex === 0) {
+      shiftRegister := wordData
+    } otherwise {
+      shiftRegister := shiftRegister |<< bitsPerPixel
+    }
 
 
-  val pixelColorIndex = modeSelect.mux(
-    M0_640X400C02 -> shiftRegister.msb.asUInt.resized,
-    M1_640X200C04 -> shiftRegister(15 downto 14).asUInt
-  )
-  val pixelColor = palette(pixelColorIndex)
+    val pixelColorIndex = modeSelect.mux(
+      M0_640X400C02 -> shiftRegister.msb.asUInt.resized,
+      M1_640X200C04 -> shiftRegister(15 downto 14).asUInt
+    )
+    val pixelColor = paletteCC(pixelColorIndex)
 
-  ctrl.io.rgb.clear()
-  when(ctrl.io.vga.colorEn && !pastVramLines) {
-    ctrl.io.rgb.r := pixelColor(11 downto 8)
-    ctrl.io.rgb.g := pixelColor(7 downto 4)
-    ctrl.io.rgb.b := pixelColor(3 downto 0)
+    ctrl.io.rgb.clear()
+    when(ctrl.io.vga.colorEn && !pastVramLines) {
+      ctrl.io.rgb.r := pixelColor(11 downto 8)
+      ctrl.io.rgb.g := pixelColor(7 downto 4)
+      ctrl.io.rgb.b := pixelColor(3 downto 0)
+    }
   }
 }

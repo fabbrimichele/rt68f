@@ -23,5 +23,5 @@ object Config {
     // TODO: find a way to use relative paths
     .addRtl("/home/michele/rt68f/hw/vhdl/TG68.vhd")
     .addRtl("/home/michele/rt68f/hw/vhdl/TG68_fast.vhd")
-    .addRtl("/home/michele/rt68f/hw/vhdl/dcm25mhz.vhd")
+    .addRtl("/home/michele/rt68f/hw/vhdl/dcm32_25_16.vhd")
 }
