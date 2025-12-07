@@ -124,6 +124,11 @@ case class VgaDevice() extends Component {
     val paletteCC =  BufferCC(palette)
     val mode = controlRegCC(0).asUInt
 
+    val bitsPerPixel = RegNext(mode.mux(
+      M0_640X400C02 -> U(1, 2 bits),
+      M1_640X200C04 -> U(2, 2 bits),
+    ))
+
     // Configuration
     val latency = 1
     val lastLine = 400
@@ -193,11 +198,6 @@ case class VgaDevice() extends Component {
     )
 
     val colEn = ctrl.io.vga.colorEn && ((vCount - timings.v.colorStart) < lastLine)
-
-    val bitsPerPixel = mode.mux(
-      M0_640X400C02 -> U(1, 2 bits),
-      M1_640X200C04 -> U(2, 2 bits),
-    )
 
     val pixelBitIndex = mode.mux(
       M0_640X400C02 -> pixelX(3 downto 0),
