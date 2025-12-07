@@ -126,12 +126,7 @@ case class VgaDevice() extends Component {
 
     // Configuration
     val latency = 1
-
-    val lastLine = UInt(9 bits)
-    lastLine := mode.mux(
-      M0_640X400C02 -> U(400),
-      M1_640X200C04 -> U(200),
-    )
+    val lastLine = 400
 
     val ctrl = VgaCtrl(rgbConfig)
     ctrl.io.vga <> io.vga
@@ -153,28 +148,40 @@ case class VgaDevice() extends Component {
     // 1-bit color -> fbReadAddress(fbReadAddress.high downto 4)
     // 2-bit color -> fbReadAddress(fbReadAddress.high downto 3)
     // 4-bit color -> fbReadAddress(fbReadAddress.high downto 1)
-    val fbReadAddrCounter = Reg(UInt(log2Up(fbWidth) + 4 bits)) init 0
+    val pixelCounter = Reg(UInt(log2Up(fbWidth) + 4 bits)) init 0
+    val pixelStartLineCounter = Reg(UInt(log2Up(fbWidth) + 4 bits)) init 0
+    val lineCounter = Reg(UInt(9 bits)) init 0
+
     val fbReadAddr = mode.mux(
-      M0_640X400C02 -> fbReadAddrCounter(fbReadAddrCounter.high downto 4).resize(log2Up(fbWidth)),
-      M1_640X200C04 -> fbReadAddrCounter(fbReadAddrCounter.high downto 3).resize(log2Up(fbWidth))
+      M0_640X400C02 -> pixelCounter(pixelCounter.high downto 4).resize(log2Up(fbWidth)),
+      M1_640X200C04 -> pixelCounter(pixelCounter.high downto 3).resize(log2Up(fbWidth))
     )
 
-    // TODO: repeat each line when M1_640X200C04
-
     when (frameStart) {
-      fbReadAddrCounter := 0
+      lineCounter := 0
+      pixelCounter := 0
+      pixelStartLineCounter := 0
     } elsewhen(
       (vCount >= timings.v.colorStart && vCount < timings.v.colorEnd)
       && (hCount >= (timings.h.colorStart - latency) && hCount < timings.h.colorEnd - latency)
     ) {
-      fbReadAddrCounter := fbReadAddrCounter + 1
+      pixelCounter := pixelCounter + 1
+    } elsewhen(
+      (vCount >= timings.v.colorStart && vCount < timings.v.colorEnd)
+        && (hCount === 0)
+    ) {
+      pixelCounter := pixelStartLineCounter
+      lineCounter := lineCounter + 1
+      // Stretch vertical resolution by 2 for all screen modes but M0_640X400C02
+      when(mode === M0_640X400C02 || lineCounter.lsb === False) {
+        pixelStartLineCounter := pixelStartLineCounter + 640
+      }
     }
 
     val wordData = framebuffer.readSync(
       address = fbReadAddr,
       clockCrossing = true
     )
-
 
     // -- Shift register and output ---
     val shiftRegister = Reg(Bits(16 bits)) init 0
