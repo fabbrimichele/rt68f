@@ -120,13 +120,18 @@ case class VgaDevice() extends Component {
   )
 
   new ClockingArea(clk25) {
-    // Configuration
-    val lastLine = 400
-    val latency = 1
-
     val controlRegCC = BufferCC(controlReg)
     val paletteCC =  BufferCC(palette)
     val mode = controlRegCC(0).asUInt
+
+    // Configuration
+    val latency = 1
+
+    val lastLine = UInt(9 bits)
+    lastLine := mode.mux(
+      M0_640X400C02 -> U(400),
+      M1_640X200C04 -> U(200),
+    )
 
     val ctrl = VgaCtrl(rgbConfig)
     ctrl.io.vga <> io.vga
