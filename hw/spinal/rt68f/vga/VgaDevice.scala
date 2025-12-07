@@ -124,10 +124,11 @@ case class VgaDevice() extends Component {
     val paletteCC =  BufferCC(palette)
     val mode = controlRegCC(0).asUInt
 
-    val bitsPerPixel = RegNext(mode.mux(
+    val bitsPerPixel = mode.mux(
       M0_640X400C02 -> U(1, 2 bits),
       M1_640X200C04 -> U(2, 2 bits),
-    ))
+    )
+    val bitsPerPixelReg = RegNext(bitsPerPixel)
 
     // Configuration
     val latency = 1
@@ -207,7 +208,7 @@ case class VgaDevice() extends Component {
     when (pixelBitIndex === 0) {
       shiftRegister := wordData
     } otherwise  {
-      shiftRegister := shiftRegister |<< bitsPerPixel
+      shiftRegister := shiftRegister |<< bitsPerPixelReg
     }
 
     val pixelColorIndex = mode.mux(
