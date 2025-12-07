@@ -179,7 +179,7 @@ case class VgaDevice() extends Component {
       pixelCounter := pixelStartLineCounter
       lineCounter := lineCounter + 1
       // Stretch vertical resolution by 2 for all screen modes but M0_640X400C02
-      when(mode === M0_640X400C02 || lineCounter.lsb === False) {
+      when(mode === M0_640X400C02 || lineCounter.lsb === True) {
         pixelStartLineCounter := pixelStartLineCounter + 640
       }
     }
