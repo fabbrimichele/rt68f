@@ -149,7 +149,6 @@ case class VgaDevice() extends Component {
     // 2-bit color -> fbReadAddress(fbReadAddress.high downto 3)
     // 4-bit color -> fbReadAddress(fbReadAddress.high downto 1)
     val fbReadAddrCounter = Reg(UInt(log2Up(fbWidth) + 4 bits)) init 0
-    // For the time being 1-bit per color
     val fbReadAddr = mode.mux(
       M0_640X400C02 -> fbReadAddrCounter(fbReadAddrCounter.high downto 4).resize(log2Up(fbWidth)),
       M1_640X200C04 -> fbReadAddrCounter(fbReadAddrCounter.high downto 3).resize(log2Up(fbWidth))
