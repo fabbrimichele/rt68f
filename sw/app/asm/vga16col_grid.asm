@@ -24,7 +24,7 @@ HR_GRD_LOOP:
 
     ; Vertical grid
     MOVE.W  #199,D0         ; Line length (in pixels)
-    MOVE.W  #$8000,D1       ; Pattern (red line in position 0)
+    MOVE.W  #$C000,D1       ; Pattern ($0C red line in position 0)
     MOVE.W  #39,D2          ; Number of lines - 1
     LEA     VGA,A0          ; First column
 VR_GRD_LOOP:
@@ -32,7 +32,7 @@ VR_GRD_LOOP:
     ADD.L   #4,A0           ; Next line after 16 lines (here we count in bytes not words)
     DBRA    D2,VR_GRD_LOOP  ; Decrease, check and branch
     SUB.L   #2,A0           ; Last line pattern (it's the last column of the word)
-    MOVE.W  #$0002,D1       ; Pattern (red line in position 0)
+    MOVE.W  #$000C,D1       ; Pattern (red line in position 0)
     BSR     VER_LINE
 
 END:
@@ -46,7 +46,7 @@ END:
 HOR_LINE:
     MOVEM.L D0/A0,-(SP)
 HOR_LINE_LOOP:
-    MOVE.W  #$FFFF,(A0)+    ; write solid green line (8 pixels)
+    MOVE.W  #$AAAA,(A0)+    ; write solid green line (8 pixels)
     DBRA    D0,HOR_LINE_LOOP
     MOVEM.L (SP)+,D0/A0     ; Done
     RTS
