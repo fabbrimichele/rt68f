@@ -1,6 +1,6 @@
 package rt68f.vga
 
-import rt68f.core.M68kBus
+import rt68f.core.{M68kBus, ResetCtrl}
 import rt68f.vga.VgaDevice.Modes.{M0_640X400C02, M1_640X200C04, M2_320X200C16, M3_320X200C16}
 import rt68f.vga.VgaDevice.rgbConfig
 import spinal.core._
@@ -31,6 +31,7 @@ case class VgaDevice() extends Component {
     val paletteSel      = in Bool() // Palette select from decoder
     val controlSel      = in Bool() // Control select from decoder
     val pixelClock      = in Bool() // Pixel clock must be 25.175 Mhz
+    val pixelReset      = in Bool() // Raw reset (it must not be sync with the 16Mhz clock)
     val vga             = master(Vga(VgaDevice.rgbConfig))
   }
 
@@ -127,9 +128,17 @@ case class VgaDevice() extends Component {
   }
 
   // ------------ VGA side ------------
+  // TODO: ResetCtrl() quite some delay to the timing (10ns).
+  //       There might be something wrong in its implementation.
+  // TODO: I'm not sure this is the right approach, reset debounce
+  //       should be come from outside, but when defined outside
+  //       it increased dramatically the timing.
+  val resetCtrl = ResetCtrl()
+  resetCtrl.io.button := io.pixelReset
+
   val clk25 = ClockDomain(
     clock = io.pixelClock,
-    reset = ClockDomain.current.reset,
+    reset = resetCtrl.io.resetOut,
     frequency = FixedFrequency(25.143 MHz),
   )
 

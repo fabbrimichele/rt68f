@@ -46,7 +46,11 @@ END:
 HOR_LINE:
     MOVEM.L D0/A0,-(SP)
 HOR_LINE_LOOP:
-    MOVE.W  #$AAAA,(A0)+    ; write solid green line (8 pixels)
+    ; TODO: There is something really wrong.
+    ;       - when drawing with FFFF, the FPGA stops working, including the serial port.
+    ;       - when drawing with AAAA, everything works just fine.
+    ;       I suspect this has to do with the timing too high for the VgaDevice.
+    MOVE.W  #$FFFF,(A0)+    ; write solid green line (8 pixels)
     DBRA    D0,HOR_LINE_LOOP
     MOVEM.L (SP)+,D0/A0     ; Done
     RTS

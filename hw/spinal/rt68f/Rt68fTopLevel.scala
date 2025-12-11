@@ -38,6 +38,8 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val vga = master(Vga(VgaDevice.rgbConfig))
   }
 
+  // TODO: ResetCtrl() quite some delay to the timing (10ns).
+  //       There might be something wrong in its implementation.
   val resetCtrl = ResetCtrl()
   resetCtrl.io.button := io.reset
 
@@ -136,6 +138,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     vga.io.paletteSel := vgaPaletteSel
     vga.io.controlSel := vgaControlSel
     vga.io.pixelClock := dcm.io.CLK_OUT1 // 25.175 MHz
+    vga.io.pixelReset := io.reset
 
     // If VGA selected, forward VGA response into CPU aggregated signals
     when(!cpu.io.AS && (vgaFramebufferSel || vgaPaletteSel || vgaControlSel)) {
