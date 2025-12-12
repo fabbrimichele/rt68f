@@ -128,17 +128,9 @@ case class VgaDevice() extends Component {
   }
 
   // ------------ VGA side ------------
-  // TODO: ResetCtrl() quite some delay to the timing (10ns).
-  //       There might be something wrong in its implementation.
-  // TODO: I'm not sure this is the right approach, reset debounce
-  //       should be come from outside, but when defined outside
-  //       it increased dramatically the timing.
-  val resetCtrl = ResetCtrl()
-  resetCtrl.io.button := io.pixelReset
-
   val clk25 = ClockDomain(
     clock = io.pixelClock,
-    reset = resetCtrl.io.resetOut,
+    reset = io.pixelReset,
     frequency = FixedFrequency(25.143 MHz),
   )
 
