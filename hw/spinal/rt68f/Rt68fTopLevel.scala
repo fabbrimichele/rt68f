@@ -6,7 +6,7 @@ import rt68f.memory._
 import spinal.core._
 import spinal.lib.com.uart.Uart
 import spinal.lib.graphic.vga.Vga
-import spinal.lib.master
+import spinal.lib.{BufferCC, master}
 import vga.VgaDevice
 
 import scala.language.postfixOps
@@ -38,183 +38,197 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val vga = master(Vga(VgaDevice.rgbConfig))
   }
 
-  val resetCtrl = ResetCtrl()
-  resetCtrl.io.button := io.reset
-
-  val dcm = new Dcm32_25_16()
-
-  val clk16 = ClockDomain(
-    clock = dcm.io.CLK_OUT2,
-    reset = resetCtrl.io.resetOut,
-    frequency = FixedFrequency(16 MHz)
+  // Clock needs to be synchronized
+  // TODO: Try to debounce it syncReset.
+  //  I could move the BufferCC and debounce logic inside the `ResetCtrl`.
+  val syncReset = BufferCC(io.reset)
+  val clk32 = ClockDomain(
+    clock = ClockDomain.current.clock,
+    reset = syncReset,
+    frequency = FixedFrequency(32 MHz),
+    config = ClockDomainConfig(
+      resetKind = SYNC
+    )
   )
 
-  // Clock domain area for CPU
-  new ClockingArea(clk16) {
-    // ----------------
-    // CPU Core
-    // ----------------
-    val cpu = M68k()
-    val cpuDataI = Bits(16 bits)
-    val cpuDtack = Bool()
+  new ClockingArea(clk32) {
 
-    // Connect CPU inputs to the aggregated signals
-    cpu.io.DATAI := cpuDataI
-    cpu.io.DTACK := cpuDtack
+    val dcm = new Dcm32_25_16()
 
-    // Default responses
-    cpuDataI := B(0, 16 bits)
-    cpuDtack := True
+    val clk16 = ClockDomain(
+      clock = dcm.io.CLK_OUT2,
+      reset = !dcm.io.LOCKED,
+      frequency = FixedFrequency(16 MHz),
+    )
 
-    // --------------------------------
-    // ROM: 16 KB @ 0x0000 - 0x4FFFF
-    // --------------------------------
-    val romSizeWords = 16384 / 2 // 16 KB / 2 bytes per 16-bit word
-    val rom = Mem16Bits(size = romSizeWords, readOnly = true, initFile = Some(romFilename))
-    val romSel = cpu.io.ADDR < U(0x3FFF, cpu.io.ADDR.getWidth bits)
+    // Clock domain area for CPU
+    new ClockingArea(clk16) {
+      // ----------------
+      // CPU Core
+      // ----------------
+      val cpu = M68k()
+      val cpuDataI = Bits(16 bits)
+      val cpuDtack = Bool()
 
-    // Connect CPU outputs to ROM inputs
-    rom.io.bus.AS    := cpu.io.AS
-    rom.io.bus.UDS   := cpu.io.UDS
-    rom.io.bus.LDS   := cpu.io.LDS
-    rom.io.bus.RW    := cpu.io.RW
-    rom.io.bus.ADDR  := cpu.io.ADDR
-    rom.io.bus.DATAO := cpu.io.DATAO
+      // Connect CPU inputs to the aggregated signals
+      cpu.io.DATAI := cpuDataI
+      cpu.io.DTACK := cpuDtack
 
-    rom.io.sel := romSel
+      // Default responses
+      cpuDataI := B(0, 16 bits)
+      cpuDtack := True
 
-    // If ROM selected, forward ROM response into CPU aggregated signals
-    when(!cpu.io.AS && romSel) {
-      cpuDataI := rom.io.bus.DATAI
-      cpuDtack := rom.io.bus.DTACK
-    }
+      // --------------------------------
+      // ROM: 16 KB @ 0x0000 - 0x4FFFF
+      // --------------------------------
+      val romSizeWords = 16384 / 2 // 16 KB / 2 bytes per 16-bit word
+      val rom = Mem16Bits(size = romSizeWords, readOnly = true, initFile = Some(romFilename))
+      val romSel = cpu.io.ADDR < U(0x3FFF, cpu.io.ADDR.getWidth bits)
 
+      // Connect CPU outputs to ROM inputs
+      rom.io.bus.AS := cpu.io.AS
+      rom.io.bus.UDS := cpu.io.UDS
+      rom.io.bus.LDS := cpu.io.LDS
+      rom.io.bus.RW := cpu.io.RW
+      rom.io.bus.ADDR := cpu.io.ADDR
+      rom.io.bus.DATAO := cpu.io.DATAO
 
-    // --------------------------------
-    // RAM: 16 KB @ 0x4000 - 0x7FFF
-    // --------------------------------
-    val ramSizeWords = 16384 / 2 // 16384 KB / 2 bytes per 16-bit word
-    val ram = Mem16Bits(size = ramSizeWords)
-    val ramSel = cpu.io.ADDR >= U(0x4000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x7FFF, cpu.io.ADDR.getWidth bits)
+      rom.io.sel := romSel
 
-    // Connect CPU outputs to ROM inputs
-    ram.io.bus.AS    := cpu.io.AS
-    ram.io.bus.UDS   := cpu.io.UDS
-    ram.io.bus.LDS   := cpu.io.LDS
-    ram.io.bus.RW    := cpu.io.RW
-    ram.io.bus.ADDR  := cpu.io.ADDR
-    ram.io.bus.DATAO := cpu.io.DATAO
-
-    ram.io.sel := ramSel
-
-    // If RAM selected, forward RAM response into CPU aggregated signals
-    when(!cpu.io.AS && ramSel) {
-      cpuDataI := ram.io.bus.DATAI
-      cpuDtack := ram.io.bus.DTACK
-    }
+      // If ROM selected, forward ROM response into CPU aggregated signals
+      when(!cpu.io.AS && romSel) {
+        cpuDataI := rom.io.bus.DATAI
+        cpuDtack := rom.io.bus.DTACK
+      }
 
 
-    // --------------------------------
-    // VGA: 32 KB @ 0x8000 - 0xFFFF
-    // --------------------------------
-    val vga = VgaDevice()
-    io.vga <> vga.io.vga
+      // --------------------------------
+      // RAM: 16 KB @ 0x4000 - 0x7FFF
+      // --------------------------------
+      val ramSizeWords = 16384 / 2 // 16384 KB / 2 bytes per 16-bit word
+      val ram = Mem16Bits(size = ramSizeWords)
+      val ramSel = cpu.io.ADDR >= U(0x4000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x7FFF, cpu.io.ADDR.getWidth bits)
 
-    val vgaFramebufferSel = cpu.io.ADDR >= U(0x8000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0xFFFF, cpu.io.ADDR.getWidth bits)
-    val vgaPaletteSel = cpu.io.ADDR >= U(0x13000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x13008, cpu.io.ADDR.getWidth bits)
-    val vgaControlSel = cpu.io.ADDR === U(0x13100, cpu.io.ADDR.getWidth bits)
+      // Connect CPU outputs to ROM inputs
+      ram.io.bus.AS := cpu.io.AS
+      ram.io.bus.UDS := cpu.io.UDS
+      ram.io.bus.LDS := cpu.io.LDS
+      ram.io.bus.RW := cpu.io.RW
+      ram.io.bus.ADDR := cpu.io.ADDR
+      ram.io.bus.DATAO := cpu.io.DATAO
 
-    // Connect CPU outputs to ROM inputs
-    vga.io.bus.AS    := cpu.io.AS
-    vga.io.bus.UDS   := cpu.io.UDS
-    vga.io.bus.LDS   := cpu.io.LDS
-    vga.io.bus.RW    := cpu.io.RW
-    vga.io.bus.ADDR  := cpu.io.ADDR
-    vga.io.bus.DATAO := cpu.io.DATAO
+      ram.io.sel := ramSel
 
-    vga.io.framebufferSel := vgaFramebufferSel
-    vga.io.paletteSel := vgaPaletteSel
-    vga.io.controlSel := vgaControlSel
-    vga.io.pixelClock := dcm.io.CLK_OUT1 // 25.175 MHz
-
-    // If VGA selected, forward VGA response into CPU aggregated signals
-    when(!cpu.io.AS && (vgaFramebufferSel || vgaPaletteSel || vgaControlSel)) {
-      cpuDataI := vga.io.bus.DATAI
-      cpuDtack := vga.io.bus.DTACK
-    }
+      // If RAM selected, forward RAM response into CPU aggregated signals
+      when(!cpu.io.AS && ramSel) {
+        cpuDataI := ram.io.bus.DATAI
+        cpuDtack := ram.io.bus.DTACK
+      }
 
 
-    // --------------------------------
-    // LED device @ 0x10000
-    // --------------------------------
-    val ledDev = LedDevice()
-    val ledDevSel = cpu.io.ADDR === U(0x10000, cpu.io.ADDR.getWidth bits)
-    io.led := ledDev.io.leds
+      // --------------------------------
+      // VGA: 32 KB @ 0x8000 - 0xFFFF
+      // --------------------------------
+      val vga = VgaDevice()
+      io.vga <> vga.io.vga
 
-    // Connect CPU outputs to LedDev inputs
-    ledDev.io.bus.AS    := cpu.io.AS
-    ledDev.io.bus.UDS   := cpu.io.UDS
-    ledDev.io.bus.LDS   := cpu.io.LDS
-    ledDev.io.bus.RW    := cpu.io.RW
-    ledDev.io.bus.ADDR  := cpu.io.ADDR
-    ledDev.io.bus.DATAO := cpu.io.DATAO
+      val vgaFramebufferSel = cpu.io.ADDR >= U(0x8000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0xFFFF, cpu.io.ADDR.getWidth bits)
+      val vgaPaletteSel = cpu.io.ADDR >= U(0x13000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x13008, cpu.io.ADDR.getWidth bits)
+      val vgaControlSel = cpu.io.ADDR === U(0x13100, cpu.io.ADDR.getWidth bits)
 
-    ledDev.io.sel := ledDevSel
+      // Connect CPU outputs to ROM inputs
+      vga.io.bus.AS := cpu.io.AS
+      vga.io.bus.UDS := cpu.io.UDS
+      vga.io.bus.LDS := cpu.io.LDS
+      vga.io.bus.RW := cpu.io.RW
+      vga.io.bus.ADDR := cpu.io.ADDR
+      vga.io.bus.DATAO := cpu.io.DATAO
 
-    // If LED selected, forward LED response into CPU aggregated signals
-    when(!cpu.io.AS && ledDevSel) {
-      cpuDataI := ledDev.io.bus.DATAI
-      cpuDtack := ledDev.io.bus.DTACK
-    }
+      vga.io.framebufferSel := vgaFramebufferSel
+      vga.io.paletteSel := vgaPaletteSel
+      vga.io.controlSel := vgaControlSel
+      vga.io.pixelClock := dcm.io.CLK_OUT1 // 25.175 MHz
+      vga.io.pixelReset := !dcm.io.LOCKED
 
-
-    // --------------------------------
-    // Key device @ 0x11000
-    // --------------------------------
-    val keyDev = KeyDevice()
-    val keyDevSel = cpu.io.ADDR === U(0x11000, cpu.io.ADDR.getWidth bits)
-    keyDev.io.keys := io.key
-
-    // Connect CPU outputs to LedDev inputs
-    keyDev.io.bus.AS    := cpu.io.AS
-    keyDev.io.bus.UDS   := cpu.io.UDS
-    keyDev.io.bus.LDS   := cpu.io.LDS
-    keyDev.io.bus.RW    := cpu.io.RW
-    keyDev.io.bus.ADDR  := cpu.io.ADDR
-    keyDev.io.bus.DATAO := cpu.io.DATAO
-
-    keyDev.io.sel := keyDevSel
-
-    // If KEY selected, forward KEY response into CPU aggregated signals
-    when(!cpu.io.AS && keyDevSel) {
-      cpuDataI := keyDev.io.bus.DATAI
-      cpuDtack := keyDev.io.bus.DTACK
-    }
+      // If VGA selected, forward VGA response into CPU aggregated signals
+      when(!cpu.io.AS && (vgaFramebufferSel || vgaPaletteSel || vgaControlSel)) {
+        cpuDataI := vga.io.bus.DATAI
+        cpuDtack := vga.io.bus.DTACK
+      }
 
 
-    // --------------------------------
-    // UART device @ 0x12000
-    // --------------------------------
-    val uartDev = UartDevice()
-    val uartDevSel = cpu.io.ADDR === U(0x12000, cpu.io.ADDR.getWidth bits) ||
-      cpu.io.ADDR === U(0x12002, cpu.io.ADDR.getWidth bits)
+      // --------------------------------
+      // LED device @ 0x10000
+      // --------------------------------
+      val ledDev = LedDevice()
+      val ledDevSel = cpu.io.ADDR === U(0x10000, cpu.io.ADDR.getWidth bits)
+      io.led := ledDev.io.leds
 
-    io.uart <> uartDev.io.uart
+      // Connect CPU outputs to LedDev inputs
+      ledDev.io.bus.AS := cpu.io.AS
+      ledDev.io.bus.UDS := cpu.io.UDS
+      ledDev.io.bus.LDS := cpu.io.LDS
+      ledDev.io.bus.RW := cpu.io.RW
+      ledDev.io.bus.ADDR := cpu.io.ADDR
+      ledDev.io.bus.DATAO := cpu.io.DATAO
 
-    // Connect CPU outputs to LedDev inputs
-    uartDev.io.bus.AS    := cpu.io.AS
-    uartDev.io.bus.UDS   := cpu.io.UDS
-    uartDev.io.bus.LDS   := cpu.io.LDS
-    uartDev.io.bus.RW    := cpu.io.RW
-    uartDev.io.bus.ADDR  := cpu.io.ADDR
-    uartDev.io.bus.DATAO := cpu.io.DATAO
+      ledDev.io.sel := ledDevSel
 
-    uartDev.io.sel := uartDevSel
+      // If LED selected, forward LED response into CPU aggregated signals
+      when(!cpu.io.AS && ledDevSel) {
+        cpuDataI := ledDev.io.bus.DATAI
+        cpuDtack := ledDev.io.bus.DTACK
+      }
 
-    // If UART selected, forward UART response into CPU aggregated signals
-    when(!cpu.io.AS && uartDevSel) {
-      cpuDataI := uartDev.io.bus.DATAI
-      cpuDtack := uartDev.io.bus.DTACK
+
+      // --------------------------------
+      // Key device @ 0x11000
+      // --------------------------------
+      val keyDev = KeyDevice()
+      val keyDevSel = cpu.io.ADDR === U(0x11000, cpu.io.ADDR.getWidth bits)
+      keyDev.io.keys := io.key
+
+      // Connect CPU outputs to LedDev inputs
+      keyDev.io.bus.AS := cpu.io.AS
+      keyDev.io.bus.UDS := cpu.io.UDS
+      keyDev.io.bus.LDS := cpu.io.LDS
+      keyDev.io.bus.RW := cpu.io.RW
+      keyDev.io.bus.ADDR := cpu.io.ADDR
+      keyDev.io.bus.DATAO := cpu.io.DATAO
+
+      keyDev.io.sel := keyDevSel
+
+      // If KEY selected, forward KEY response into CPU aggregated signals
+      when(!cpu.io.AS && keyDevSel) {
+        cpuDataI := keyDev.io.bus.DATAI
+        cpuDtack := keyDev.io.bus.DTACK
+      }
+
+
+      // --------------------------------
+      // UART device @ 0x12000
+      // --------------------------------
+      val uartDev = UartDevice()
+      val uartDevSel = cpu.io.ADDR === U(0x12000, cpu.io.ADDR.getWidth bits) ||
+        cpu.io.ADDR === U(0x12002, cpu.io.ADDR.getWidth bits)
+
+      io.uart <> uartDev.io.uart
+
+      // Connect CPU outputs to LedDev inputs
+      uartDev.io.bus.AS := cpu.io.AS
+      uartDev.io.bus.UDS := cpu.io.UDS
+      uartDev.io.bus.LDS := cpu.io.LDS
+      uartDev.io.bus.RW := cpu.io.RW
+      uartDev.io.bus.ADDR := cpu.io.ADDR
+      uartDev.io.bus.DATAO := cpu.io.DATAO
+
+      uartDev.io.sel := uartDevSel
+
+      // If UART selected, forward UART response into CPU aggregated signals
+      when(!cpu.io.AS && uartDevSel) {
+        cpuDataI := uartDev.io.bus.DATAI
+        cpuDtack := uartDev.io.bus.DTACK
+      }
     }
   }
 

@@ -149,6 +149,8 @@ disassemble:
 	m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/blinker.bin
 	m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/keys.bin
 
+# TODO: add command to debug timing: trce -v 12 -fastpaths -o design_timing_report Rt68f.ncd Rt68f.pcf
+
 clean:
 	rm -f hw/gen/*.v
 	rm -f hw/gen/*.vhd
