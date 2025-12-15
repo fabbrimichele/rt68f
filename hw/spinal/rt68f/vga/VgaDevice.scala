@@ -253,7 +253,7 @@ case class VgaDevice() extends Component {
 
     val pixelColorIndex = mode.mux(
       //M0_640X400C02 -> shiftRegister.msb.resized,
-      M0_640X400C02 -> B"0111",
+      M0_640X400C02 -> shiftRegister(15 downto 15).resized,
       M1_640X200C04 -> shiftRegister(15 downto 14).resized,
       M2_320X200C16 -> shiftRegister(15 downto 12).resized,
       M3_320X200C16 -> shiftRegister(15 downto 12).resized,
@@ -268,9 +268,14 @@ case class VgaDevice() extends Component {
 */
       // TODO: the palette is causing the glitches with the serial
       //       without it works.
-      ctrl.io.rgb.r := pixelColorIndex(2).mux(U"1111", U"0000")
-      ctrl.io.rgb.g := pixelColorIndex(1).mux(U"1111", U"0000")
-      ctrl.io.rgb.b := pixelColorIndex(0).mux(U"1111", U"0000")
+      // Bit 3 is intensity
+      // 11 -> full intensity, 10 -> off, 01 -> half intensity, 00 -> off
+      val r = (pixelColorIndex(3) ## pixelColorIndex(2)).mux(3 -> U"1111", 2 -> U"0000", 1 -> U"0111", 0 -> U"0000")
+      val g = (pixelColorIndex(3) ## pixelColorIndex(1)).mux(3 -> U"1111", 2 -> U"0000", 1 -> U"0111", 0 -> U"0000")
+      val b = (pixelColorIndex(3) ## pixelColorIndex(0)).mux(3 -> U"1111", 2 -> U"0000", 1 -> U"0111", 0 -> U"0000")
+      ctrl.io.rgb.r := r
+      ctrl.io.rgb.g := g
+      ctrl.io.rgb.b := b
     } otherwise {
       ctrl.io.rgb.clear()
     }
