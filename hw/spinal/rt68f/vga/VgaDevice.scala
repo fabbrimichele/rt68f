@@ -266,7 +266,8 @@ case class VgaDevice() extends Component {
       ctrl.io.rgb.g := pixelColor(7 downto 4)
       ctrl.io.rgb.b := pixelColor(3 downto 0)
 */
-      // TODO: try not to use the palette
+      // TODO: the palette is causing the glitches with the serial
+      //       without it works.
       ctrl.io.rgb.r := pixelColorIndex(2).mux(U"1111", U"0000")
       ctrl.io.rgb.g := pixelColorIndex(1).mux(U"1111", U"0000")
       ctrl.io.rgb.b := pixelColorIndex(0).mux(U"1111", U"0000")
