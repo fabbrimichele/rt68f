@@ -246,7 +246,7 @@ object Rt68fTopLevelVhdl extends App {
   //private val romFilename = "uart_echo.hex"
   //private val romFilename = "mem_test.hex"
   //private val romFilename = "monitor.hex"
-  private val romFilename = "uart16450_tx_byte.hex"
+  private val romFilename = "uart16450_echo.hex"
 
   private val report = Config.spinal.generateVhdl(Rt68fTopLevel(romFilename))
   report.mergeRTLSource("mergeRTL") // Merge all rtl sources into mergeRTL.vhd and mergeRTL.v files

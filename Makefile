@@ -3,7 +3,7 @@ TARGET = Rt68f
 TOPLEVEL = rt68f.Rt68fTopLevel
 DEVICE = xc6slx9-tqg144-2
 UCF = papilio_duo_computing_shield
-ASSEMBLIES = blinker led_on keys uart uart_echo uart_tx_byte uart_hello mem_test monitor uart16450_tx_byte
+ASSEMBLIES = blinker led_on keys uart uart_echo uart_tx_byte uart_hello mem_test monitor uart16450_tx_byte uart16450_echo
 
 # App
 # Define the source directory for app assembly files
