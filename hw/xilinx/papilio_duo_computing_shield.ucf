@@ -7,12 +7,10 @@ CONFIG PROHIBIT=P144;
 CONFIG PROHIBIT=P69;
 CONFIG PROHIBIT=P60;
 
-NET clk             LOC="P94"  | IOSTANDARD=LVTTL | PERIOD=31.25ns;              # CLK
-NET uart_rxd       LOC="P46"  | IOSTANDARD=LVTTL;                                # RX
-NET uart_txd       LOC="P141" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # TX
-#NET ARDUINO_RESET  LOC="P139" | IOSTANDARD=LVTTL;                                # ARDUINO_RESET
-#NET uart_rxd        LOC="P116"  | IOSTANDARD=LVCMOS33| PULLUP;                   # A0 - RS232_RX
-#NET uart_txd        LOC="P117"  | IOSTANDARD=LVCMOS33 | DRIVE=12 | SLEW=SLOW;    # A1 - RS232_TX
+NET clk             LOC="P94"  | IOSTANDARD=LVTTL | PERIOD=31.25ns;             # CLK
+NET uart_rxd       LOC="P46"  | IOSTANDARD=LVTTL;                               # RX - USB
+NET uart_txd       LOC="P141" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;         # TX - USB
+#NET ARDUINO_RESET  LOC="P139" | IOSTANDARD=LVTTL;                               # ARDUINO_RESET
 #NET SD_MISO       LOC="P118" | IOSTANDARD=LVTTL;                                # A2
 #NET SD_CD         LOC="P119" | IOSTANDARD=LVTTL;                                # A3
 #NET PS2_DAT1      LOC="P120" | IOSTANDARD=LVTTL;                                # A4
@@ -30,12 +28,15 @@ NET uart_txd       LOC="P141" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;         
 #NET SD_nCS        LOC="P112" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B2
 NET reset          LOC="P102" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST | CLOCK_DEDICATED_ROUTE = FALSE; # B5
 
-# NOTE: NET key(x) breaks the Serial transmission!!!
-# where 'x' depends on the design. That is not good...
-#NET key(3)         LOC="P111" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B3 - key left
-#NET key(2)         LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B4 - key down
-#NET key(0)         LOC="P101" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B6 - key up
-#NET key(1)         LOC="P100" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B7 - key right
+# This serial has reliability issues with keys, VGA, etc
+# To have a reliable serial use the one over USB (P46, P141)
+#NET uart_rxd        LOC="P116" | IOSTANDARD=LVTTL;                                # A0 - RS232_RX
+#NET uart_txd        LOC="P117" | IOSTANDARD=LVTTL;                                # A1 - RS232_TX
+
+NET key(3)         LOC="P111" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;         # B3 - key left
+NET key(2)         LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;         # B4 - key down
+NET key(0)         LOC="P101" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;         # B6 - key up
+NET key(1)         LOC="P100" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;         # B7 - key right
 
 NET vga_hSync     LOC="P99"  | IOSTANDARD=LVCMOS33 | DRIVE=2 | SLEW=SLOW;          # C0
 NET vga_vSync     LOC="P97"  | IOSTANDARD=LVCMOS33 | DRIVE=2 | SLEW=SLOW;          # C1
