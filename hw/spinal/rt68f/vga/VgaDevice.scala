@@ -44,7 +44,6 @@ case class VgaDevice() extends Component {
 
   // Palette (implemented with registers)
   // TODO: use 12 bits
-  /*
   val palette = Vec.fill(16)(Reg(UInt(16 bits)))
   palette(0).init(U(0x0000))  // Black
   palette(1).init(U(0x000A))  // Blue
@@ -62,7 +61,6 @@ case class VgaDevice() extends Component {
   palette(13).init(U(0x0F5F)) // Bright Magenta
   palette(14).init(U(0x0FF5)) // Bright Yellow
   palette(15).init(U(0x0FFF)) // Bright White (Pure White)
-  */
 
   // Control register
   val controlReg = Reg(Bits(16 bits)) init 2 // Default 320x200, 16 colors
@@ -79,11 +77,11 @@ case class VgaDevice() extends Component {
 
     when(io.bus.RW) {
       // Read
-      //io.bus.DATAI := palette(wordAddr).asBits
+      io.bus.DATAI := palette(wordAddr).asBits
     } otherwise {
       // Write
       // TODO: handle UDS/LDS
-      //palette(wordAddr) := io.bus.DATAO.asUInt
+      palette(wordAddr) := io.bus.DATAO.asUInt
     }
   }
 
@@ -138,7 +136,7 @@ case class VgaDevice() extends Component {
 
   new ClockingArea(clk25) {
     val controlRegCC = BufferCC(controlReg)
-    //val paletteCC =  BufferCC(palette)
+    val paletteCC =  BufferCC(palette)
     val mode = controlRegCC(1 downto 0).asUInt
 
     val bitsPerPixel = mode.mux(
@@ -253,29 +251,29 @@ case class VgaDevice() extends Component {
 
     val pixelColorIndex = mode.mux(
       //M0_640X400C02 -> shiftRegister.msb.resized,
-      M0_640X400C02 -> shiftRegister(15 downto 15).resized,
-      M1_640X200C04 -> shiftRegister(15 downto 14).resized,
-      M2_320X200C16 -> shiftRegister(15 downto 12).resized,
-      M3_320X200C16 -> shiftRegister(15 downto 12).resized,
+      M0_640X400C02 -> shiftRegister(15 downto 15).asUInt.resized,
+      M1_640X200C04 -> shiftRegister(15 downto 14).asUInt.resized,
+      M2_320X200C16 -> shiftRegister(15 downto 12).asUInt.resized,
+      M3_320X200C16 -> shiftRegister(15 downto 12).asUInt.resized,
     )
-    //val pixelColor = paletteCC(pixelColorIndex)
+    val pixelColor = paletteCC(pixelColorIndex)
 
     when(colEn) {
-/*
       ctrl.io.rgb.r := pixelColor(11 downto 8)
       ctrl.io.rgb.g := pixelColor(7 downto 4)
       ctrl.io.rgb.b := pixelColor(3 downto 0)
-*/
       // TODO: the palette is causing the glitches with the serial
       //       without it works.
       // Bit 3 is intensity
       // 11 -> full intensity, 10 -> off, 01 -> half intensity, 00 -> off
+/*
       val r = (pixelColorIndex(3) ## pixelColorIndex(2)).mux(3 -> U"1111", 2 -> U"0000", 1 -> U"0111", 0 -> U"0000")
       val g = (pixelColorIndex(3) ## pixelColorIndex(1)).mux(3 -> U"1111", 2 -> U"0000", 1 -> U"0111", 0 -> U"0000")
       val b = (pixelColorIndex(3) ## pixelColorIndex(0)).mux(3 -> U"1111", 2 -> U"0000", 1 -> U"0111", 0 -> U"0000")
       ctrl.io.rgb.r := r
       ctrl.io.rgb.g := g
       ctrl.io.rgb.b := b
+*/
     } otherwise {
       ctrl.io.rgb.clear()
     }
