@@ -39,6 +39,7 @@
 ; ------------------------------
     ORG    $0400            ; Start of memory
 START:
+    JSR     UART_INIT
     LEA     MSG_TITLE,A0
     BSR     PUTS
 
@@ -521,7 +522,7 @@ TRAP_14_HANDLER:
 ; ------------------------------
 ; Subroutines
 ; ------------------------------
-    INCLUDE 'lib/console_io.asm'
+    INCLUDE 'lib/console_io_16450.asm'
     INCLUDE 'lib/conversions.asm'
 
 ; -------------------------------------------------------------
@@ -591,9 +592,19 @@ FB_START        EQU $00008000               ; Start of Framebuffer
 FB_END          EQU $00010000               ; End of Framebuffer (+1)
 FB_LEN          EQU (FB_END-FB_START)       ; Framebuffer length
 LED             EQU $00010000               ; LED-mapped register base address
-UART_BASE       EQU $00012000               ; UART-mapped data register address
-UART_DATA       EQU UART_BASE+0             ; UART-mapped data register address
-UART_STAT       EQU UART_BASE+2             ; UART-mapped data register address
+; SpinalHDL UART
+;UART_BASE       EQU $00012000               ; UART base address
+;UART_DATA       EQU UART_BASE+0             ; UART-mapped data register address
+;UART_STAT       EQU UART_BASE+2             ; UART-mapped status register address
+; 16450 UART
+UART_BASE       EQU $00012000               ; UART base address
+UART_RBR        EQU UART_BASE+$0            ; Receive Buffer Register(RBR) / Transmitter Holding Register(THR) / Divisor Latch (LSB)
+UART_IER        EQU UART_BASE+$2            ; Interrupt enable register / Divisor Latch (MSB)
+UART_IIR        EQU UART_BASE+$4            ; Interrupt Identification Register
+UART_LCR        EQU UART_BASE+$6            ; Line control register
+UART_MCR        EQU UART_BASE+$8            ; MODEM control register
+UART_LSR        EQU UART_BASE+$A            ; Line status register
+UART_MSR        EQU UART_BASE+$C            ; MODEM status register
 ; NOTE: do not remove spaces around +
 
 ; Monitor RAM

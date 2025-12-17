@@ -207,17 +207,11 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
       // --------------------------------
       // UART device @ 0x12000
-      // 8 word registers (
+      // 8 word registers
       // --------------------------------
       val uartDev = T16450Device()
       val uartDevSel = cpu.io.ADDR >= U(0x12000, cpu.io.ADDR.getWidth bits) &&
         cpu.io.ADDR < U(0x12010, cpu.io.ADDR.getWidth bits)
-
-      /*
-      val uartDev = UartDevice()
-      val uartDevSel = cpu.io.ADDR === U(0x12000, cpu.io.ADDR.getWidth bits) ||
-        cpu.io.ADDR === U(0x12002, cpu.io.ADDR.getWidth bits)
-      */
 
       io.uart <> uartDev.io.uart
 
@@ -251,8 +245,8 @@ object Rt68fTopLevelVhdl extends App {
   //private val romFilename = "uart_hello.hex"
   //private val romFilename = "uart_echo.hex"
   //private val romFilename = "mem_test.hex"
-  private val romFilename = "uart16450_tx_byte.hex"
-  //private val romFilename = "monitor.hex"
+  private val romFilename = "monitor.hex"
+  //private val romFilename = "uart16450_echo.hex"
 
   private val report = Config.spinal.generateVhdl(Rt68fTopLevel(romFilename))
   report.mergeRTLSource("mergeRTL") // Merge all rtl sources into mergeRTL.vhd and mergeRTL.v files
