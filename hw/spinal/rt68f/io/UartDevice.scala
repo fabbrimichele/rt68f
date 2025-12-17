@@ -101,8 +101,6 @@ case class UartDevice() extends Component {
   val isRxReadFire = !io.bus.AS && io.sel && io.bus.RW && !regSel && rxValid
   rxFifo.io.pop.ready := isRxReadFire // Acknowledge the pop
 
-  // TODO: try to delay DTACK with a state machine?
-
   // Handle DTACK (data acknowledge) and Read transactions
   when(!io.bus.AS && io.sel) {
     io.bus.DTACK := False // acknowledge access (active low)
