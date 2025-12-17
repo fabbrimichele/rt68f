@@ -44,6 +44,7 @@ case class VgaDevice() extends Component {
 
   // Palette (implemented with registers)
   // TODO: use 12 bits
+/*
   val palette = Vec.fill(16)(Reg(UInt(16 bits)))
   palette(0).init(U(0x0000))  // Black
   palette(1).init(U(0x000A))  // Blue
@@ -61,6 +62,7 @@ case class VgaDevice() extends Component {
   palette(13).init(U(0x0F5F)) // Bright Magenta
   palette(14).init(U(0x0FF5)) // Bright Yellow
   palette(15).init(U(0x0FFF)) // Bright White (Pure White)
+*/
 
   // Control register
   val controlReg = Reg(Bits(16 bits)) init 2 // Default 320x200, 16 colors
@@ -77,11 +79,11 @@ case class VgaDevice() extends Component {
 
     when(io.bus.RW) {
       // Read
-      io.bus.DATAI := palette(wordAddr).asBits
+      //io.bus.DATAI := palette(wordAddr).asBits
     } otherwise {
       // Write
       // TODO: handle UDS/LDS
-      palette(wordAddr) := io.bus.DATAO.asUInt
+      //palette(wordAddr) := io.bus.DATAO.asUInt
     }
   }
 
@@ -135,8 +137,26 @@ case class VgaDevice() extends Component {
   )
 
   new ClockingArea(clk25) {
+    val palette = Vec.fill(16)(Reg(UInt(16 bits)))
+    palette(0).init(U(0x0000))  // Black
+    palette(1).init(U(0x000A))  // Blue
+    palette(2).init(U(0x00A0))  // Green
+    palette(3).init(U(0x00AA))  // Cyan
+    palette(4).init(U(0x0A00))  // Red
+    palette(5).init(U(0x0A0A))  // Magenta
+    palette(6).init(U(0x0A50))  // Brown (Special Case: R=A, G=5, B=0)
+    palette(7).init(U(0x0AAA))  // Light Gray
+    palette(8).init(U(0x0555))  // Dark Gray
+    palette(9).init(U(0x055F))  // Bright Blue
+    palette(10).init(U(0x05F5)) // Bright Green
+    palette(11).init(U(0x05FF)) // Bright Cyan
+    palette(12).init(U(0x0F55)) // Bright Red
+    palette(13).init(U(0x0F5F)) // Bright Magenta
+    palette(14).init(U(0x0FF5)) // Bright Yellow
+    palette(15).init(U(0x0FFF)) // Bright White (Pure White)
+
     val controlRegCC = BufferCC(controlReg)
-    val paletteCC =  BufferCC(palette)
+    //val paletteCC =  BufferCC(palette)
     val mode = controlRegCC(1 downto 0).asUInt
 
     val bitsPerPixel = mode.mux(
@@ -256,7 +276,8 @@ case class VgaDevice() extends Component {
       M2_320X200C16 -> shiftRegister(15 downto 12).asUInt.resized,
       M3_320X200C16 -> shiftRegister(15 downto 12).asUInt.resized,
     )
-    val pixelColor = paletteCC(pixelColorIndex)
+    //val pixelColor = paletteCC(pixelColorIndex)
+    val pixelColor = palette(pixelColorIndex)
 
     when(colEn) {
       ctrl.io.rgb.r := pixelColor(11 downto 8)

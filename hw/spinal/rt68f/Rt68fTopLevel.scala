@@ -209,40 +209,39 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       // --------------------------------
       // Centralized Bus Multiplexer
       // --------------------------------
-      val cpuDataI = Bits(16 bits)
-      val cpuDtack = Bool()
+      // 1. Registers to "Clean" the signals coming back to the CPU
+      val cpuDataIReg = Reg(Bits(16 bits)) init 0
+      val cpuDtackReg = Reg(Bool()) init True // DTACK is Active Low (True = Idle)
 
-      // Connect CPU inputs to the aggregated signals
-      cpu.io.DATAI := cpuDataI
-      cpu.io.DTACK := cpuDtack
+      // Connect CPU directly to these "Clean" registers
+      cpu.io.DATAI := cpuDataIReg
+      cpu.io.DTACK := cpuDtackReg
 
-      // Default responses
-      cpuDataI := B(0, 16 bits)
-      cpuDtack := True
+      cpuDtackReg := True
 
       when(!cpu.io.AS) {
         when(romSel) {
-          cpuDataI := rom.io.bus.DATAI
-          cpuDtack := rom.io.bus.DTACK
+          cpuDataIReg := rom.io.bus.DATAI
+          cpuDtackReg := rom.io.bus.DTACK
         } elsewhen (ramSel) {
-          cpuDataI := ram.io.bus.DATAI
-          cpuDtack := ram.io.bus.DTACK
+          cpuDataIReg := ram.io.bus.DATAI
+          cpuDtackReg := ram.io.bus.DTACK
         } elsewhen (vgaFramebufferSel || vgaPaletteSel || vgaControlSel) {
-          cpuDataI := vga.io.bus.DATAI
-          cpuDtack := vga.io.bus.DTACK
+          cpuDataIReg := vga.io.bus.DATAI
+          cpuDtackReg := vga.io.bus.DTACK
         } elsewhen (uartDevSel) {
-          cpuDataI := uartDev.io.bus.DATAI
-          cpuDtack := uartDev.io.bus.DTACK
+          cpuDataIReg := uartDev.io.bus.DATAI
+          cpuDtackReg := uartDev.io.bus.DTACK
         } elsewhen (ledDevSel) {
-          cpuDataI := ledDev.io.bus.DATAI
-          cpuDtack := ledDev.io.bus.DTACK
+          cpuDataIReg := ledDev.io.bus.DATAI
+          cpuDtackReg := ledDev.io.bus.DTACK
         } elsewhen (keyDevSel) {
-          cpuDataI := keyDev.io.bus.DATAI
-          cpuDtack := keyDev.io.bus.DTACK
+          cpuDataIReg := keyDev.io.bus.DATAI
+          cpuDtackReg := keyDev.io.bus.DTACK
         } otherwise {
           // Optional: Bus Error / Default Response
-          cpuDataI := B(0xFFFF, 16 bits)
-          cpuDtack := False // Generate a fake DTACK so CPU doesn't hang?
+          cpuDataIReg := B(0xFFFF, 16 bits)
+          cpuDtackReg := False // Generate a fake DTACK so CPU doesn't hang?
         }
       }
     }
