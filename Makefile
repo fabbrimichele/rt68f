@@ -81,15 +81,15 @@ blinker.bin:
 BIN_FILE ?= vga_grid.bin
 load: apps
 	# 1. Send LOAD command to prepare the device
-	@echo "--- Loading $(BIN_FILE) to /dev/ttyUSB2 ---"
-	printf "LOAD\r" > /dev/ttyUSB2
+	@echo "--- Loading $(BIN_FILE) to /dev/ttyUSB1 ---"
+	printf "LOAD\r" > /dev/ttyUSB1
 	sleep 0.5
 	# 2. Transfer the contents of the chosen binary file
-	cat target/app/$(BIN_FILE) > /dev/ttyUSB2
+	cat target/app/$(BIN_FILE) > /dev/ttyUSB1
 	sleep 0.5
 	# 3. Send RUN command
 	@echo "--- Running application at 0x4000 ---"
-	printf "RUN 4000\r" > /dev/ttyUSB2
+	printf "RUN 4000\r" > /dev/ttyUSB1
 
 
 # It requires 640x400 pixel images (ideally B&W)
@@ -111,11 +111,11 @@ build-img4col-bin:
 
 
 load-img-bin:
-	printf "FBCLR\r" > /dev/ttyUSB2
+	printf "FBCLR\r" > /dev/ttyUSB1
 	sleep 0.5
-	printf "LOAD\r" > /dev/ttyUSB2
+	printf "LOAD\r" > /dev/ttyUSB1
 	sleep 0.5
-	cat $(TARGET_APP_DIR)/img_with_header.bin > /dev/ttyUSB2
+	cat $(TARGET_APP_DIR)/img_with_header.bin > /dev/ttyUSB1
 
 
 # 'apps' target: invoked specifically to build all application binaries
