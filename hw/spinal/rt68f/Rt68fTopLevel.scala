@@ -67,23 +67,42 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       // CPU Core
       // ----------------
       val cpu = M68k()
-      val cpuDataI = Bits(16 bits)
-      val cpuDtack = Bool()
 
-      // Connect CPU inputs to the aggregated signals
-      cpu.io.DATAI := cpuDataI
-      cpu.io.DTACK := cpuDtack
+      // --------------------------------
+      // Address decoding
+      // --------------------------------
+      val romSel, ramSel = False
+      val vgaFramebufferSel, vgaPaletteSel, vgaControlSel = False
+      val ledDevSel, keyDevSel, uartDevSel = False
 
-      // Default responses
-      cpuDataI := B(0, 16 bits)
-      cpuDtack := True
+      // Centralized Decoding Chain
+      // This ensures that even if an address matches two ranges,
+      // only the highest priority one is selected.
+      val addr = cpu.io.ADDR
+      when(addr >= 0x00000 && addr < 0x04000) {
+        romSel := True
+      } elsewhen(addr >= 0x04000 && addr < 0x08000) {
+        ramSel := True
+      } elsewhen(addr >= 0x08000 && addr < 0x10000) {
+        vgaFramebufferSel := True
+      } elsewhen(cpu.io.ADDR === 0x10000) {
+        ledDevSel := True
+      } elsewhen(cpu.io.ADDR === 0x11000) {
+        keyDevSel := True
+      } elsewhen(cpu.io.ADDR >= 0x12000 && cpu.io.ADDR < 0x12010) {
+        uartDevSel := True
+      } elsewhen(cpu.io.ADDR >= 0x13000 && cpu.io.ADDR < 0x13020) {
+        vgaPaletteSel := True
+      } elsewhen(cpu.io.ADDR === 0x13100) {
+        vgaControlSel := True
+      }
+
 
       // --------------------------------
       // ROM: 16 KB @ 0x0000 - 0x4FFFF
       // --------------------------------
       val romSizeWords = 16384 / 2 // 16 KB / 2 bytes per 16-bit word
       val rom = Mem16Bits(size = romSizeWords, readOnly = true, initFile = Some(romFilename))
-      val romSel = cpu.io.ADDR < U(0x3FFF, cpu.io.ADDR.getWidth bits)
 
       // Connect CPU outputs to ROM inputs
       rom.io.bus.AS := cpu.io.AS
@@ -92,14 +111,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       rom.io.bus.RW := cpu.io.RW
       rom.io.bus.ADDR := cpu.io.ADDR
       rom.io.bus.DATAO := cpu.io.DATAO
-
       rom.io.sel := romSel
-
-      // If ROM selected, forward ROM response into CPU aggregated signals
-      when(!cpu.io.AS && romSel) {
-        cpuDataI := rom.io.bus.DATAI
-        cpuDtack := rom.io.bus.DTACK
-      }
 
 
       // --------------------------------
@@ -107,7 +119,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       // --------------------------------
       val ramSizeWords = 16384 / 2 // 16384 KB / 2 bytes per 16-bit word
       val ram = Mem16Bits(size = ramSizeWords)
-      val ramSel = cpu.io.ADDR >= U(0x4000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x7FFF, cpu.io.ADDR.getWidth bits)
 
       // Connect CPU outputs to ROM inputs
       ram.io.bus.AS := cpu.io.AS
@@ -116,14 +127,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       ram.io.bus.RW := cpu.io.RW
       ram.io.bus.ADDR := cpu.io.ADDR
       ram.io.bus.DATAO := cpu.io.DATAO
-
       ram.io.sel := ramSel
-
-      // If RAM selected, forward RAM response into CPU aggregated signals
-      when(!cpu.io.AS && ramSel) {
-        cpuDataI := ram.io.bus.DATAI
-        cpuDtack := ram.io.bus.DTACK
-      }
 
 
       // --------------------------------
@@ -131,10 +135,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       // --------------------------------
       val vga = VgaDevice()
       io.vga <> vga.io.vga
-
-      val vgaFramebufferSel = cpu.io.ADDR >= U(0x8000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0xFFFF, cpu.io.ADDR.getWidth bits)
-      val vgaPaletteSel = cpu.io.ADDR >= U(0x13000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x13020, cpu.io.ADDR.getWidth bits)
-      val vgaControlSel = cpu.io.ADDR === U(0x13100, cpu.io.ADDR.getWidth bits)
 
       // Connect CPU outputs to ROM inputs
       vga.io.bus.AS := cpu.io.AS
@@ -150,18 +150,11 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       vga.io.pixelClock := dcm.io.CLK_OUT1 // 25.175 MHz
       vga.io.pixelReset := !dcm.io.LOCKED
 
-      // If VGA selected, forward VGA response into CPU aggregated signals
-      when(!cpu.io.AS && (vgaFramebufferSel || vgaPaletteSel || vgaControlSel)) {
-        cpuDataI := vga.io.bus.DATAI
-        cpuDtack := vga.io.bus.DTACK
-      }
-
 
       // --------------------------------
       // LED device @ 0x10000
       // --------------------------------
       val ledDev = LedDevice()
-      val ledDevSel = cpu.io.ADDR === U(0x10000, cpu.io.ADDR.getWidth bits)
       io.led := ledDev.io.leds
 
       // Connect CPU outputs to LedDev inputs
@@ -171,21 +164,13 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       ledDev.io.bus.RW := cpu.io.RW
       ledDev.io.bus.ADDR := cpu.io.ADDR
       ledDev.io.bus.DATAO := cpu.io.DATAO
-
       ledDev.io.sel := ledDevSel
-
-      // If LED selected, forward LED response into CPU aggregated signals
-      when(!cpu.io.AS && ledDevSel) {
-        cpuDataI := ledDev.io.bus.DATAI
-        cpuDtack := ledDev.io.bus.DTACK
-      }
 
 
       // --------------------------------
       // Key device @ 0x11000
       // --------------------------------
       val keyDev = KeyDevice()
-      val keyDevSel = cpu.io.ADDR === U(0x11000, cpu.io.ADDR.getWidth bits)
       keyDev.io.keys := io.key
 
       // Connect CPU outputs to LedDev inputs
@@ -195,14 +180,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       keyDev.io.bus.RW := cpu.io.RW
       keyDev.io.bus.ADDR := cpu.io.ADDR
       keyDev.io.bus.DATAO := cpu.io.DATAO
-
       keyDev.io.sel := keyDevSel
-
-      // If KEY selected, forward KEY response into CPU aggregated signals
-      when(!cpu.io.AS && keyDevSel) {
-        cpuDataI := keyDev.io.bus.DATAI
-        cpuDtack := keyDev.io.bus.DTACK
-      }
 
 
       // --------------------------------
@@ -210,9 +188,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       // 8 word registers
       // --------------------------------
       val uartDev = T16450Device()
-      val uartDevSel = cpu.io.ADDR >= U(0x12000, cpu.io.ADDR.getWidth bits) &&
-        cpu.io.ADDR < U(0x12010, cpu.io.ADDR.getWidth bits)
-
       io.uart <> uartDev.io.uart
 
       // Connect CPU outputs to LedDev inputs
@@ -222,13 +197,39 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       uartDev.io.bus.RW := cpu.io.RW
       uartDev.io.bus.ADDR := cpu.io.ADDR
       uartDev.io.bus.DATAO := cpu.io.DATAO
-
       uartDev.io.sel := uartDevSel
 
-      // If UART selected, forward UART response into CPU aggregated signals
-      when(!cpu.io.AS && uartDevSel) {
-        cpuDataI := uartDev.io.bus.DATAI
-        cpuDtack := uartDev.io.bus.DTACK
+      // --------------------------------
+      // Centralized Bus Multiplexer
+      // --------------------------------
+      // TODO: Move together with the address decoding to a separate module
+      cpu.io.DATAI := 0
+      cpu.io.DTACK := True
+
+      when(!cpu.io.AS) {
+        when(romSel) {
+          cpu.io.DATAI := rom.io.bus.DATAI
+          cpu.io.DTACK := rom.io.bus.DTACK
+        } elsewhen (ramSel) {
+          cpu.io.DATAI := ram.io.bus.DATAI
+          cpu.io.DTACK := ram.io.bus.DTACK
+        } elsewhen (vgaFramebufferSel || vgaPaletteSel || vgaControlSel) {
+          cpu.io.DATAI := vga.io.bus.DATAI
+          cpu.io.DTACK := vga.io.bus.DTACK
+        } elsewhen (uartDevSel) {
+          cpu.io.DATAI := uartDev.io.bus.DATAI
+          cpu.io.DTACK := uartDev.io.bus.DTACK
+        } elsewhen (ledDevSel) {
+          cpu.io.DATAI := ledDev.io.bus.DATAI
+          cpu.io.DTACK := ledDev.io.bus.DTACK
+        } elsewhen (keyDevSel) {
+          cpu.io.DATAI := keyDev.io.bus.DATAI
+          cpu.io.DTACK := keyDev.io.bus.DTACK
+        } otherwise {
+          // Optional: Bus Error / Default Response
+          cpu.io.DATAI := B(0xFFFF, 16 bits)
+          cpu.io.DTACK := False // Generate a fake DTACK so CPU doesn't hang?
+        }
       }
     }
   }
