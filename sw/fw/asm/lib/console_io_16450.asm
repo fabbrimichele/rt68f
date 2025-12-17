@@ -1,0 +1,61 @@
+;------------------------------------------------------------------------------------
+; Serial initialization 19200 baud, 8N1
+;------------------------------------------------------------------------------------
+UART_INIT:
+	MOVE.B #$80,UART_LCR	; select DLAB = 1, to access the Divisor Latches of the Baud Generator
+	MOVE.B #$00,UART_IER	; set divisor MSB to 0
+	MOVE.B #52,UART_RBR     ; set divisor LSB to 52: 16MHz/16/52 = 19230 (should be 19200)
+	MOVE.B #$00,UART_LCR	; select DLAB = 0
+	MOVE.B #$03,UART_LCR	; set options to 8N1
+	MOVE.B #$00,UART_IER	; disable interrupt
+	RTS						;
+
+;------------------------------------------------------------------------------------
+; PUTS - Prints the null-terminated string pointed to by A0.
+;------------------------------------------------------------------------------------
+PUTS:
+    MOVEM.L D0/A0,-(SP)
+PUTS_LOOP:
+    MOVE.B  (A0)+,D0        ; Get character, increment pointer
+    BEQ     PUTS_END        ; Check for null terminator (0)
+    BSR     PUTCHAR         ; Print the character in D0
+    BRA     PUTS_LOOP       ; Loop back
+PUTS_END:
+    MOVEM.L (SP)+,D0/A0
+    RTS                     ; Return from subroutine
+
+;------------------------------------------------------------------------------------
+; PUTCHAR - Prints the single character stored in D0 to the UART data register.
+;------------------------------------------------------------------------------------
+PUTCHAR:
+    MOVE.L D2,-(SP)         ; Save D2
+    ; Check UART status (TX Ready)
+PUTCHAR_WAIT:
+    ; TODO: Don't access directly memory with BTST
+    ;       it won't work, not sure if it suppose
+    ;       to work like that (I don't think so) or
+    ;       if it's a bug.
+    MOVE.W  UART_LSR,D2     ; Read status register
+    BTST    #5,D2           ; Check TX ready (Bit 5)
+    BEQ     PUTCHAR_WAIT    ; Wait until TX ready
+    MOVE.B  D0,UART_RBR     ; Write the character to the data register
+    MOVE.L  (SP)+,D2
+    RTS
+
+;------------------------------------------------------------------------------------
+; GETCHAR - Gets a single character from the UART data register and stores it in D0
+;------------------------------------------------------------------------------------
+GETCHAR:
+    MOVE.L D2,-(SP)         ; Save D2
+    ; Check UART status (RX Ready)
+GETCHAR_WAIT:
+    ; TODO: Don't access directly memory with BTST
+    ;       it won't work, not sure if it suppose
+    ;       to work like that (I don't think so) or
+    ;       if it's a bug.
+    MOVE.W  UART_LSR,D2     ; Read status register
+    BTST    #0,D2           ; Check RX ready (Bit 1)
+    BEQ     GETCHAR_WAIT    ; Wait until RX ready
+    MOVE.W  UART_RBR,D0     ; Read character to D0
+    MOVE.L  (SP)+,D2
+    RTS
