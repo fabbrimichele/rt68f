@@ -133,7 +133,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       io.vga <> vga.io.vga
 
       val vgaFramebufferSel = cpu.io.ADDR >= U(0x8000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0xFFFF, cpu.io.ADDR.getWidth bits)
-      val vgaPaletteSel = cpu.io.ADDR >= U(0x13000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x13008, cpu.io.ADDR.getWidth bits)
+      val vgaPaletteSel = cpu.io.ADDR >= U(0x13000, cpu.io.ADDR.getWidth bits) && cpu.io.ADDR < U(0x13020, cpu.io.ADDR.getWidth bits)
       val vgaControlSel = cpu.io.ADDR === U(0x13100, cpu.io.ADDR.getWidth bits)
 
       // Connect CPU outputs to ROM inputs
@@ -207,10 +207,11 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
       // --------------------------------
       // UART device @ 0x12000
+      // 8 word registers
       // --------------------------------
-      val uartDev = UartDevice()
-      val uartDevSel = cpu.io.ADDR === U(0x12000, cpu.io.ADDR.getWidth bits) ||
-        cpu.io.ADDR === U(0x12002, cpu.io.ADDR.getWidth bits)
+      val uartDev = T16450Device()
+      val uartDevSel = cpu.io.ADDR >= U(0x12000, cpu.io.ADDR.getWidth bits) &&
+        cpu.io.ADDR < U(0x12010, cpu.io.ADDR.getWidth bits)
 
       io.uart <> uartDev.io.uart
 
@@ -244,7 +245,8 @@ object Rt68fTopLevelVhdl extends App {
   //private val romFilename = "uart_hello.hex"
   //private val romFilename = "uart_echo.hex"
   //private val romFilename = "mem_test.hex"
-  private val romFilename = "monitor.hex"
+  //private val romFilename = "monitor.hex"
+  private val romFilename = "uart16450_tx_byte.hex"
 
   private val report = Config.spinal.generateVhdl(Rt68fTopLevel(romFilename))
   report.mergeRTLSource("mergeRTL") // Merge all rtl sources into mergeRTL.vhd and mergeRTL.v files
