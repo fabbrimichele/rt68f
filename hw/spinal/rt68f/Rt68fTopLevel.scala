@@ -68,7 +68,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       // ----------------
       val cpu = M68k()
 
-
       // --------------------------------
       // Address decoding
       // --------------------------------
@@ -92,7 +91,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
         keyDevSel := True
       } elsewhen(cpu.io.ADDR >= 0x12000 && cpu.io.ADDR < 0x12010) {
         uartDevSel := True
-      } elsewhen(cpu.io.ADDR >= 0x13000 && cpu.io.ADDR < 0x13020) { // Expanded for 256 colors
+      } elsewhen(cpu.io.ADDR >= 0x13000 && cpu.io.ADDR < 0x13020) {
         vgaPaletteSel := True
       } elsewhen(cpu.io.ADDR === 0x13100) {
         vgaControlSel := True
@@ -112,7 +111,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       rom.io.bus.RW := cpu.io.RW
       rom.io.bus.ADDR := cpu.io.ADDR
       rom.io.bus.DATAO := cpu.io.DATAO
-
       rom.io.sel := romSel
 
 
@@ -129,7 +127,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       ram.io.bus.RW := cpu.io.RW
       ram.io.bus.ADDR := cpu.io.ADDR
       ram.io.bus.DATAO := cpu.io.DATAO
-
       ram.io.sel := ramSel
 
 
@@ -167,7 +164,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       ledDev.io.bus.RW := cpu.io.RW
       ledDev.io.bus.ADDR := cpu.io.ADDR
       ledDev.io.bus.DATAO := cpu.io.DATAO
-
       ledDev.io.sel := ledDevSel
 
 
@@ -184,7 +180,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       keyDev.io.bus.RW := cpu.io.RW
       keyDev.io.bus.ADDR := cpu.io.ADDR
       keyDev.io.bus.DATAO := cpu.io.DATAO
-
       keyDev.io.sel := keyDevSel
 
 
@@ -193,7 +188,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       // 8 word registers
       // --------------------------------
       val uartDev = T16450Device()
-
       io.uart <> uartDev.io.uart
 
       // Connect CPU outputs to LedDev inputs
@@ -203,45 +197,38 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       uartDev.io.bus.RW := cpu.io.RW
       uartDev.io.bus.ADDR := cpu.io.ADDR
       uartDev.io.bus.DATAO := cpu.io.DATAO
-
       uartDev.io.sel := uartDevSel
 
       // --------------------------------
       // Centralized Bus Multiplexer
       // --------------------------------
-      // 1. Registers to "Clean" the signals coming back to the CPU
-      val cpuDataIReg = Reg(Bits(16 bits)) init 0
-      val cpuDtackReg = Reg(Bool()) init True // DTACK is Active Low (True = Idle)
-
-      // Connect CPU directly to these "Clean" registers
-      cpu.io.DATAI := cpuDataIReg
-      cpu.io.DTACK := cpuDtackReg
-
-      cpuDtackReg := True
+      // TODO: Move together with the address decoding to a separate module
+      cpu.io.DATAI := 0
+      cpu.io.DTACK := True
 
       when(!cpu.io.AS) {
         when(romSel) {
-          cpuDataIReg := rom.io.bus.DATAI
-          cpuDtackReg := rom.io.bus.DTACK
+          cpu.io.DATAI := rom.io.bus.DATAI
+          cpu.io.DTACK := rom.io.bus.DTACK
         } elsewhen (ramSel) {
-          cpuDataIReg := ram.io.bus.DATAI
-          cpuDtackReg := ram.io.bus.DTACK
+          cpu.io.DATAI := ram.io.bus.DATAI
+          cpu.io.DTACK := ram.io.bus.DTACK
         } elsewhen (vgaFramebufferSel || vgaPaletteSel || vgaControlSel) {
-          cpuDataIReg := vga.io.bus.DATAI
-          cpuDtackReg := vga.io.bus.DTACK
+          cpu.io.DATAI := vga.io.bus.DATAI
+          cpu.io.DTACK := vga.io.bus.DTACK
         } elsewhen (uartDevSel) {
-          cpuDataIReg := uartDev.io.bus.DATAI
-          cpuDtackReg := uartDev.io.bus.DTACK
+          cpu.io.DATAI := uartDev.io.bus.DATAI
+          cpu.io.DTACK := uartDev.io.bus.DTACK
         } elsewhen (ledDevSel) {
-          cpuDataIReg := ledDev.io.bus.DATAI
-          cpuDtackReg := ledDev.io.bus.DTACK
+          cpu.io.DATAI := ledDev.io.bus.DATAI
+          cpu.io.DTACK := ledDev.io.bus.DTACK
         } elsewhen (keyDevSel) {
-          cpuDataIReg := keyDev.io.bus.DATAI
-          cpuDtackReg := keyDev.io.bus.DTACK
+          cpu.io.DATAI := keyDev.io.bus.DATAI
+          cpu.io.DTACK := keyDev.io.bus.DTACK
         } otherwise {
           // Optional: Bus Error / Default Response
-          cpuDataIReg := B(0xFFFF, 16 bits)
-          cpuDtackReg := False // Generate a fake DTACK so CPU doesn't hang?
+          cpu.io.DATAI := B(0xFFFF, 16 bits)
+          cpu.io.DTACK := False // Generate a fake DTACK so CPU doesn't hang?
         }
       }
     }
