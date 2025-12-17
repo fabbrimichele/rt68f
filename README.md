@@ -29,10 +29,16 @@ runMain rt68f.Rt68fTopLevelSim
 ```
 
 
-## To programm the bitstream to the Papilio DUO
+## To program the bitstream to the Papilio DUO
 ```bash
 /opt/GadgetFactory/papilio-loader
 ```
+
+## To load a file to the SBC
+```bash
+make load BIN_FILE=vga16col_palette.bin
+```
+where the file specified with `BIN_FILE` well be search in `/rt68f/target/app`
 
 ## Papilio prog
 `papilio-prog` is the programmer for the Papilio DUO board.
