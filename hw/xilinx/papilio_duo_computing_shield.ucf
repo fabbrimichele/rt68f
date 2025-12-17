@@ -38,22 +38,22 @@ NET key(2)         LOC="P105" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;         
 NET key(0)         LOC="P101" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;         # B6 - key up
 NET key(1)         LOC="P100" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;         # B7 - key right
 
-NET vga_hSync     LOC="P99"  | IOSTANDARD=LVCMOS33 | DRIVE=2 | SLEW=SLOW;          # C0
-NET vga_vSync     LOC="P97"  | IOSTANDARD=LVCMOS33 | DRIVE=2 | SLEW=SLOW;          # C1
-NET vga_color_b(0)   LOC="P93"  | IOSTANDARD=LVCMOS33 | DRIVE=2 | SLEW=SLOW;          # C2
+NET vga_hSync     LOC="P99"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C0
+NET vga_vSync     LOC="P97"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C1
+NET vga_color_b(0)   LOC="P93"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C2
 #NET AUDIO1_LEFT   LOC="P88"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C3
 #NET AUDIO1_RIGHT  LOC="P85"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C4
-NET vga_color_b(1)   LOC="P83"  | IOSTANDARD=LVCMOS33 | DRIVE=2 | SLEW=SLOW;          # C5
-NET vga_color_b(2)   LOC="P81"  | IOSTANDARD=LVCMOS33 | DRIVE=2 | SLEW=SLOW;          # C6
-NET vga_color_b(3)   LOC="P79"  | IOSTANDARD=LVCMOS33 | DRIVE=2 | SLEW=SLOW;          # C7
-NET vga_color_g(0)  LOC="P75"  | IOSTANDARD=LVCMOS33 | DRIVE=2 | SLEW=SLOW;          # C8
-NET vga_color_g(1)  LOC="P67"  | IOSTANDARD=LVCMOS33 | DRIVE=2 | SLEW=SLOW;          # C9
-NET vga_color_g(2)  LOC="P62"  | IOSTANDARD=LVCMOS33 | DRIVE=2 | SLEW=SLOW;          # C10
-NET vga_color_g(3)  LOC="P59"  | IOSTANDARD=LVCMOS33 | DRIVE=2 | SLEW=SLOW;          # C11
-NET vga_color_r(3)    LOC="P57"  | IOSTANDARD=LVCMOS33 | DRIVE=2 | SLEW=SLOW;          # C12
-NET vga_color_r(2)    LOC="P55"  | IOSTANDARD=LVCMOS33 | DRIVE=2 | SLEW=SLOW;          # C13
-NET vga_color_r(1)    LOC="P50"  | IOSTANDARD=LVCMOS33 | DRIVE=2 | SLEW=SLOW;          # C14
-NET vga_color_r(0)    LOC="P47"  | IOSTANDARD=LVCMOS33 | DRIVE=2 | SLEW=SLOW;          # C15
+NET vga_color_b(1)   LOC="P83"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C5
+NET vga_color_b(2)   LOC="P81"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C6
+NET vga_color_b(3)   LOC="P79"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C7
+NET vga_color_g(0)  LOC="P75"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C8
+NET vga_color_g(1)  LOC="P67"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C9
+NET vga_color_g(2)  LOC="P62"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C10
+NET vga_color_g(3)  LOC="P59"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C11
+NET vga_color_r(3)    LOC="P57"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C12
+NET vga_color_r(2)    LOC="P55"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C13
+NET vga_color_r(1)    LOC="P50"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C14
+NET vga_color_r(0)    LOC="P47"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C15
 #NET JOYSTICK2_5   LOC="P98"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D0
 #NET JOYSTICK2_4   LOC="P95"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D1
 #NET JOYSTICK2_3   LOC="P92"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D2
@@ -66,10 +66,10 @@ NET vga_color_r(0)    LOC="P47"  | IOSTANDARD=LVCMOS33 | DRIVE=2 | SLEW=SLOW;   
 #NET PS2_DAT2      LOC="P66"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D9
 #NET AUDIO2_RIGHT  LOC="P61"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D10
 #NET AUDIO2_LEFT   LOC="P58"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D11
-#NET led(0)         LOC="P56"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D12
-#NET led(1)         LOC="P51"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D13
-#NET led(2)         LOC="P48"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D14
-#NET led(3)         LOC="P39"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D15
+NET led(0)         LOC="P56"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D12
+NET led(1)         LOC="P51"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D13
+NET led(2)         LOC="P48"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D14
+NET led(3)         LOC="P39"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D15
 
 #NET SRAM_ADDR(0)  LOC="P7"   | IOSTANDARD=LVTTL;                                # SRAM_ADDR0
 #NET SRAM_ADDR(1)  LOC="P8"   | IOSTANDARD=LVTTL;                                # SRAM_ADDR1
