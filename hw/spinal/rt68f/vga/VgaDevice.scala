@@ -80,8 +80,13 @@ case class VgaDevice() extends Component {
       io.bus.DATAI := palette(wordAddr).asBits
     } otherwise {
       // Write
-      // TODO: handle UDS/LDS
-      palette(wordAddr) := io.bus.DATAO.asUInt
+      when (!io.bus.LDS) {
+        palette(wordAddr) := Cat(palette(wordAddr)(15 downto 8), io.bus.DATAO(7 downto 0)).asUInt
+      } elsewhen(!io.bus.UDS) {
+        palette(wordAddr) := Cat(io.bus.DATAO(15 downto 8), palette(wordAddr)(7 downto 0)).asUInt
+      } elsewhen(!io.bus.LDS && !io.bus.UDS) {
+        palette(wordAddr) := io.bus.DATAO.asUInt
+      }
     }
   }
 
