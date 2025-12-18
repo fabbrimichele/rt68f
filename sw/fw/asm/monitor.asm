@@ -199,7 +199,7 @@ HELP_CMD:
 ;
 ; Example (File Content in Hex Bytes):
 ; 00 00 08 10 ; Load Address: $00000810
-; 00 00 00 02 ; Content Length: 2 bytes
+; 00 00 00 02 ; Content Length: 2 bytes (it doesn't include the headers)
 ; 55 55       ; Actual Content: Two bytes ($55, $55)
 ; GTKTerm format:
 ; 00;00;08;10;00;00;00;02;55;55

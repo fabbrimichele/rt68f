@@ -11,8 +11,8 @@ def adjust_image(img):
     return img
 
 def save_with_header(filename, data, load_address):
-    # Total length = 8 bytes header + data length
-    total_length = 8 + len(data)
+    # Total length = data length (headers don't need to be counted)
+    total_length = len(data)
 
     with open(filename, "wb") as f:
         # Write Load Address (Big Endian)
