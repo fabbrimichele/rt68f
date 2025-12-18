@@ -13,30 +13,38 @@ def adjust_image(img):
     img = img.quantize(colors=16, method=Image.Quantize.MAXCOVERAGE)
     return img
 
-def save_palette(img, filename):
-    # 3. Extract the Palette and convert to 12-bit (444)
-    # Pillow stores palette as [R0, G0, B0, R1, G1, B1...] (8-bit each)
-    # 3. Handle the Palette (12-bit / 444 format)
-    raw_palette = img.getpalette()[:48]  # Get R,G,B for 16 colors
-    with open(filename, "wb") as f_pal:
-        for i in range(0, len(raw_palette), 3):
-            # Convert 8-bit color to 4-bit (0-255 -> 0-15)
-            r = raw_palette[i] >> 4
-            g = raw_palette[i+1] >> 4
-            b = raw_palette[i+2] >> 4
+def save_with_header(filename, data, load_address):
+    # Total length = 8 bytes header + data length
+    total_length = 8 + len(data)
 
-            # Pack into 16-bit Big Endian word: 0000 RRRR GGGG BBBB
-            color_16bit = (r << 8) | (g << 4) | b
-            f_pal.write(color_16bit.to_bytes(2, 'big'))
+    with open(filename, "wb") as f:
+        # Write Load Address (Big Endian)
+        f.write(load_address.to_bytes(4, 'big'))
+        # Write Total Content Length (Big Endian)
+        f.write(total_length.to_bytes(4, 'big'))
+        # Write Actual Data
+        f.write(data)
+
+def save_palette(img, filename):
+    raw_palette = img.getpalette()[:48]
+    pal_data = bytearray()
+    for i in range(0, len(raw_palette), 3):
+        r, g, b = raw_palette[i] >> 4, raw_palette[i+1] >> 4, raw_palette[i+2] >> 4
+        color_16bit = (r << 8) | (g << 4) | b
+        pal_data.extend(color_16bit.to_bytes(2, 'big'))
+
+    # Using your fixed address for palette
+    save_with_header(filename, pal_data, 0x00013000)
 
 def save_packed_img(img, filename):
     pixels = list(img.getdata())
-    with open(filename, "wb") as f_pix:
-        for i in range(0, len(pixels), 2):
-            # Combine two 4-bit nibbles into one byte
-            # Pixel A is high nibble, Pixel B is low nibble
-            packed_byte = (pixels[i] << 4) | pixels[i+1]
-            f_pix.write(packed_byte.to_bytes(1, 'big'))
+    pix_data = bytearray()
+    for i in range(0, len(pixels), 2):
+        packed_byte = (pixels[i] << 4) | pixels[i+1]
+        pix_data.append(packed_byte)
+
+    # FIXED: Added the missing save call here
+    save_with_header(filename, pix_data, 0x00008000)
 
 def convert(in_filename, out_filename, palette_filename):
     """Convert a PNG image to 320x200 pixels 16 colors with palette"""
