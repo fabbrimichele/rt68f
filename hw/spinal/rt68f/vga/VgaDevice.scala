@@ -162,7 +162,8 @@ case class VgaDevice() extends Component {
 
     // Configuration
     val latency = 1
-    val lastLine = 400
+    val numberOfLines = 400
+    val vertOffset = 40
 
     val ctrl = VgaCtrl(rgbConfig)
     ctrl.io.vga <> io.vga
@@ -196,29 +197,25 @@ case class VgaDevice() extends Component {
       M3_320X200C16 -> pixelCounter(pixelCounter.high downto 2).resize(log2Up(fbWidth)),
     )
 
+    val isVisibleVertRange = vCount >= (timings.v.colorStart + vertOffset) && vCount < (timings.v.colorStart + numberOfLines + vertOffset)
+    val isVisibleHorRange = hCount >= (timings.h.colorStart - latency) && hCount < timings.h.colorEnd - latency
+
     when (frameStart) {
       lineCounter := 0
       pixelCounter := 0
       pixelStartLineCounter := 0
-    } elsewhen(
-      (vCount >= timings.v.colorStart && vCount < timings.v.colorEnd)
-      && (hCount >= (timings.h.colorStart - latency) && hCount < timings.h.colorEnd - latency)
-    ) {
+    } elsewhen(isVisibleVertRange && isVisibleHorRange) {
       // Stretch horizontal resolution for modes M2 and M3
       stretch := !stretch
       when (mode === M0_640X400C02 || mode === M1_640X200C04 || stretch === False) {
         pixelCounter := pixelCounter + 1
       }
-    } elsewhen(
-      (vCount >= timings.v.colorStart && vCount < timings.v.colorEnd)
-        && (hCount === 0)
-    ) {
+    } elsewhen(isVisibleVertRange && (hCount === 0)) {
       pixelCounter := pixelStartLineCounter
       lineCounter := lineCounter + 1
       stretch := True
       // Stretch vertical resolution by 2 for all screen modes but M0_640X400C02
       when(mode === M0_640X400C02 || lineCounter.lsb === True) {
-        // Adding of 320 (or lineWidthReg) instead of 640 increase time from 80 ns to 103 ns
         pixelStartLineCounter := pixelStartLineCounter + lineWidthReg
       }
     }
@@ -237,7 +234,7 @@ case class VgaDevice() extends Component {
       U(0, 12 bits)
     )
 
-    val colEn = ctrl.io.vga.colorEn && ((vCount - timings.v.colorStart) < lastLine)
+    val colEn = ctrl.io.vga.colorEn && isVisibleVertRange
 
     val pixelBitIndex = mode.mux(
       M0_640X400C02 -> pixelX(3 downto 0),
