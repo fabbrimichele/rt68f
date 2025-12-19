@@ -14,9 +14,10 @@ case class VgaCtrl(rgbConfig: RgbConfig, timingsWidth: Int = 12) extends Compone
     val timings     = in(VgaTimings(timingsWidth))
     val hCounter    = out UInt(timingsWidth bit)
     val vCounter    = out UInt(timingsWidth bit)
+    val colorEn     = out Bool()
     val frameStart  = out Bool()
     val rgb         = in(Rgb(rgbConfig))
-    val vga         = master(Vga(rgbConfig))
+    val vga         = master(Vga(rgbConfig, withColorEn = false))
   }
 
   case class HVArea(timingsHV: VgaTimingsHV, enable: Bool) extends Area {
@@ -56,6 +57,11 @@ case class VgaCtrl(rgbConfig: RgbConfig, timingsWidth: Int = 12) extends Compone
 
   io.vga.hSync := h.sync ^ h.polarity
   io.vga.vSync := v.sync ^ v.polarity
-  io.vga.colorEn := colorEn
+  // Color enabled is required by the VgaDevice
+  // but not as a output of the top level.
+  // (I attempted to replace it with
+  // isVisibleHorRange && isVisibleVertRange
+  // but the image color had shadows).
+  io.colorEn := colorEn
   io.vga.color := io.rgb
 }
