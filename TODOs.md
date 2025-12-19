@@ -1,8 +1,8 @@
 ## TODOs
 
 ### VGA
-* Center the 400 lines when using 480 lines VGA Mode
-* Implement a bit in the control register to switch between VGA 640x480 and VGA 640x400
+* ~~Center the 400 lines when using 480 lines VGA Mode~~ (DONE)
+* ~~Implement a bit in the control register to switch between VGA 640x480 and VGA 640x400~~ (DONE)
 * Trigger an interrupt for frame start
 
 ### Logic
