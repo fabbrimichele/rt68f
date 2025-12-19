@@ -37,7 +37,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val led = out Bits(4 bits)
     val key = in Bits(4 bits) // Keys disabled in UCF file due to UART conflict.
     val uart = master(Uart()) // Expose UART pins (txd, rxd), must be defined in the ucf
-    val vga = master(Vga(VgaDevice.rgbConfig/*, withColorEn = false*/))
+    val vga = master(Vga(VgaDevice.rgbConfig, withColorEn = false))
     val sram = master(SRamBus())
   }
 
