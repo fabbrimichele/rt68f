@@ -26,6 +26,7 @@ import scala.language.postfixOps
  *   0x00012000              : UART (base)
  *   0x00013000              ; VGA Palette (4 words, it'll be 256)
  *   0x00013100              ; VGA Control (1 word, it might increase)
+ *   0x00100000 - 0x00180000 ; 512 KB SRAM
  */
 
 //noinspection TypeAnnotation
@@ -36,6 +37,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val key = in Bits(4 bits) // Keys disabled in UCF file due to UART conflict.
     val uart = master(Uart()) // Expose UART pins (txd, rxd), must be defined in the ucf
     val vga = master(Vga(VgaDevice.rgbConfig))
+    val sram = master(SRamBus())
   }
 
   // Clock needs to be synchronized
@@ -71,7 +73,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       // --------------------------------
       // Address decoding
       // --------------------------------
-      val romSel, ramSel = False
+      val romSel, ramSel, sramSel = False
       val vgaFramebufferSel, vgaPaletteSel, vgaControlSel = False
       val ledDevSel, keyDevSel, uartDevSel = False
 
@@ -95,8 +97,9 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
         vgaPaletteSel := True
       } elsewhen(cpu.io.ADDR === 0x13100) {
         vgaControlSel := True
+      } elsewhen(cpu.io.ADDR >= 0x100000 && cpu.io.ADDR < 0x180000) {
+        sramSel := True
       }
-
 
       // --------------------------------
       // ROM: 16 KB @ 0x0000 - 0x4FFFF
@@ -200,6 +203,20 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       uartDev.io.sel := uartDevSel
 
       // --------------------------------
+      // SRAM: 512 KB @ 0x100000 - 0x180000
+      // --------------------------------
+      val sramCtrl = SRamCtrl()
+      sramCtrl.io.bus.AS := cpu.io.AS
+      sramCtrl.io.bus.UDS := cpu.io.UDS
+      sramCtrl.io.bus.LDS := cpu.io.LDS
+      sramCtrl.io.bus.RW := cpu.io.RW
+      sramCtrl.io.bus.ADDR := cpu.io.ADDR
+      sramCtrl.io.bus.DATAO := cpu.io.DATAO
+      sramCtrl.io.sel := sramSel
+      io.sram <> sramCtrl.io.sram
+
+
+      // --------------------------------
       // Centralized Bus Multiplexer
       // --------------------------------
       // TODO: Move together with the address decoding to a separate module
@@ -225,6 +242,9 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
         } elsewhen (keyDevSel) {
           cpu.io.DATAI := keyDev.io.bus.DATAI
           cpu.io.DTACK := keyDev.io.bus.DTACK
+        } elsewhen (sramSel) {
+          cpu.io.DATAI := sramCtrl.io.bus.DATAI
+          cpu.io.DTACK := sramCtrl.io.bus.DTACK
         } otherwise {
           // Optional: Bus Error / Default Response
           cpu.io.DATAI := B(0xFFFF, 16 bits)
