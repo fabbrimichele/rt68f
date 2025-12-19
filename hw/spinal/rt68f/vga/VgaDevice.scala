@@ -32,7 +32,7 @@ case class VgaDevice() extends Component {
     val controlSel      = in Bool() // Control select from decoder
     val pixelClock      = in Bool() // Pixel clock must be 25.175 Mhz
     val pixelReset      = in Bool() // Raw reset (it must not be sync with the 16Mhz clock)
-    val vga             = master(Vga(VgaDevice.rgbConfig))
+    val vga             = master(Vga(VgaDevice.rgbConfig, withColorEn = false))
   }
 
   // Framebuffer
@@ -255,7 +255,7 @@ case class VgaDevice() extends Component {
       U(0, 12 bits)
     )
 
-    val colEn = ctrl.io.vga.colorEn && isVisibleVertRange
+    val colEn = ctrl.io.colorEn && isVisibleVertRange
 
     val pixelBitIndex = mode.mux(
       M0_640X400C02 -> pixelX(3 downto 0),
