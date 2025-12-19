@@ -35,9 +35,6 @@ case class VgaDevice() extends Component {
     val vga             = master(Vga(VgaDevice.rgbConfig))
   }
 
-  // TODO: add a CTRL register to switch between:
-  //  - Monitor resolution: 640x480 (no black bands) and 640x400
-
   // Framebuffer
   val fbWidth = 32768 / 2  // 32KB = 640x400, 1 bit color
   val framebuffer = Mem(Bits(16 bits), fbWidth)
@@ -63,7 +60,9 @@ case class VgaDevice() extends Component {
   palette(15).init(U(0x0FFF)) // Bright White (Pure White)
 
   // Control register
-  val controlReg = Reg(Bits(16 bits)) init 2 // Default 320x200, 16 colors
+  // Bits 1-0 [Screen mode] : 0 -> 640x400 2 colors, 1 -> 640x200 4 colors, 2 -> 320x200 16 colors (3 same as 2)
+  // Bit 2    [Overscan]    : 0 -> off, 1 -> on
+  val controlReg = Reg(Bits(16 bits)) init 2 // 320x200 no overscan
 
   // ------------ 68000 BUS side ------------
   // Default response
@@ -143,6 +142,7 @@ case class VgaDevice() extends Component {
     val controlRegCC = BufferCC(controlReg)
     val paletteCC =  BufferCC(palette)
     val mode = controlRegCC(1 downto 0).asUInt
+    val overscan = controlRegCC(2)
 
     val bitsPerPixel = mode.mux(
       M0_640X400C02 -> U(1, 3 bits),
@@ -165,11 +165,32 @@ case class VgaDevice() extends Component {
     val numberOfLines = 400
     val vertOffset = 40
 
+    val vertOffsetReg = Reg(UInt()) init 0
+
     val ctrl = VgaCtrl(rgbConfig)
     ctrl.io.vga <> io.vga
 
     ctrl.io.softReset := False
-    ctrl.io.timings.setAs_h640_v480_r60
+
+    when(overscan) {
+      // VGA Signal 640 x 400 @ 70 Hz
+      vertOffsetReg := 0
+      ctrl.io.timings.setAs(
+        hPixels = 640,
+        hSync = 96,
+        hFront = 16,
+        hBack = 48,
+        hPolarity = false,
+        vPixels = 400,
+        vSync = 2,
+        vFront = 12,
+        vBack = 35,
+        vPolarity = false
+      )
+    } otherwise {
+      vertOffsetReg := vertOffset
+      ctrl.io.timings.setAs_h640_v480_r60
+    }
 
     // --- Access Exposed Counters and Timings ---
     val hCount = ctrl.io.hCounter
@@ -197,7 +218,7 @@ case class VgaDevice() extends Component {
       M3_320X200C16 -> pixelCounter(pixelCounter.high downto 2).resize(log2Up(fbWidth)),
     )
 
-    val isVisibleVertRange = vCount >= (timings.v.colorStart + vertOffset) && vCount < (timings.v.colorStart + numberOfLines + vertOffset)
+    val isVisibleVertRange = vCount >= (timings.v.colorStart + vertOffsetReg) && vCount < (timings.v.colorStart + numberOfLines + vertOffsetReg)
     val isVisibleHorRange = hCount >= (timings.h.colorStart - latency) && hCount < timings.h.colorEnd - latency
 
     when (frameStart) {
