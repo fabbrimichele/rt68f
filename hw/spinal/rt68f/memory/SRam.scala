@@ -50,12 +50,12 @@ case class SRamCtrl() extends Component {
       // Read
       io.sram.oe := False // active
       when (!io.bus.LDS) {
-        // B"8'xFF"`
         io.bus.DATAI := Cat(B"8'x00", io.sram.data.read)
       } elsewhen(!io.bus.UDS) {
         io.bus.DATAI := Cat(io.sram.data.read, B"8'x00")
       } elsewhen(!io.bus.LDS && !io.bus.UDS) {
-        // TODO
+        // TODO implement 16-bit read, below a temporary solution for debugging purpose
+        io.bus.DATAI := Cat(io.sram.data.read, B"8'x00")
       }
     } otherwise {
       // Write
@@ -67,7 +67,9 @@ case class SRamCtrl() extends Component {
         io.sram.data.writeEnable := True
         io.sram.data.write := io.bus.DATAO(15 downto 8)
       } elsewhen(!io.bus.LDS && !io.bus.UDS) {
-        // TODO
+        // TODO implement 16-bit read, below a temporary solution for debugging purpose
+        io.sram.data.writeEnable := True
+        io.sram.data.write := io.bus.DATAO(7 downto 0)
       }
     }
   }

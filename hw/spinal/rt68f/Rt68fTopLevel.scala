@@ -6,6 +6,7 @@ import rt68f.memory._
 import spinal.core._
 import spinal.lib.com.uart.Uart
 import spinal.lib.graphic.vga.Vga
+import spinal.lib.io.InOutWrapper
 import spinal.lib.{BufferCC, master}
 import vga.VgaDevice
 
@@ -36,7 +37,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val led = out Bits(4 bits)
     val key = in Bits(4 bits) // Keys disabled in UCF file due to UART conflict.
     val uart = master(Uart()) // Expose UART pins (txd, rxd), must be defined in the ucf
-    val vga = master(Vga(VgaDevice.rgbConfig))
+    val vga = master(Vga(VgaDevice.rgbConfig/*, withColorEn = false*/))
     val sram = master(SRamBus())
   }
 
@@ -269,7 +270,7 @@ object Rt68fTopLevelVhdl extends App {
   private val romFilename = "monitor.hex"
   //private val romFilename = "uart16450_echo.hex"
 
-  private val report = Config.spinal.generateVhdl(Rt68fTopLevel(romFilename))
+  private val report = Config.spinal.generateVhdl(InOutWrapper(Rt68fTopLevel(romFilename)))
   report.mergeRTLSource("mergeRTL") // Merge all rtl sources into mergeRTL.vhd and mergeRTL.v files
   report.printPruned()
 }
