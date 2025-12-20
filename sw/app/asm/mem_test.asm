@@ -123,8 +123,14 @@ UART_DATA   EQU UART_BASE+0 ; UART-mapped data register address
 UART_STAT   EQU UART_BASE+2 ; UART-mapped data register address
 
     ; --- Memory and Peripheral Map Constants (Based on your decoder) ---
-RAM_START       EQU     $004000     ; Base address of RAM (16KB)
-RAM_SIZE        EQU     $004000     ; Total size of RAM in bytes (16KB)
+
+    ; FPGA Mem
+;RAM_START       EQU     $004000     ; Base address of RAM (16KB)
+;RAM_SIZE        EQU     $004000     ; Total size of RAM in bytes (16KB)
+
+    ; SRAM
+RAM_START       EQU     $100000     ; Base address of RAM (1MB)
+RAM_SIZE        EQU     $080000     ; Total size of RAM in bytes (1.5MB)
 
     ; --- Test Data Constants ---
 INIT_WORD       EQU     $DEAD       ; Initial 16-bit word pattern
