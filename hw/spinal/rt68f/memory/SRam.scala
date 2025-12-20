@@ -2,7 +2,8 @@ package rt68f.memory
 
 import rt68f.core.M68kBus
 import spinal.core.in.Bool
-import spinal.core.{Bits, Bundle, Cat, Component, False, IntToBuilder, LiteralBuilder, True, in, out, when}
+import spinal.core.{B, Bits, Bundle, Cat, Component, False, IntToBuilder, LiteralBuilder, Reg, True, in, out, when}
+import spinal.lib.fsm.{EntryPoint, State, StateMachine}
 import spinal.lib.io.TriState
 import spinal.lib.{IMasterSlave, master, slave}
 
@@ -28,48 +29,106 @@ case class SRamCtrl() extends Component {
     val sram = master(SRamBus())
   }
 
-  io.sram.addr := io.bus.ADDR.asBits(18 downto 0)
-
   // Default state
   io.sram.we := True // Disabled (active low)
   io.sram.ce := True // Disabled (active low)
   io.sram.oe := True // Disabled (active low)
-  io.bus.DTACK := True // Disabled (active low)
-  io.bus.DATAI := B"16'x0000"
   io.sram.data.writeEnable := False
   io.sram.data.write := B"8'x00"
+  io.sram.addr := U"0".asBits.resized
+  io.bus.DTACK := True // Disabled (active low)
 
-  // TODO:
-  //  Implement 16 bits interface.
-  //  Initial implementation, only 8 bits at a time.
-  when(!io.bus.AS && io.sel) {
-    io.bus.DTACK := False // active
-    io.sram.ce := False // active
+  val dataBuf = Reg(Bits(16 bits)) init(0)
+  io.bus.DATAI := dataBuf
 
-    when(io.bus.RW) {
-      // Read
-      io.sram.oe := False // active
-      when (!io.bus.LDS) {
-        io.bus.DATAI := Cat(B"8'x00", io.sram.data.read)
-      } elsewhen(!io.bus.UDS) {
-        io.bus.DATAI := Cat(io.sram.data.read, B"8'x00")
-      } elsewhen(!io.bus.LDS && !io.bus.UDS) {
-        // TODO implement 16-bit read, below a temporary solution for debugging purpose
-        io.bus.DATAI := Cat(io.sram.data.read, B"8'x00")
+  val fsm = new StateMachine {
+    val idle: State = new State with EntryPoint {
+      whenIsActive {
+        when(!io.bus.AS && io.sel) {
+          when(io.bus.RW) {
+            goto(readLow)
+          } otherwise {
+            goto(writeLow)
+          }
+        }
       }
-    } otherwise {
-      // Write
-      io.sram.we := False // active
-      when (!io.bus.LDS) {
-        io.sram.data.writeEnable := True
-        io.sram.data.write := io.bus.DATAO(7 downto 0)
-      } elsewhen(!io.bus.UDS) {
-        io.sram.data.writeEnable := True
-        io.sram.data.write := io.bus.DATAO(15 downto 8)
-      } elsewhen(!io.bus.LDS && !io.bus.UDS) {
-        // TODO implement 16-bit read, below a temporary solution for debugging purpose
-        io.sram.data.writeEnable := True
-        io.sram.data.write := io.bus.DATAO(7 downto 0)
+    }
+
+    // -- READ SEQUENCE --
+    // TODO: the read introduces a lot a latency that
+    //  is actually not necessary considering the RAM
+    //  can be as fast as 10 ns. Create an additional
+    //  clock at 64 MHz only for the RAM, it'll require
+    //  BufferCC for the signals (cross domain buffers)
+    val readLow: State = new State {
+      whenIsActive {
+        io.sram.ce := False // active
+        io.sram.oe := False // active
+        io.sram.addr := io.bus.ADDR.asBits(18 downto 1) ##  B"1" // LDS address (odd address)
+        goto(sampleLow)
+      }
+    }
+
+    val sampleLow: State = new State {
+      whenIsActive {
+        dataBuf(7 downto 0) := io.sram.data.read
+        goto(readHigh)
+      }
+    }
+
+    val readHigh: State = new State {
+      whenIsActive {
+        io.sram.ce := False // active
+        io.sram.oe := False // active
+        io.sram.addr := io.bus.ADDR.asBits(18 downto 1) ##  B"0" // UDS address (even address)
+
+        goto(sampleHigh)
+      }
+    }
+
+    val sampleHigh: State = new State {
+      whenIsActive {
+        dataBuf(15 downto 8) := io.sram.data.read
+        io.bus.DTACK := False
+        goto(waitCpu)
+      }
+    }
+
+    // -- WRITE SEQUENCE --
+    val writeLow: State = new State {
+      whenIsActive {
+        when(!io.bus.LDS) {
+          io.sram.ce := False
+          io.sram.we := False
+          io.sram.addr := io.bus.ADDR(18 downto 1) ## B"1" // LDS address (odd address)
+          io.sram.data.writeEnable := True
+          io.sram.data.write := io.bus.DATAO(7 downto 0)
+        }
+        goto(writeHigh)
+      }
+    }
+
+    val writeHigh: State = new State {
+      whenIsActive {
+        when(!io.bus.UDS) {
+          io.sram.ce := False
+          io.sram.we := False
+          io.sram.addr := io.bus.ADDR(18 downto 1) ## B"0" // UDS address (odd address)
+          io.sram.data.writeEnable := True
+          io.sram.data.write := io.bus.DATAO(15 downto 8)
+        }
+        io.bus.DTACK := False
+        goto(waitCpu)
+      }
+    }
+
+    // -- SHARE STATE --
+    val waitCpu: State = new State {
+      whenIsActive {
+        io.bus.DTACK := False
+        when(io.bus.AS) {
+          goto(idle)
+        }
       }
     }
   }

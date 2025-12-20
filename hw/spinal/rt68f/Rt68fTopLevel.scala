@@ -170,7 +170,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       ledDev.io.bus.DATAO := cpu.io.DATAO
       ledDev.io.sel := ledDevSel
 
-
       // --------------------------------
       // Key device @ 0x11000
       // --------------------------------
@@ -215,7 +214,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       sramCtrl.io.bus.DATAO := cpu.io.DATAO
       sramCtrl.io.sel := sramSel
       io.sram <> sramCtrl.io.sram
-
 
       // --------------------------------
       // Centralized Bus Multiplexer
