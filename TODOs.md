@@ -7,8 +7,8 @@
 ### VGA
 * ~~Center the 400 lines when using 480 lines VGA Mode~~ (DONE)
 * ~~Implement a bit in the control register to switch between VGA 640x480 and VGA 640x400~~ (DONE)
-* Trigger an interrupt for frame start
-* Increase RAM size to 64000 bytes and increase colors at the 3 resolutions
+* Trigger an interrupt for frame start and 68000 interrupt
+* Increase RAM size to 64000  (requires monitor refactoring) and increase colors at the 3 resolutions
   * 640x400 - 2 colors -> 4 colors
   * 640x200 - 4 colors -> 16 colors
   * 320x200 - 16 colors -> 256 colors
@@ -19,3 +19,12 @@
 ### UART
 * Use a CPU clock that allows a standard BAUD rate for the UART
 * try `tio -b 76800 /dev/ttyUSB0`
+
+### SPI Flash
+* Design the registers to read from the SPI
+* Read from the SPI Flash data with a 68000 program
+
+### Sound
+* Integrate a sound core synth, see:
+  * https://www.fpga4fun.com/OPL.html
+  * https://github.com/jotego/jtopl
