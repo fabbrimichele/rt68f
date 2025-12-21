@@ -10,7 +10,7 @@ import scala.language.postfixOps
 case class BusManager() extends Component {
   val io = new Bundle {
     // Master Interface (from CPU)
-    val masterBus = slave(M68kBus())
+    val cpuBus = slave(M68kBus())
 
     // Slave busses (for the Mux)
     val romBus  = master(M68kBus())
@@ -33,6 +33,27 @@ case class BusManager() extends Component {
     val sramSel           = out Bool()
   }
 
+  // --------------------------------
+  // Broadcast Logic
+  // --------------------------------
+  val peripheralBuses = List(
+    io.romBus, io.ramBus, io.vgaBus, io.ledBus,
+    io.keyBus, io.uartBus, io.sramBus
+  )
+
+  for (bus <- peripheralBuses) {
+    bus.AS := io.cpuBus.AS
+    bus.UDS := io.cpuBus.UDS
+    bus.LDS := io.cpuBus.LDS
+    bus.RW := io.cpuBus.RW
+    bus.ADDR := io.cpuBus.ADDR
+    bus.DATAO := io.cpuBus.DATAO
+  }
+
+
+  // --------------------------------
+  // Address decoding
+  // --------------------------------
   io.romSel            := False
   io.ramSel            := False
   io.vgaFramebufferSel := False
@@ -43,12 +64,9 @@ case class BusManager() extends Component {
   io.uartDevSel        := False
   io.sramSel           := False
 
-  // --------------------------------
-  // Address decoding
-  // --------------------------------
   // Decoding Chain, ensures that even if an address matches
   // two ranges, only the highest priority one is selected.
-  val addr = io.masterBus.ADDR
+  val addr = io.cpuBus.ADDR
   when(addr >= 0x00000 && addr < 0x04000) {
     io.romSel := True
   } elsewhen(addr >= 0x04000 && addr < 0x08000) {
@@ -72,36 +90,36 @@ case class BusManager() extends Component {
   // --------------------------------
   // Bus Multiplexer
   // --------------------------------
-  io.masterBus.DATAI := 0
-  io.masterBus.DTACK := True
+  io.cpuBus.DATAI := 0
+  io.cpuBus.DTACK := True
 
-  when(!io.masterBus.AS) {
+  when(!io.cpuBus.AS) {
     when(io.romSel) {
-      io.masterBus.DATAI := io.romBus.DATAI
-      io.masterBus.DTACK := io.romBus.DTACK
+      io.cpuBus.DATAI := io.romBus.DATAI
+      io.cpuBus.DTACK := io.romBus.DTACK
     } elsewhen (io.ramSel) {
-      io.masterBus.DATAI := io.ramBus.DATAI
-      io.masterBus.DTACK := io.ramBus.DTACK
+      io.cpuBus.DATAI := io.ramBus.DATAI
+      io.cpuBus.DTACK := io.ramBus.DTACK
     } elsewhen (io.vgaFramebufferSel || io.vgaPaletteSel || io.vgaControlSel) {
-      io.masterBus.DATAI := io.vgaBus.DATAI
-      io.masterBus.DTACK := io.vgaBus.DTACK
+      io.cpuBus.DATAI := io.vgaBus.DATAI
+      io.cpuBus.DTACK := io.vgaBus.DTACK
     } elsewhen (io.uartDevSel) {
-      io.masterBus.DATAI := io.uartBus.DATAI
-      io.masterBus.DTACK := io.uartBus.DTACK
+      io.cpuBus.DATAI := io.uartBus.DATAI
+      io.cpuBus.DTACK := io.uartBus.DTACK
     } elsewhen (io.ledDevSel) {
-      io.masterBus.DATAI := io.ledBus.DATAI
-      io.masterBus.DTACK := io.ledBus.DTACK
+      io.cpuBus.DATAI := io.ledBus.DATAI
+      io.cpuBus.DTACK := io.ledBus.DTACK
     } elsewhen (io.keyDevSel) {
-      io.masterBus.DATAI := io.keyBus.DATAI
-      io.masterBus.DTACK := io.keyBus.DTACK
+      io.cpuBus.DATAI := io.keyBus.DATAI
+      io.cpuBus.DTACK := io.keyBus.DTACK
     } elsewhen (io.sramSel) {
-      io.masterBus.DATAI := io.sramBus.DATAI
-      io.masterBus.DTACK := io.sramBus.DTACK
+      io.cpuBus.DATAI := io.sramBus.DATAI
+      io.cpuBus.DTACK := io.sramBus.DTACK
     } otherwise {
       // Optional: Bus Error / Default Response
       // TODO: I should trigger Bus error or at least an interrupt
-      io.masterBus.DATAI := B(0xFFFF, 16 bits)
-      io.masterBus.DTACK := False // Generate a fake DTACK so CPU doesn't hang?
+      io.cpuBus.DATAI := B(0xFFFF, 16 bits)
+      io.cpuBus.DTACK := False // Generate a fake DTACK so CPU doesn't hang?
     }
   }
 }

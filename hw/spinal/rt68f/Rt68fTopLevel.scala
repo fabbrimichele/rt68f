@@ -72,7 +72,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       val cpu = M68k()
 
       val busManager = BusManager()
-      busManager.io.masterBus <> cpu.io
+      busManager.io.cpuBus <> cpu.io
 
       // --------------------------------
       // ROM: 16 KB @ 0x0000 - 0x4FFFF
@@ -80,16 +80,8 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       val romSizeWords = 16384 / 2 // 16 KB / 2 bytes per 16-bit word
       val rom = Mem16Bits(size = romSizeWords, readOnly = true, initFile = Some(romFilename))
 
-      // Connect CPU outputs to ROM inputs
-      rom.io.bus.AS := cpu.io.AS
-      rom.io.bus.UDS := cpu.io.UDS
-      rom.io.bus.LDS := cpu.io.LDS
-      rom.io.bus.RW := cpu.io.RW
-      rom.io.bus.ADDR := cpu.io.ADDR
-      rom.io.bus.DATAO := cpu.io.DATAO
+      busManager.io.romBus <> rom.io.bus
       rom.io.sel := busManager.io.romSel
-      busManager.io.romBus.DATAI := rom.io.bus.DATAI
-      busManager.io.romBus.DTACK := rom.io.bus.DTACK
 
       // --------------------------------
       // RAM: 16 KB @ 0x4000 - 0x7FFF
@@ -97,16 +89,8 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       val ramSizeWords = 16384 / 2 // 16384 KB / 2 bytes per 16-bit word
       val ram = Mem16Bits(size = ramSizeWords)
 
-      // Connect CPU outputs to ROM inputs
-      ram.io.bus.AS := cpu.io.AS
-      ram.io.bus.UDS := cpu.io.UDS
-      ram.io.bus.LDS := cpu.io.LDS
-      ram.io.bus.RW := cpu.io.RW
-      ram.io.bus.ADDR := cpu.io.ADDR
-      ram.io.bus.DATAO := cpu.io.DATAO
+      busManager.io.ramBus <> ram.io.bus
       ram.io.sel := busManager.io.ramSel
-      busManager.io.ramBus.DATAI := ram.io.bus.DATAI
-      busManager.io.ramBus.DTACK := ram.io.bus.DTACK
 
       // --------------------------------
       // VGA: 32 KB @ 0x8000 - 0xFFFF
@@ -114,16 +98,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       val vga = VgaDevice()
       io.vga <> vga.io.vga
 
-      // Connect CPU outputs to ROM inputs
-      vga.io.bus.AS := cpu.io.AS
-      vga.io.bus.UDS := cpu.io.UDS
-      vga.io.bus.LDS := cpu.io.LDS
-      vga.io.bus.RW := cpu.io.RW
-      vga.io.bus.ADDR := cpu.io.ADDR
-      vga.io.bus.DATAO := cpu.io.DATAO
-      busManager.io.vgaBus.DATAI := vga.io.bus.DATAI
-      busManager.io.vgaBus.DTACK := vga.io.bus.DTACK
-
+      busManager.io.vgaBus <> vga.io.bus
       vga.io.framebufferSel := busManager.io.vgaFramebufferSel
       vga.io.paletteSel := busManager.io.vgaPaletteSel
       vga.io.controlSel := busManager.io.vgaControlSel
@@ -136,16 +111,8 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       val ledDev = LedDevice()
       io.led := ledDev.io.leds
 
-      // Connect CPU outputs to LedDev inputs
-      ledDev.io.bus.AS := cpu.io.AS
-      ledDev.io.bus.UDS := cpu.io.UDS
-      ledDev.io.bus.LDS := cpu.io.LDS
-      ledDev.io.bus.RW := cpu.io.RW
-      ledDev.io.bus.ADDR := cpu.io.ADDR
-      ledDev.io.bus.DATAO := cpu.io.DATAO
+      busManager.io.ledBus <> ledDev.io.bus
       ledDev.io.sel := busManager.io.ledDevSel
-      busManager.io.ledBus.DATAI := ledDev.io.bus.DATAI
-      busManager.io.ledBus.DTACK := ledDev.io.bus.DTACK
 
       // --------------------------------
       // Key device @ 0x11000
@@ -153,16 +120,8 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       val keyDev = KeyDevice()
       keyDev.io.keys := io.key
 
-      // Connect CPU outputs to LedDev inputs
-      keyDev.io.bus.AS := cpu.io.AS
-      keyDev.io.bus.UDS := cpu.io.UDS
-      keyDev.io.bus.LDS := cpu.io.LDS
-      keyDev.io.bus.RW := cpu.io.RW
-      keyDev.io.bus.ADDR := cpu.io.ADDR
-      keyDev.io.bus.DATAO := cpu.io.DATAO
+      busManager.io.keyBus <> keyDev.io.bus
       keyDev.io.sel := busManager.io.keyDevSel
-      busManager.io.keyBus.DATAI := keyDev.io.bus.DATAI
-      busManager.io.keyBus.DTACK := keyDev.io.bus.DTACK
 
 
       // --------------------------------
@@ -172,31 +131,17 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       val uartDev = T16450Device()
       io.uart <> uartDev.io.uart
 
-      // Connect CPU outputs to LedDev inputs
-      uartDev.io.bus.AS := cpu.io.AS
-      uartDev.io.bus.UDS := cpu.io.UDS
-      uartDev.io.bus.LDS := cpu.io.LDS
-      uartDev.io.bus.RW := cpu.io.RW
-      uartDev.io.bus.ADDR := cpu.io.ADDR
-      uartDev.io.bus.DATAO := cpu.io.DATAO
+      busManager.io.uartBus <> uartDev.io.bus
       uartDev.io.sel := busManager.io.uartDevSel
-      busManager.io.uartBus.DATAI := uartDev.io.bus.DATAI
-      busManager.io.uartBus.DTACK := uartDev.io.bus.DTACK
 
       // --------------------------------
       // SRAM: 512 KB @ 0x100000 - 0x180000
       // --------------------------------
       val sramCtrl = SRamCtrl()
-      sramCtrl.io.bus.AS := cpu.io.AS
-      sramCtrl.io.bus.UDS := cpu.io.UDS
-      sramCtrl.io.bus.LDS := cpu.io.LDS
-      sramCtrl.io.bus.RW := cpu.io.RW
-      sramCtrl.io.bus.ADDR := cpu.io.ADDR
-      sramCtrl.io.bus.DATAO := cpu.io.DATAO
-      sramCtrl.io.sel := busManager.io.sramSel
-      busManager.io.sramBus.DATAI := sramCtrl.io.bus.DATAI
-      busManager.io.sramBus.DTACK := sramCtrl.io.bus.DTACK
       io.sram <> sramCtrl.io.sram
+
+      busManager.io.sramBus <> sramCtrl.io.bus
+      sramCtrl.io.sel := busManager.io.sramSel
 
     }
   }
