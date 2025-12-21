@@ -14,7 +14,7 @@
   * 320x200 - 16 colors -> 256 colors
 
 ### Logic
-* Move address decoding logic and bus multiplex to a separate module/s
+* ~~Move address decoding logic and bus multiplex to a separate module/s~~ (DONE)
 
 ### UART
 * Use a CPU clock that allows a standard BAUD rate for the UART
