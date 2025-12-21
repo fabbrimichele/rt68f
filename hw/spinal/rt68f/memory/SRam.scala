@@ -55,11 +55,6 @@ case class SRamCtrl() extends Component {
     }
 
     // -- READ SEQUENCE --
-    // TODO: the read introduces a lot a latency that
-    //  is actually not necessary considering the RAM
-    //  can be as fast as 10 ns. Create an additional
-    //  clock at 64 MHz only for the RAM, it'll require
-    //  BufferCC for the signals (cross domain buffers)
     val readLow: State = new State {
       whenIsActive {
         io.sram.ce := False // active
@@ -71,6 +66,9 @@ case class SRamCtrl() extends Component {
 
     val sampleLow: State = new State {
       whenIsActive {
+        io.sram.ce := False // active
+        io.sram.oe := False // active
+        io.sram.addr := io.bus.ADDR.asBits(18 downto 1) ##  B"1" // LDS address (odd address)
         dataBuf(7 downto 0) := io.sram.data.read
         goto(readHigh)
       }
@@ -88,6 +86,9 @@ case class SRamCtrl() extends Component {
 
     val sampleHigh: State = new State {
       whenIsActive {
+        io.sram.ce := False // active
+        io.sram.oe := False // active
+        io.sram.addr := io.bus.ADDR.asBits(18 downto 1) ##  B"0" // UDS address (even address)
         dataBuf(15 downto 8) := io.sram.data.read
         io.bus.DTACK := False
         goto(waitCpu)
@@ -97,11 +98,11 @@ case class SRamCtrl() extends Component {
     // -- WRITE SEQUENCE --
     val writeLow: State = new State {
       whenIsActive {
+        io.sram.addr := io.bus.ADDR(18 downto 1) ## B"1" // LDS address (odd address)
+        io.sram.data.writeEnable := True
         when(!io.bus.LDS) {
           io.sram.ce := False
           io.sram.we := False
-          io.sram.addr := io.bus.ADDR(18 downto 1) ## B"1" // LDS address (odd address)
-          io.sram.data.writeEnable := True
           io.sram.data.write := io.bus.DATAO(7 downto 0)
         }
         goto(writeHigh)
@@ -110,12 +111,12 @@ case class SRamCtrl() extends Component {
 
     val writeHigh: State = new State {
       whenIsActive {
+        io.sram.addr := io.bus.ADDR(18 downto 1) ## B"0" // UDS address (odd address)
+        io.sram.data.write := io.bus.DATAO(15 downto 8)
         when(!io.bus.UDS) {
           io.sram.ce := False
           io.sram.we := False
-          io.sram.addr := io.bus.ADDR(18 downto 1) ## B"0" // UDS address (odd address)
           io.sram.data.writeEnable := True
-          io.sram.data.write := io.bus.DATAO(15 downto 8)
         }
         io.bus.DTACK := False
         goto(waitCpu)
