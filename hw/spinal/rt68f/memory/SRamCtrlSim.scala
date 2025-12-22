@@ -73,16 +73,22 @@ object SRamCtrlSim extends App {
       println(s"--- Starting Read at 0x${address.toHexString} ---")
 
       // S0
-      dut.cpuClockDomain.waitFallingEdge()
+      dut.cpuClockDomain.waitRisingEdge()
       dut.dut.io.bus.ADDR #= address
       dut.dut.io.bus.RW #= true
       dut.dut.io.sel #= true
+
+      // S1
+      // dut.cpuClockDomain.waitFallingEdge()
 
       // S2
       dut.cpuClockDomain.waitRisingEdge()
       dut.dut.io.bus.AS #= false
       dut.dut.io.bus.UDS #= false
       dut.dut.io.bus.LDS #= false
+
+      // S3
+      // dut.cpuClockDomain.waitFallingEdge()
 
       // SRAM Model
       val sramModel = fork {
@@ -100,23 +106,10 @@ object SRamCtrlSim extends App {
       }
 
       // S4: Sample DTACK
-      dut.cpuClockDomain.waitFallingEdge()
+      dut.cpuClockDomain.waitRisingEdge()
       val dtack = dut.dut.io.bus.DTACK.toBoolean
-      if(!dtack) {
-        println(s"SUCCESS: DTACK low at S4. Data: 0x${dut.dut.io.bus.DATAI.toLong.toHexString}")
-      } else {
-        //********************************************************
-        //********************************************************
-        //********************************************************
-        //********************************************************
-        //********************************************************
-        // TODO: it fails here!
-        //********************************************************
-        //********************************************************
-        //********************************************************
-        //********************************************************
-        println("FAILURE: DTACK was HIGH at S4.")
-      }
+      assert(!dtack, "FAILURE: DTACK was HIGH at S4.")
+      println(s"SUCCESS: DTACK low at S4. Data: 0x${dut.dut.io.bus.DATAI.toLong.toHexString}")
 
       // S7: Terminate
       dut.cpuClockDomain.waitFallingEdge()
