@@ -2,7 +2,7 @@
 
 ### SRAM
 * ~~Implement a simple SRAM controller to map to/from 8-bit data from/to 16-bit data~~
-* Enhance the controller to have no wait states
+* ~~Enhance the controller to have no wait states~~
 
 ### VGA
 * ~~Center the 400 lines when using 480 lines VGA Mode~~ (DONE)

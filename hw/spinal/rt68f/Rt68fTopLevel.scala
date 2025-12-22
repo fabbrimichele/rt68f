@@ -56,10 +56,16 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
   new ClockingArea(clk32) {
 
-    val dcm = new Dcm32_25_16()
+    val dcm = new Clk_32_64_25_16()
 
     val clk16 = ClockDomain(
-      clock = dcm.io.CLK_OUT2,
+      clock = dcm.io.CLK_OUT16,
+      reset = !dcm.io.LOCKED,
+      frequency = FixedFrequency(16 MHz),
+    )
+
+    val clk64 = ClockDomain(
+      clock = dcm.io.CLK_OUT64,
       reset = !dcm.io.LOCKED,
       frequency = FixedFrequency(16 MHz),
     )
@@ -102,7 +108,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       vga.io.framebufferSel := busManager.io.vgaFramebufferSel
       vga.io.paletteSel := busManager.io.vgaPaletteSel
       vga.io.controlSel := busManager.io.vgaControlSel
-      vga.io.pixelClock := dcm.io.CLK_OUT1 // 25.175 MHz
+      vga.io.pixelClock := dcm.io.CLK_OUT25 // 25.175 MHz
       vga.io.pixelReset := !dcm.io.LOCKED
 
       // --------------------------------
@@ -137,7 +143,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       // --------------------------------
       // SRAM: 512 KB @ 0x100000 - 0x180000
       // --------------------------------
-      val sramCtrl = SRamCtrl()
+      val sramCtrl = SRamCtrl(clk64)
       io.sram <> sramCtrl.io.sram
 
       busManager.io.sramBus <> sramCtrl.io.bus
