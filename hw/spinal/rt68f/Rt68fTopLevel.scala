@@ -42,45 +42,9 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val sram = master(SRamBus())
   }
 
-
-  // Create an Area to manage all clocks and reset things
-  // See: https://spinalhdl.github.io/SpinalDoc-RTD/master/SpinalHDL/Examples/Simple%20ones/pll_resetctrl.html
-  val clkCtrl = new Area {
-    // Instantiate and drive the PLL
-    val pll = new Clk_32_64_25_16
-    pll.io.CLK_IN32 := io.clk
-    pll.io.RESET := io.reset
-
-    val clk16 = ClockDomain.internal(
-      name = "clk16mhz",
-      frequency = FixedFrequency(16 MHz),
-    )
-    clk16.clock := pll.io.CLK_OUT16
-    clk16.reset := ResetCtrl.asyncAssertSyncDeassert(
-      input = io.reset || !pll.io.LOCKED,
-      clockDomain = clk16
-    )
-
-    val clk25 = ClockDomain.internal(
-      name = "clk25mhz",
-      frequency = FixedFrequency(25.143 MHz),
-    )
-    clk25.clock := pll.io.CLK_OUT25
-    clk25.reset := ResetCtrl.asyncAssertSyncDeassert(
-      input = io.reset || !pll.io.LOCKED,
-      clockDomain = clk25
-    )
-
-    val clk64 = ClockDomain.internal(
-      name = "clk64mhz",
-      frequency = FixedFrequency(64 MHz),
-    )
-    clk64.clock := pll.io.CLK_OUT64
-    clk64.reset := ResetCtrl.asyncAssertSyncDeassert(
-      input = io.reset || !pll.io.LOCKED,
-      clockDomain = clk64
-    )
-  }
+  val clkCtrl = ClockCtrl()
+  clkCtrl.io.clkIn := io.clk
+  clkCtrl.io.reset := io.reset
 
   // Clock domain area for CPU
   new ClockingArea(clkCtrl.clk16) {
