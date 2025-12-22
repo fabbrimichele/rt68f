@@ -28,7 +28,7 @@ case class SRamBus(addrWidth: Int = 19, dataWidth: Int = 8) extends Bundle with 
   both read and write, this corresponds to the 68000 state S2 that is before
   the 68000 expects DTACK to be asserted (S4) to avoid wait states.
  */
-case class SRamCtrl(clock64: ClockDomain) extends Component {
+case class SRamCtrl(clk64: ClockDomain) extends Component {
   val io = new Bundle {
     val bus = slave(M68kBus())
     val sel = in Bool()
@@ -37,7 +37,7 @@ case class SRamCtrl(clock64: ClockDomain) extends Component {
 
   // Since 64MHz and 16MHz clock are in phase
   // there is no need of BufferCC.
-  val clock64Area = new ClockingArea(clock64) {
+  val clock64Area = new ClockingArea(clk64) {
     // Registered outputs for stability
     val sramAddr = Reg(Bits(19 bits)) init (0)
     val sramWe = Reg(Bool()) init (True)

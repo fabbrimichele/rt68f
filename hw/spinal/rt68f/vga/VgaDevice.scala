@@ -24,14 +24,12 @@ object VgaDevice {
 
 
 //noinspection TypeAnnotation
-case class VgaDevice() extends Component {
+case class VgaDevice(clk25: ClockDomain) extends Component {
   val io = new Bundle {
     val bus             = slave(M68kBus())
     val framebufferSel  = in Bool() // Framebuffer select from decoder
     val paletteSel      = in Bool() // Palette select from decoder
     val controlSel      = in Bool() // Control select from decoder
-    val pixelClock      = in Bool() // Pixel clock must be 25.175 Mhz
-    val pixelReset      = in Bool() // Raw reset (it must not be sync with the 16Mhz clock)
     val vga             = master(Vga(VgaDevice.rgbConfig, withColorEn = false))
   }
 
@@ -132,12 +130,6 @@ case class VgaDevice() extends Component {
   }
 
   // ------------ VGA side ------------
-  val clk25 = ClockDomain(
-    clock = io.pixelClock,
-    reset = io.pixelReset,
-    frequency = FixedFrequency(25.143 MHz),
-  )
-
   new ClockingArea(clk25) {
     val controlRegCC = BufferCC(controlReg)
     val paletteCC =  BufferCC(palette)
