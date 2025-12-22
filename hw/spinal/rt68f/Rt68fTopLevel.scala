@@ -55,23 +55,11 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
   )
 
   new ClockingArea(clk32) {
-
-    val dcm = new Clk_32_64_25_16()
-
-    val clk16 = ClockDomain(
-      clock = dcm.io.CLK_OUT16,
-      reset = !dcm.io.LOCKED,
-      frequency = FixedFrequency(16 MHz),
-    )
-
-    val clk64 = ClockDomain(
-      clock = dcm.io.CLK_OUT64,
-      reset = !dcm.io.LOCKED,
-      frequency = FixedFrequency(16 MHz),
-    )
+    // It needs to be inside the clk32 area
+    val clockManager = ClockManager()
 
     // Clock domain area for CPU
-    new ClockingArea(clk16) {
+    new ClockingArea(clockManager.clk16) {
       // ----------------
       // CPU Core
       // ----------------
@@ -101,15 +89,13 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       // --------------------------------
       // VGA: 32 KB @ 0x8000 - 0xFFFF
       // --------------------------------
-      val vga = VgaDevice()
+      val vga = VgaDevice(clockManager.clk25)
       io.vga <> vga.io.vga
 
       busManager.io.vgaBus <> vga.io.bus
       vga.io.framebufferSel := busManager.io.vgaFramebufferSel
       vga.io.paletteSel := busManager.io.vgaPaletteSel
       vga.io.controlSel := busManager.io.vgaControlSel
-      vga.io.pixelClock := dcm.io.CLK_OUT25 // 25.175 MHz
-      vga.io.pixelReset := !dcm.io.LOCKED
 
       // --------------------------------
       // LED device @ 0x10000
@@ -143,12 +129,11 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
       // --------------------------------
       // SRAM: 512 KB @ 0x100000 - 0x180000
       // --------------------------------
-      val sramCtrl = SRamCtrl(clk64)
+      val sramCtrl = SRamCtrl(clockManager.clk64)
       io.sram <> sramCtrl.io.sram
 
       busManager.io.sramBus <> sramCtrl.io.bus
       sramCtrl.io.sel := busManager.io.sramSel
-
     }
   }
 
