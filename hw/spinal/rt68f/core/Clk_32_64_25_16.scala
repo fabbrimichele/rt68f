@@ -12,8 +12,6 @@ class Clk_32_64_25_16 extends BlackBox {
     val LOCKED = out Bool()
   }
 
-  mapClockDomain(clock = io.CLK_IN32, reset = io.RESET, resetActiveLevel = HIGH)
-
   setDefinitionName("clk_32_64_25_16") // This tells SpinalHDL which Verilog module to instantiate
   addRTLPath("hw/vhdl/clk_32_64_25_16.vhd") // Merge the file to the generated 'mergeRTL.v' file
   noIoPrefix() // Remove io_ prefix

@@ -1,10 +1,10 @@
 package rt68f.vga
 
-import rt68f.core.{M68kBus, ResetCtrl}
+import rt68f.core._
 import rt68f.vga.VgaDevice.Modes.{M0_640X400C02, M1_640X200C04, M2_320X200C16, M3_320X200C16}
 import rt68f.vga.VgaDevice.rgbConfig
 import spinal.core._
-import spinal.lib.graphic.{Rgb, RgbConfig}
+import spinal.lib.graphic.RgbConfig
 import spinal.lib.graphic.vga.Vga
 import spinal.lib.{BufferCC, master, slave}
 

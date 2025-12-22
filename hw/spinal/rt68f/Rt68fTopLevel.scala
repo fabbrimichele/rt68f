@@ -7,7 +7,7 @@ import spinal.core._
 import spinal.lib.com.uart.Uart
 import spinal.lib.graphic.vga.Vga
 import spinal.lib.io.InOutWrapper
-import spinal.lib.{BufferCC, master}
+import spinal.lib.{BufferCC, ResetCtrl, master}
 import vga.VgaDevice
 
 import scala.language.postfixOps
@@ -33,6 +33,7 @@ import scala.language.postfixOps
 //noinspection TypeAnnotation
 case class Rt68fTopLevel(romFilename: String) extends Component {
   val io = new Bundle {
+    val clk = in Bool()
     val reset = in Bool()
     val led = out Bits(4 bits)
     val key = in Bits(4 bits) // Keys disabled in UCF file due to UART conflict.
@@ -41,100 +42,122 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val sram = master(SRamBus())
   }
 
-  // Clock needs to be synchronized
-  // TODO: Try to debounce it syncReset.
-  //  I could move the BufferCC and debounce logic inside the `ResetCtrl`.
-  val syncReset = BufferCC(io.reset)
-  val clk32 = ClockDomain(
-    clock = ClockDomain.current.clock,
-    reset = syncReset,
-    frequency = FixedFrequency(32 MHz),
-    config = ClockDomainConfig(
-      resetKind = SYNC
+
+  // Create an Area to manage all clocks and reset things
+  // See: https://spinalhdl.github.io/SpinalDoc-RTD/master/SpinalHDL/Examples/Simple%20ones/pll_resetctrl.html
+  val clkCtrl = new Area {
+    // Instantiate and drive the PLL
+    val pll = new Clk_32_64_25_16
+    pll.io.CLK_IN32 := io.clk
+    pll.io.RESET := io.reset
+
+    val clk16 = ClockDomain.internal(
+      name = "clk16mhz",
+      frequency = FixedFrequency(16 MHz),
     )
-  )
+    clk16.clock := pll.io.CLK_OUT16
+    clk16.reset := ResetCtrl.asyncAssertSyncDeassert(
+      input = io.reset || !pll.io.LOCKED,
+      clockDomain = clk16
+    )
 
-  new ClockingArea(clk32) {
-    // It needs to be inside the clk32 area
-    val clockManager = ClockManager()
+    val clk25 = ClockDomain.internal(
+      name = "clk25mhz",
+      frequency = FixedFrequency(25.143 MHz),
+    )
+    clk25.clock := pll.io.CLK_OUT25
+    clk25.reset := ResetCtrl.asyncAssertSyncDeassert(
+      input = io.reset || !pll.io.LOCKED,
+      clockDomain = clk25
+    )
 
-    // Clock domain area for CPU
-    new ClockingArea(clockManager.clk16) {
-      // ----------------
-      // CPU Core
-      // ----------------
-      val cpu = M68k()
+    val clk64 = ClockDomain.internal(
+      name = "clk64mhz",
+      frequency = FixedFrequency(64 MHz),
+    )
+    clk64.clock := pll.io.CLK_OUT64
+    clk64.reset := ResetCtrl.asyncAssertSyncDeassert(
+      input = io.reset || !pll.io.LOCKED,
+      clockDomain = clk64
+    )
+  }
 
-      val busManager = BusManager()
-      busManager.io.cpuBus <> cpu.io
+  // Clock domain area for CPU
+  new ClockingArea(clkCtrl.clk16) {
+    // ----------------
+    // CPU Core
+    // ----------------
+    val cpu = M68k()
 
-      // --------------------------------
-      // ROM: 16 KB @ 0x0000 - 0x4FFFF
-      // --------------------------------
-      val romSizeWords = 16384 / 2 // 16 KB / 2 bytes per 16-bit word
-      val rom = Mem16Bits(size = romSizeWords, readOnly = true, initFile = Some(romFilename))
+    val busManager = BusManager()
+    busManager.io.cpuBus <> cpu.io
 
-      busManager.io.romBus <> rom.io.bus
-      rom.io.sel := busManager.io.romSel
+    // --------------------------------
+    // ROM: 16 KB @ 0x0000 - 0x4FFFF
+    // --------------------------------
+    val romSizeWords = 16384 / 2 // 16 KB / 2 bytes per 16-bit word
+    val rom = Mem16Bits(size = romSizeWords, readOnly = true, initFile = Some(romFilename))
 
-      // --------------------------------
-      // RAM: 16 KB @ 0x4000 - 0x7FFF
-      // --------------------------------
-      val ramSizeWords = 16384 / 2 // 16384 KB / 2 bytes per 16-bit word
-      val ram = Mem16Bits(size = ramSizeWords)
+    busManager.io.romBus <> rom.io.bus
+    rom.io.sel := busManager.io.romSel
 
-      busManager.io.ramBus <> ram.io.bus
-      ram.io.sel := busManager.io.ramSel
+    // --------------------------------
+    // RAM: 16 KB @ 0x4000 - 0x7FFF
+    // --------------------------------
+    val ramSizeWords = 16384 / 2 // 16384 KB / 2 bytes per 16-bit word
+    val ram = Mem16Bits(size = ramSizeWords)
 
-      // --------------------------------
-      // VGA: 32 KB @ 0x8000 - 0xFFFF
-      // --------------------------------
-      val vga = VgaDevice(clockManager.clk25)
-      io.vga <> vga.io.vga
+    busManager.io.ramBus <> ram.io.bus
+    ram.io.sel := busManager.io.ramSel
 
-      busManager.io.vgaBus <> vga.io.bus
-      vga.io.framebufferSel := busManager.io.vgaFramebufferSel
-      vga.io.paletteSel := busManager.io.vgaPaletteSel
-      vga.io.controlSel := busManager.io.vgaControlSel
+    // --------------------------------
+    // VGA: 32 KB @ 0x8000 - 0xFFFF
+    // --------------------------------
+    val vga = VgaDevice(clkCtrl.clk25)
+    io.vga <> vga.io.vga
 
-      // --------------------------------
-      // LED device @ 0x10000
-      // --------------------------------
-      val ledDev = LedDevice()
-      io.led := ledDev.io.leds
+    busManager.io.vgaBus <> vga.io.bus
+    vga.io.framebufferSel := busManager.io.vgaFramebufferSel
+    vga.io.paletteSel := busManager.io.vgaPaletteSel
+    vga.io.controlSel := busManager.io.vgaControlSel
 
-      busManager.io.ledBus <> ledDev.io.bus
-      ledDev.io.sel := busManager.io.ledDevSel
+    // --------------------------------
+    // LED device @ 0x10000
+    // --------------------------------
+    val ledDev = LedDevice()
+    io.led := ledDev.io.leds
 
-      // --------------------------------
-      // Key device @ 0x11000
-      // --------------------------------
-      val keyDev = KeyDevice()
-      keyDev.io.keys := io.key
+    busManager.io.ledBus <> ledDev.io.bus
+    ledDev.io.sel := busManager.io.ledDevSel
 
-      busManager.io.keyBus <> keyDev.io.bus
-      keyDev.io.sel := busManager.io.keyDevSel
+    // --------------------------------
+    // Key device @ 0x11000
+    // --------------------------------
+    val keyDev = KeyDevice()
+    keyDev.io.keys := io.key
+
+    busManager.io.keyBus <> keyDev.io.bus
+    keyDev.io.sel := busManager.io.keyDevSel
 
 
-      // --------------------------------
-      // UART device @ 0x12000
-      // 8 word registers
-      // --------------------------------
-      val uartDev = T16450Device()
-      io.uart <> uartDev.io.uart
+    // --------------------------------
+    // UART device @ 0x12000
+    // 8 word registers
+    // --------------------------------
+    val uartDev = T16450Device()
+    io.uart <> uartDev.io.uart
 
-      busManager.io.uartBus <> uartDev.io.bus
-      uartDev.io.sel := busManager.io.uartDevSel
+    busManager.io.uartBus <> uartDev.io.bus
+    uartDev.io.sel := busManager.io.uartDevSel
 
-      // --------------------------------
-      // SRAM: 512 KB @ 0x100000 - 0x180000
-      // --------------------------------
-      val sramCtrl = SRamCtrl(clockManager.clk64)
-      io.sram <> sramCtrl.io.sram
+    // --------------------------------
+    // SRAM: 512 KB @ 0x100000 - 0x180000
+    // --------------------------------
+    val sramCtrl = SRamCtrl(clkCtrl.clk64)
+    io.sram <> sramCtrl.io.sram
 
-      busManager.io.sramBus <> sramCtrl.io.bus
-      sramCtrl.io.sel := busManager.io.sramSel
-    }
+    busManager.io.sramBus <> sramCtrl.io.bus
+    sramCtrl.io.sel := busManager.io.sramSel
   }
 
   // Remove io_ prefix
