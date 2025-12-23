@@ -491,12 +491,11 @@ CHK_TRL_DONE:
 ; TRAP handlers
 ; ------------------------------
 TRAP_14_HANDLER:
-    MOVE.L  #RAM_END,A7
+    MOVE.L  #RAM_END,A7 ; TODO: shouldn't this be `SP_START`?
     JMP     MON_ENTRY
 
-
 ; ------------------------------
-; Subroutines
+; Libraries
 ; ------------------------------
     INCLUDE 'lib/console_io_16450.asm'
     INCLUDE 'lib/conversions.asm'
@@ -529,7 +528,7 @@ READ_LOOP:
 
 
 INIT_VECTOR_TABLE:
-    MOVE.L  #TRAP_14_HANDLER,$8E
+    MOVE.L  #TRAP_14_HANDLER,VT_TRAP_14
     RTS
 
 
@@ -566,7 +565,7 @@ MON_MEM_LEN EQU 256                     ; RAM allocated for the monitor
 
 ; Memory Map
 RAM_START       EQU $00000400               ; Start of RAM address (after the vector table)
-RAM_END         EQU $00004000               ; End of RAM address (+1)
+RAM_END         EQU $00080000               ; End of RAM address (+1)
 SP_START        EQU (RAM_END-MON_MEM_LEN)   ; After SP, allocates monitor RAM
 MON_MEM_START   EQU SP_START                ;
 FB_START        EQU $00200000               ; Start of Framebuffer
@@ -583,6 +582,9 @@ UART_MCR        EQU UART_BASE+$8            ; MODEM control register
 UART_LSR        EQU UART_BASE+$A            ; Line status register
 UART_MSR        EQU UART_BASE+$C            ; MODEM status register
 ; NOTE: do not remove spaces around +
+
+; Vector Table
+VT_TRAP_14      EQU $B8
 
 ; Monitor RAM
 ; Allocated after the stack point, if the monitor needs
