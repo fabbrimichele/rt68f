@@ -19,8 +19,8 @@ import scala.language.postfixOps
  *
  * SimpleSoC Memory Map
  *
- *   0x00000000 - 0x00003FFF : 16 KB ROM (16-bit words)
- *   0x00004000 - 0x00007FFF : 16 KB RAM (16-bit words)
+ *   0x00000000 - 0x00003FFF : 16 KB RAM (16-bit words)
+ *   0x00004000 - 0x00007FFF : 16 KB ROM (16-bit words)
  *   0x00008000 - 0x0000FFFF : 32 KB Video Framebuffer (16-bit words)
  *   0x00010000              : LED peripheral (lower 4 bits drive LEDs)
  *   0x00011000              : KEY peripheral (lower 4 bits reflect key inputs)

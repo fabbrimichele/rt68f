@@ -1,44 +1,20 @@
 ; ------------------------------
-; 68000 Vector Table (first 32 entries = 0x0000-0x007C)
-; Each vector is 32 bits (long)
+; ROM Monitor
 ; ------------------------------
-    ORG    $0000            ; Start of memory
-    DC.L   SP_START         ; 0: Initial Stack Pointer (SP)
-    DC.L   START            ; 1: Reset vector (PC start address)
-    DC.L   $00000000        ; 2: Bus Error
-    DC.L   $00000000        ; 3: Address Error
-    DC.L   $00000000        ; 4: Illegal Instruction
-    DC.L   $00000000        ; 5: Divide by Zero
-    DC.L   $00000000        ; 6: CHK Instruction
-    DC.L   $00000000        ; 7: TRAPV Instruction
-    DC.L   $00000000        ; 8: Privilege Violation
-    DC.L   $00000000        ; 9: Trace
-    DC.L   $00000000        ; 10: Line 1010 Emulator
-    DC.L   $00000000        ; 11: Line 1111 Emulator
+    ORG    $4000                ; ROM Start Address
 
-    ORG    $0080            ; TRAP #0~15
-    DC.L   $00000000        ; 32: TRAP0
-    DC.L   $00000000        ; 33: TRAP1
-    DC.L   $00000000        ; 34: TRAP2
-    DC.L   $00000000        ; 35: TRAP3
-    DC.L   $00000000        ; 36: TRAP4
-    DC.L   $00000000        ; 37: TRAP5
-    DC.L   $00000000        ; 38: TRAP6
-    DC.L   $00000000        ; 39: TRAP7
-    DC.L   $00000000        ; 40: TRAP8
-    DC.L   $00000000        ; 41: TRAP9
-    DC.L   $00000000        ; 42: TRAP10
-    DC.L   $00000000        ; 43: TRAP11
-    DC.L   $00000000        ; 44: TRAP12
-    DC.L   $00000000        ; 45: TRAP13
-    DC.L   TRAP_14_HANDLER  ; 46: TRAP14
-    DC.L   $00000000        ; 47: TRAP15
+; ------------------------------
+; Initial Reset SP and PC in Vector Table
+; ------------------------------
+    DC.L SP_START           ; Reset Stack Pointer (SP, SP move downward far from SO_RAM)
+    DC.L START              ; Reset Program counter (PC) (point to the beginning of code)
+
 
 ; ------------------------------
 ; Program code
 ; ------------------------------
-    ORG    $0400            ; Start of memory
 START:
+    JSR     INIT_VECTOR_TABLE
     JSR     UART_INIT
     LEA     MSG_TITLE,A0
     BSR     PUTS
@@ -519,6 +495,7 @@ TRAP_14_HANDLER:
     MOVE.L  #RAM_END,A7
     JMP     MON_ENTRY
 
+
 ; ------------------------------
 ; Subroutines
 ; ------------------------------
@@ -549,6 +526,11 @@ READ_LOOP:
     DBRA    D2,READ_LOOP    ; Loop 4 times total (D2 counts down from 3)
 
     MOVEM.L (SP)+,D0/D2      ; Restore registers
+    RTS
+
+
+INIT_VECTOR_TABLE:
+    MOVE.L  #TRAP_14_HANDLER,$8E
     RTS
 
 
@@ -584,8 +566,8 @@ FBCLR_STR   DC.B    'FBCLR',NUL
 MON_MEM_LEN EQU 256                     ; RAM allocated for the monitor
 
 ; Memory Map
-RAM_START       EQU $00004000               ; Start of RAM address
-RAM_END         EQU $00008000               ; End of RAM address (+1)
+RAM_START       EQU $00000400               ; Start of RAM address (after the vector table)
+RAM_END         EQU $00004000               ; End of RAM address (+1)
 SP_START        EQU (RAM_END-MON_MEM_LEN)   ; After SP, allocates monitor RAM
 MON_MEM_START   EQU SP_START                ;
 FB_START        EQU $00008000               ; Start of Framebuffer

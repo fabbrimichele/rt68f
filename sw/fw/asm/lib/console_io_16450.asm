@@ -3,14 +3,14 @@
 ; Note: when changing this file a `make clean` is required.
 ;------------------------------------------------------------------------------------
 UART_INIT:
-	MOVE.B #$80,UART_LCR	; select DLAB = 1, to access the Divisor Latches of the Baud Generator
-	MOVE.B #$00,UART_IER	; set divisor MSB to 0
+	MOVE.B  #$80,UART_LCR	; select DLAB = 1, to access the Divisor Latches of the Baud Generator
+	MOVE.B  #$00,UART_IER	; set divisor MSB to 0
 	;MOVE.B #52,UART_RBR     ; set divisor LSB to 52: 16MHz/16/52 = 19230 (should be 19200)
 	;MOVE.B #26,UART_RBR     ; set divisor LSB to 26: 16MHz/16/26 = 38461 (should be 38400)
-	MOVE.B #13,UART_RBR     ; set divisor LSB to 13: 16MHz/16/13 = 76923 (should be 76800, it's not common, but it seems to work)
-	MOVE.B #$00,UART_LCR	; select DLAB = 0
-	MOVE.B #$03,UART_LCR	; set options to 8N1
-	MOVE.B #$00,UART_IER	; disable interrupt
+	MOVE.B  #13,UART_RBR     ; set divisor LSB to 13: 16MHz/16/13 = 76923 (should be 76800, it's not common, but it seems to work)
+	MOVE.B  #$00,UART_LCR	; select DLAB = 0
+	MOVE.B  #$03,UART_LCR	; set options to 8N1
+	MOVE.B  #$00,UART_IER	; disable interrupt
 	RTS						;
 
 ;------------------------------------------------------------------------------------

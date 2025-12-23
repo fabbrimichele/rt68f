@@ -1,8 +1,7 @@
 package rt68f.core
 
-import spinal.core.{B, Component, False, IntToBuilder, True, out, when}
-import spinal.lib.experimental.chisel.Bundle
-import spinal.lib.{master, slave}
+import spinal.core.{Area, B, Bundle, Component, False, IntToBuilder, Reg, True, UInt, out, when}
+import spinal.lib.{Counter, master, slave}
 
 import scala.language.postfixOps
 
@@ -64,13 +63,27 @@ case class BusManager() extends Component {
   io.uartDevSel        := False
   io.sramSel           := False
 
+  /*
+  val bootCounter = new  Area {
+    private val counter = Reg(UInt(4 bits)) init 0
+    when (counter < 8) {
+      counter := counter + 1
+    }
+    val romSwapEn = counter < 8
+  }
+  */
+
   // Decoding Chain, ensures that even if an address matches
   // two ranges, only the highest priority one is selected.
   val addr = io.cpuBus.ADDR
-  when(addr >= 0x00000 && addr < 0x04000) {
+  when(addr >= 0x00000 && addr < 0x00008) {
     io.romSel := True
-  } elsewhen(addr >= 0x04000 && addr < 0x08000) {
+    // Accessing Init SP and PC
+    //when(bootCounter.romSwapEn) { io.romSel := True } otherwise { io.ramSel := True }
+  } elsewhen(addr >= 0x00008 && addr < 0x04000) {
     io.ramSel := True
+  } elsewhen(addr >= 0x04000 && addr < 0x08000) {
+    io.romSel := True
   } elsewhen(addr >= 0x08000 && addr < 0x10000) {
     io.vgaFramebufferSel := True
   } elsewhen(addr === 0x10000) {
