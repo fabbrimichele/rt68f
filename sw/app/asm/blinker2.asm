@@ -1,7 +1,7 @@
     ; ===========================
     ; Program code
     ; ===========================
-    ORG    $4000            ; Start of RAM
+    ORG    $400             ; Start of RAM
 
 START:
     MOVE.W  #1,D1
@@ -24,4 +24,4 @@ DLY_LOOP:
     ; Constants
     ; ===========================
 DLY_VAL     EQU     666666      ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
-LED         EQU     $00010000   ; LED-mapped register base address
+LED         EQU     $00400000   ; LED-mapped register base address

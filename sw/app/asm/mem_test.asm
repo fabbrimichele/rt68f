@@ -1,7 +1,7 @@
     ; ------------------------------
     ; Program code
     ; ------------------------------
-    ORG    $4000            ; Start of RAM
+    ORG    $400                 ; Start of RAM
 
 START:
     MOVEA.L #RAM_START,A0       ; A0 = Base address of RAM
@@ -62,51 +62,6 @@ HALT:
 
 
     ; ------------------------------
-    ; Subroutines
-    ; ------------------------------
-
-    ; PUTS - Prints the null-terminated string pointed to by A0.
-PUTS:
-    MOVE.L  A0,-(SP)        ; Save the current string pointer (A0)
-PUTS_LOOP:
-    MOVE.B  (A0)+,D0        ; Get character, increment pointer
-    BEQ     PUTS_END        ; Check for null terminator (0)
-    BSR     PUTCHAR         ; Print the character in D0
-    BRA     PUTS_LOOP       ; Loop back
-PUTS_END:
-    MOVE.L  (SP)+,A0        ; Restore the string pointer for the next loop iteration (A0)
-    RTS                     ; Return from subroutine
-
-    ; PUTCHAR - Prints the single character stored in D0 to the UART data register.
-PUTCHAR:
-    ; Check UART status (TX Ready)
-PUTCHAR_WAIT:
-    MOVE.W  UART_STAT,D2    ; Read status register
-    BTST    #0,D2           ; Check TX ready (Bit 0)
-    BEQ     PUTCHAR_WAIT    ; Wait until TX ready
-    ; Write character (from D0)
-    MOVE.W  D0,UART_DATA    ; Write the character to the data register
-    RTS
-
-    ; GETCHAR - Gets a single character from the UART data register and stores it in D0
-GETCHAR:
-    ; Check UART status (RX Ready)
-GETCHAR_WAIT:
-    MOVE.W  UART_STAT,D2    ; Read status register
-    BTST    #1,D2           ; Check RX ready (Bit 1)
-    BEQ     GETCHAR_WAIT    ; Wait until RX ready
-    ; Read character (to D0)
-    MOVE.W  UART_DATA,D0    ; Read character to D0
-    RTS
-
-DELAY:
-    MOVE.L  #DLY_VAL,D0     ; Load delay value
-DLY_LOOP:
-    SUBQ.L  #1,D0           ; Decrement counter
-    BNE     DLY_LOOP        ; Loop until D0 is zero
-    RTS
-
-    ; ------------------------------
     ; Data Section
     ; ------------------------------
 MSG_READY:
@@ -115,12 +70,7 @@ MSG_READY:
     ; ===========================
     ; Constants
     ; ===========================
-DLY_VAL     EQU 1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
-RAM_END     EQU $00008000   ; End of RAM address (+1)
-LED         EQU $00010000   ; LED-mapped register base address
-UART_BASE   EQU $00012000   ; UART-mapped data register address
-UART_DATA   EQU UART_BASE+0 ; UART-mapped data register address
-UART_STAT   EQU UART_BASE+2 ; UART-mapped data register address
+LED         EQU $00400000           ; LED-mapped register base address
 
     ; --- Memory and Peripheral Map Constants (Based on your decoder) ---
 
@@ -129,8 +79,8 @@ UART_STAT   EQU UART_BASE+2 ; UART-mapped data register address
 ;RAM_SIZE        EQU     $004000     ; Total size of RAM in bytes (16KB)
 
     ; SRAM
-RAM_START       EQU     $100000     ; Base address of RAM (1MB)
-RAM_SIZE        EQU     $080000     ; Total size of RAM in bytes (1.5MB)
+RAM_START       EQU     $001000     ; Base address of RAM (1MB)
+RAM_SIZE        EQU     $07F000     ; Total size of RAM in bytes (512KB - 4KB)
 
     ; --- Test Data Constants ---
 INIT_WORD       EQU     $DEAD       ; Initial 16-bit word pattern

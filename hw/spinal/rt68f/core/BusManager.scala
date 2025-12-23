@@ -66,30 +66,28 @@ case class BusManager() extends Component {
   // Decoding Chain, ensures that even if an address matches
   // two ranges, only the highest priority one is selected.
   val addr = io.cpuBus.ADDR
-  when(addr >= 0x00000 && addr < 0x00008) {
+  when(addr >= 0x00000000 && addr < 0x00000008) {
     // This is required to have Reset SP and PC defined
     // in ROM when the CPU starts, the 2 values are only
     // read during after the reset, there is no point in
     // making them writable.
     io.romSel := True
-  } elsewhen(addr >= 0x00008 && addr < 0x04000) {
-    io.ramSel := True
-  } elsewhen(addr >= 0x04000 && addr < 0x08000) {
-    io.romSel := True
-  } elsewhen(addr >= 0x08000 && addr < 0x10000) {
-    io.vgaFramebufferSel := True
-  } elsewhen(addr === 0x10000) {
-    io.ledDevSel := True
-  } elsewhen(addr === 0x11000) {
-    io.keyDevSel := True
-  } elsewhen(addr >= 0x12000 && addr < 0x12010) {
-    io.uartDevSel := True
-  } elsewhen(addr >= 0x13000 && addr < 0x13020) {
-    io.vgaPaletteSel := True
-  } elsewhen(addr === 0x13100) {
-    io.vgaControlSel := True
-  } elsewhen(addr >= 0x100000 && addr < 0x180000) {
+  } elsewhen(addr >= 0x00000008 && addr < 0x00080000) {
     io.sramSel := True
+  } elsewhen(addr >= 0x00200000 && addr < 0x00208000) {
+    io.vgaFramebufferSel := True
+  } elsewhen(addr >= 0x00300000 && addr < 0x00308000) {
+    io.romSel := True
+  } elsewhen(addr === 0x00400000) {
+    io.ledDevSel := True
+  } elsewhen(addr === 0x00401000) {
+    io.keyDevSel := True
+  } elsewhen(addr >= 0x00402000 && addr < 0x00402010) {
+    io.uartDevSel := True
+  } elsewhen(addr >= 0x00403000 && addr < 0x00403020) {
+    io.vgaPaletteSel := True
+  } elsewhen(addr === 0x00403100) {
+    io.vgaControlSel := True
   }
 
   // --------------------------------

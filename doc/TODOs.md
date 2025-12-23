@@ -1,9 +1,12 @@
 ## TODOs
 
+### Firmware
+* Fix all firmware examples to use the new memory map (monitor is already updated)
+
 ### SRAM
 * ~~Implement a simple SRAM controller to map to/from 8-bit data from/to 16-bit data~~
 * ~~Enhance the controller to have no wait states~~
-* Define Reset SP and PC in ROM and replace FPGA Block Memory with SRAM
+* ~~Define Reset SP and PC in ROM and replace FPGA Block Memory with SRAM~~
 
 ### VGA
 * ~~Center the 400 lines when using 480 lines VGA Mode~~ (DONE)
