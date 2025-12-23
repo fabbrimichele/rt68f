@@ -63,23 +63,15 @@ case class BusManager() extends Component {
   io.uartDevSel        := False
   io.sramSel           := False
 
-  /*
-  val bootCounter = new  Area {
-    private val counter = Reg(UInt(4 bits)) init 0
-    when (counter < 8) {
-      counter := counter + 1
-    }
-    val romSwapEn = counter < 8
-  }
-  */
-
   // Decoding Chain, ensures that even if an address matches
   // two ranges, only the highest priority one is selected.
   val addr = io.cpuBus.ADDR
   when(addr >= 0x00000 && addr < 0x00008) {
+    // This is required to have Reset SP and PC defined
+    // in ROM when the CPU starts, the 2 values are only
+    // read during after the reset, there is no point in
+    // making them writable.
     io.romSel := True
-    // Accessing Init SP and PC
-    //when(bootCounter.romSwapEn) { io.romSel := True } otherwise { io.ramSel := True }
   } elsewhen(addr >= 0x00008 && addr < 0x04000) {
     io.ramSel := True
   } elsewhen(addr >= 0x04000 && addr < 0x08000) {
