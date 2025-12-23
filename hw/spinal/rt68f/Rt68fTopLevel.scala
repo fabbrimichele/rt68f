@@ -56,9 +56,9 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     busManager.io.cpuBus <> cpu.io
 
     // --------------------------------
-    // ROM: 16 KB @ 0x0000 - 0x4FFFF
+    // ROM: 1.5 KB @ 0x0000 - 0x4FFFF TODO: update range in the comment
     // --------------------------------
-    val romSizeWords = 16384 / 2 // 16 KB / 2 bytes per 16-bit word
+    val romSizeWords = 1536 / 2 // 1.5 KB / 2 bytes per 16-bit word
     val rom = Mem16Bits(size = romSizeWords, readOnly = true, initFile = Some(romFilename))
 
     busManager.io.romBus <> rom.io.bus
@@ -74,7 +74,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     ram.io.sel := busManager.io.ramSel
 
     // --------------------------------
-    // VGA: 32 KB @ 0x8000 - 0xFFFF
+    // VGA: 64000 bytes @ 0x8000 - 0xFFFF TODO: update range in the comment
     // --------------------------------
     val vga = VgaDevice(clkCtrl.clk25)
     io.vga <> vga.io.vga

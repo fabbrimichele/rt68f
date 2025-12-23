@@ -34,7 +34,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   }
 
   // Framebuffer
-  val fbWidth = 32768 / 2  // 32KB = 640x400, 1 bit color
+  val fbWidth = 64000 / 2  // 32KB = 640x400, 1 bit color
   val framebuffer = Mem(Bits(16 bits), fbWidth)
 
   // Palette (implemented with registers)

@@ -539,12 +539,12 @@ INIT_VECTOR_TABLE:
 ; Messages
 MSG_TITLE       DC.B    'RT68F Monitor v0.1',LF,NUL
 MSG_UNKNOWN     DC.B    'Error: Unknown command or syntax',LF,NUL
-MSG_HELP        DC.B    'DUMP  <ADDR>         - Dump from ADDR (HEX)',LF
-                DC.B    'WRITE <ADDR> <VALUE> - Write to ADDR (HEX) the VALUE (HEX)',LF
-                DC.B    'LOAD                 - Load from UART to memory',LF
-                DC.B    'RUN   <ADDR>         - Run program at ADDR (HEX)',LF
-                DC.B    'FBCLR                - Clear framebuffer',LF
-                DC.B    'HELP                 - Print this list of commands',LF
+MSG_HELP        DC.B    'DUMP  <ADDR>       - Dump from ADDR (HEX)',LF
+                DC.B    'WRITE <ADDR> <VAL> - Write to ADDR (HEX) the VALUE (HEX)',LF
+                DC.B    'LOAD               - Load from UART to memory',LF
+                DC.B    'RUN   <ADDR>       - Run program at ADDR (HEX)',LF
+                DC.B    'FBCLR              - Clear framebuffer',LF
+                DC.B    'HELP               - Print this list of commands',LF
                 DC.B    NUL
 MSG_LOADING     DC.B    'Loading...',LF,NUL
 MSG_LOAD_DONE   DC.B    'Done.',LF,NUL
