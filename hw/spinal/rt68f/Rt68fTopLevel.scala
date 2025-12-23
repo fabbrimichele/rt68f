@@ -18,17 +18,15 @@ import scala.language.postfixOps
  * @param romFilename name of the file containing the ROM content
  *
  * SimpleSoC Memory Map
- *
  *   0x00000000 - 0x00000007 : Shadowed ROM (for Reset SP and PC)
- *   0x00000000 - 0x00003FFF : 16 KB RAM (16-bit words)
- *   0x00004000 - 0x00007FFF : 16 KB ROM (16-bit words)
- *   0x00008000 - 0x0000FFFF : 32 KB Video Framebuffer (16-bit words)
- *   0x00010000              : LED peripheral (lower 4 bits drive LEDs)
- *   0x00011000              : KEY peripheral (lower 4 bits reflect key inputs)
- *   0x00012000              : UART (base)
- *   0x00013000              ; VGA Palette (4 words, it'll be 256)
- *   0x00013100              ; VGA Control (1 word, it might increase)
- *   0x00100000 - 0x00180000 ; 512 KB SRAM
+ *   0x00000008 - 0x0007FFFF : 512 KB RAM (minus 2 longs)
+ *   0x00200000 - 0x00207FFF : 32 KB Video Framebuffer (16-bit words)
+ *   0x00300000 - 0x00307FFF : 16 KB ROM (16-bit words)
+ *   0x00400000 - 0x00400000 : LED peripheral (lower 4 bits drive LEDs)
+ *   0x00401000 - 0x00401000 : KEY peripheral (lower 4 bits reflect key inputs)
+ *   0x00402000 - 0x00402010 : UART
+ *   0x00403000 - 0x00403020 : VGA Palette (16 words, it'll be 256)
+ *   0x00403100 - 0x00403100 : VGA Control (1 word, it might increase)
  */
 
 //noinspection TypeAnnotation

@@ -1,7 +1,7 @@
     ; ===========================
     ; Program code
     ; ===========================
-    ORG    $4000            ; Start of RAM
+    ORG    $400             ; Start of RAM
 
 START:
     MOVE.W  #5,(LED)        ; Write D1 into LED register
@@ -10,6 +10,6 @@ START:
     ; ===========================
     ; Constants
     ; ===========================
-LED         EQU     $00010000   ; LED-mapped register base address
+LED         EQU     $00400000   ; LED-mapped register base address
 
 

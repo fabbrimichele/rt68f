@@ -1,14 +1,13 @@
 ; ------------------------------
 ; ROM Monitor
 ; ------------------------------
-    ORG    $4000                ; ROM Start Address
+    ORG    $300000          ; ROM Start Address
 
 ; ------------------------------
 ; Initial Reset SP and PC in Vector Table
 ; ------------------------------
     DC.L SP_START           ; Reset Stack Pointer (SP, SP move downward far from SO_RAM)
     DC.L START              ; Reset Program counter (PC) (point to the beginning of code)
-
 
 ; ------------------------------
 ; Program code
@@ -570,16 +569,12 @@ RAM_START       EQU $00000400               ; Start of RAM address (after the ve
 RAM_END         EQU $00004000               ; End of RAM address (+1)
 SP_START        EQU (RAM_END-MON_MEM_LEN)   ; After SP, allocates monitor RAM
 MON_MEM_START   EQU SP_START                ;
-FB_START        EQU $00008000               ; Start of Framebuffer
-FB_END          EQU $00010000               ; End of Framebuffer (+1)
+FB_START        EQU $00200000               ; Start of Framebuffer
+FB_END          EQU $00208000               ; End of Framebuffer (+1)
 FB_LEN          EQU (FB_END-FB_START)       ; Framebuffer length
-LED             EQU $00010000               ; LED-mapped register base address
-; SpinalHDL UART
-;UART_BASE       EQU $00012000               ; UART base address
-;UART_DATA       EQU UART_BASE+0             ; UART-mapped data register address
-;UART_STAT       EQU UART_BASE+2             ; UART-mapped status register address
+LED             EQU $00400000               ; LED-mapped register base address
 ; 16450 UART
-UART_BASE       EQU $00012000               ; UART base address
+UART_BASE       EQU $00402000               ; UART base address
 UART_RBR        EQU UART_BASE+$0            ; Receive Buffer Register(RBR) / Transmitter Holding Register(THR) / Divisor Latch (LSB)
 UART_IER        EQU UART_BASE+$2            ; Interrupt enable register / Divisor Latch (MSB)
 UART_IIR        EQU UART_BASE+$4            ; Interrupt Identification Register
