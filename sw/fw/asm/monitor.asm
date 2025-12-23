@@ -491,7 +491,7 @@ CHK_TRL_DONE:
 ; TRAP handlers
 ; ------------------------------
 TRAP_14_HANDLER:
-    MOVE.L  #RAM_END,A7 ; TODO: shouldn't this be `SP_START`?
+    MOVE.L  #SP_START,SP
     JMP     MON_ENTRY
 
 ; ------------------------------
