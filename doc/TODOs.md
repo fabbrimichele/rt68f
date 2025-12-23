@@ -3,12 +3,14 @@
 ### SRAM
 * ~~Implement a simple SRAM controller to map to/from 8-bit data from/to 16-bit data~~
 * ~~Enhance the controller to have no wait states~~
+* Implement a ROM/RAM swapper and replace FPGA Block Memory with SRAM
 
 ### VGA
 * ~~Center the 400 lines when using 480 lines VGA Mode~~ (DONE)
 * ~~Implement a bit in the control register to switch between VGA 640x480 and VGA 640x400~~ (DONE)
 * Trigger an interrupt for frame start and 68000 interrupt
 * Increase RAM size to 64000  (requires monitor refactoring) and increase colors at the 3 resolutions
+  * First need to make a monitor/bootloader version that is not bigger than 1536 bytes
   * 640x400 - 2 colors -> 4 colors
   * 640x200 - 4 colors -> 16 colors
   * 320x200 - 16 colors -> 256 colors
