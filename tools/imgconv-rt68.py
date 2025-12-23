@@ -30,7 +30,7 @@ def save_palette(img, filename):
         color_16bit = (r << 8) | (g << 4) | b
         pal_data.extend(color_16bit.to_bytes(2, 'big'))
 
-    save_with_header(filename, pal_data, 0x00013000)
+    save_with_header(filename, pal_data, 0x00403000)
 
 def save_packed_img(img, filename):
     pixels = list(img.getdata())
@@ -39,7 +39,7 @@ def save_packed_img(img, filename):
         packed_byte = (pixels[i] << 4) | pixels[i+1]
         pix_data.append(packed_byte)
 
-    save_with_header(filename, pix_data, 0x00008000)
+    save_with_header(filename, pix_data, 0x00200000)
 
 def convert(in_filename, out_filename, palette_filename):
     """Convert a PNG image to 320x200 pixels 16 colors with palette"""
