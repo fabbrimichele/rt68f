@@ -22,6 +22,10 @@ object VgaDevice {
   }
 }
 
+// TODO: now there are 64000 bytes available ->
+//  * increase colors for all resolutions
+//  * increase palette, you can only use registers, memory is completely used for the fb
+//    -> if it is not possible, reduce the monitor (eventually it'll be a boot loader)
 
 //noinspection TypeAnnotation
 case class VgaDevice(clk25: ClockDomain) extends Component {
@@ -38,7 +42,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   val framebuffer = Mem(Bits(16 bits), fbWidth)
 
   // Palette (implemented with registers)
-  // TODO: use 12 bits
+  // TODO: use 12 bits, this might be necessary when expanding the palette to 256 colors
   val palette = Vec.fill(16)(Reg(UInt(16 bits)))
   palette(0).init(U(0x0000))  // Black
   palette(1).init(U(0x000A))  // Blue
