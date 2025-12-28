@@ -56,6 +56,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   palette(9).init(U(0x055F))  // Bright Blue
   palette(10).init(U(0x05F5)) // Bright Green
   palette(11).init(U(0x05FF)) // Bright Cyan
+  palette(12).init(U(0x0F55)) // Bright Red
   palette(13).init(U(0x0F5F)) // Bright Magenta
   palette(14).init(U(0x0FF5)) // Bright Yellow
   palette(15).init(U(0x0FFF)) // Bright White (Pure White)
