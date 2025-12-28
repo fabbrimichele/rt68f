@@ -43,23 +43,23 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
 
   // Palette (implemented with registers)
   // TODO: use 12 bits, this might be necessary when expanding the palette to 256 colors
-  val palette = Vec.fill(16)(Reg(UInt(16 bits)))
-  palette(0).init(U(0x0000))  // Black
-  palette(1).init(U(0x000A))  // Blue
-  palette(2).init(U(0x00A0))  // Green
-  palette(3).init(U(0x00AA))  // Cyan
-  palette(4).init(U(0x0A00))  // Red
-  palette(5).init(U(0x0A0A))  // Magenta
-  palette(6).init(U(0x0A50))  // Brown (Special Case: R=A, G=5, B=0)
-  palette(7).init(U(0x0AAA))  // Light Gray
-  palette(8).init(U(0x0555))  // Dark Gray
-  palette(9).init(U(0x055F))  // Bright Blue
-  palette(10).init(U(0x05F5)) // Bright Green
-  palette(11).init(U(0x05FF)) // Bright Cyan
-  palette(12).init(U(0x0F55)) // Bright Red
-  palette(13).init(U(0x0F5F)) // Bright Magenta
-  palette(14).init(U(0x0FF5)) // Bright Yellow
-  palette(15).init(U(0x0FFF)) // Bright White (Pure White)
+  val palette = Vec.fill(16)(Reg(UInt(12 bits)))
+  palette(0).init(U(0x000))  // Black
+  palette(1).init(U(0x00A))  // Blue
+  palette(2).init(U(0x0A0))  // Green
+  palette(3).init(U(0x0AA))  // Cyan
+  palette(4).init(U(0xA00))  // Red
+  palette(5).init(U(0xA0A))  // Magenta
+  palette(6).init(U(0xA50))  // Brown (Special Case: R=A, G=5, B=0)
+  palette(7).init(U(0xAAA))  // Light Gray
+  palette(8).init(U(0x555))  // Dark Gray
+  palette(9).init(U(0x55F))  // Bright Blue
+  palette(10).init(U(0x5F5)) // Bright Green
+  palette(11).init(U(0x5FF)) // Bright Cyan
+  palette(12).init(U(0xF55)) // Bright Red
+  palette(13).init(U(0xF5F)) // Bright Magenta
+  palette(14).init(U(0xFF5)) // Bright Yellow
+  palette(15).init(U(0xFFF)) // Bright White (Pure White)
 
   // Control register
   // Bits 1-0 [Screen mode] : 0 -> 640x400 2 colors, 1 -> 640x200 4 colors, 2 -> 320x200 16 colors (3 same as 2)
@@ -78,15 +78,15 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
 
     when(io.bus.RW) {
       // Read
-      io.bus.DATAI := palette(wordAddr).asBits
+      io.bus.DATAI := Cat(U(0, 4 bits), palette(wordAddr)).asBits
     } otherwise {
       // Write
       when (!io.bus.LDS && !io.bus.UDS) {
-        palette(wordAddr) := io.bus.DATAO.asUInt
+        palette(wordAddr) := io.bus.DATAO(11 downto 0).asUInt
       } elsewhen(!io.bus.LDS) {
-        palette(wordAddr) := Cat(palette(wordAddr)(15 downto 8), io.bus.DATAO(7 downto 0)).asUInt
+        palette(wordAddr) := Cat(palette(wordAddr)(11 downto 8), io.bus.DATAO(7 downto 0)).asUInt
       } elsewhen(!io.bus.UDS) {
-        palette(wordAddr) := Cat(io.bus.DATAO(15 downto 8), palette(wordAddr)(7 downto 0)).asUInt
+        palette(wordAddr) := Cat(io.bus.DATAO(11 downto 8), palette(wordAddr)(7 downto 0)).asUInt
       }
     }
   }
