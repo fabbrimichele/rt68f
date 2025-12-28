@@ -142,7 +142,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
 
     val bitsPerPixel = mode.mux(
       M0_640X400C02 -> U(1, 3 bits),
-      M1_640X200C04 -> U(2, 3 bits),
+      M1_640X200C04 -> U(4, 3 bits),
       M2_320X200C16 -> U(4, 3 bits),
       M3_320X200C16 -> U(4, 3 bits),
     )
@@ -209,7 +209,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
 
     val fbReadAddr = mode.mux(
       M0_640X400C02 -> pixelCounter(pixelCounter.high downto 4).resize(log2Up(fbWidth)),
-      M1_640X200C04 -> pixelCounter(pixelCounter.high downto 3).resize(log2Up(fbWidth)),
+      M1_640X200C04 -> pixelCounter(pixelCounter.high downto 2).resize(log2Up(fbWidth)),
       M2_320X200C16 -> pixelCounter(pixelCounter.high downto 2).resize(log2Up(fbWidth)),
       M3_320X200C16 -> pixelCounter(pixelCounter.high downto 2).resize(log2Up(fbWidth)),
     )
@@ -255,7 +255,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
 
     val pixelBitIndex = mode.mux(
       M0_640X400C02 -> pixelX(3 downto 0),
-      M1_640X200C04 -> pixelX(2 downto 0).resized,
+      M1_640X200C04 -> pixelX(1 downto 0).resized,
       M2_320X200C16 -> pixelX(2 downto 1).resized,
       M3_320X200C16 -> pixelX(2 downto 1).resized,
     )
@@ -270,7 +270,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
 
     val pixelColorIndex = mode.mux(
       M0_640X400C02 -> shiftRegister(15 downto 15).asUInt.resized,
-      M1_640X200C04 -> shiftRegister(15 downto 14).asUInt.resized,
+      M1_640X200C04 -> shiftRegister(15 downto 12).asUInt.resized,
       M2_320X200C16 -> shiftRegister(15 downto 12).asUInt.resized,
       M3_320X200C16 -> shiftRegister(15 downto 12).asUInt.resized,
     )

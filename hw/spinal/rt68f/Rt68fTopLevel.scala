@@ -20,7 +20,7 @@ import scala.language.postfixOps
  * SimpleSoC Memory Map
  *   0x00000000 - 0x00000007 : Shadowed ROM (for Reset SP and PC)
  *   0x00000008 - 0x0007FFFF : 512 KB RAM (minus 2 longs)
- *   0x00200000 - 0x00207FFF : 32 KB Video Framebuffer (16-bit words)
+ *   0x00200000 - 0x0020FA00 : 64 KB Video Framebuffer (16-bit words)
  *   0x00300000 - 0x00307FFF : 16 KB ROM (16-bit words)
  *   0x00400000 - 0x00400000 : LED peripheral (lower 4 bits drive LEDs)
  *   0x00401000 - 0x00401000 : KEY peripheral (lower 4 bits reflect key inputs)

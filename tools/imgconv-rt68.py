@@ -2,12 +2,16 @@
 from PIL import Image
 import sys
 
+WIDTH = 640
+HEIGHT = 200
+COLORS = 16
+
 def adjust_image(img):
     img = img.convert("RGB")  # Ensure RGB mode
-    img = img.resize((320, 200), Image.Resampling.LANCZOS)
+    img = img.resize((WIDTH, HEIGHT), Image.Resampling.LANCZOS)
     # Quantize to 16 colors (Indexed mode)
     # 'P' mode is indexed, 'palette=Image.ADAPTIVE' finds the best 16 colors
-    img = img.quantize(colors=16, method=Image.Quantize.MAXCOVERAGE)
+    img = img.quantize(colors=COLORS, method=Image.Quantize.MAXCOVERAGE)
     return img
 
 def save_with_header(filename, data, load_address):
@@ -56,5 +60,5 @@ if len(sys.argv) == 4:
     convert(in_filename, out_filename, palette_filename)
     print(f"Done")
 else:
-    print(f"Converts an image to a 320x200 pixels image with 16 colors and 4096 colors palette")
+    print(f"Converts an image to a {WIDTH}x{HEIGHT} pixels image with {COLORS} colors and 4096 colors palette")
     print(f"usage: imgconv input_filename output_filename palette_filename")
