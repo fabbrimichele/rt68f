@@ -3,8 +3,8 @@ from PIL import Image
 import sys
 
 WIDTH = 640
-HEIGHT = 200
-COLORS = 16
+HEIGHT = 400
+COLORS = 4
 
 def adjust_image(img):
     img = img.convert("RGB")  # Ensure RGB mode
@@ -39,9 +39,25 @@ def save_palette(img, filename):
 def save_packed_img(img, filename):
     pixels = list(img.getdata())
     pix_data = bytearray()
-    for i in range(0, len(pixels), 2):
-        packed_byte = (pixels[i] << 4) | pixels[i+1]
-        pix_data.append(packed_byte)
+
+    if COLORS == 16:
+        for i in range(0, len(pixels), 2):
+            packed_byte = (pixels[i] << 4) | pixels[i+1]
+            pix_data.append(packed_byte)
+    elif COLORS == 4:
+        # 2 bits per pixel: 4 pixels per byte
+        for i in range(0, len(pixels), 4):
+            # Ensure we don't go out of bounds if pixels count isn't multiple of 4
+            p1 = pixels[i] & 0x03
+            p2 = pixels[i+1] & 0x03 if i+1 < len(pixels) else 0
+            p3 = pixels[i+2] & 0x03 if i+2 < len(pixels) else 0
+            p4 = pixels[i+3] & 0x03 if i+3 < len(pixels) else 0
+
+            packed_byte = (p1 << 6) | (p2 << 4) | (p3 << 2) | p4
+            pix_data.append(packed_byte)
+    else:
+        # Fallback for 256 colors or others (1 byte per pixel)
+        pix_data = bytearray(pixels)
 
     save_with_header(filename, pix_data, 0x00200000)
 
