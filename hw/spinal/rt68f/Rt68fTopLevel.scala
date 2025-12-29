@@ -58,7 +58,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // --------------------------------
     // ROM: 1.5 KB @ 0x0000 - 0x4FFFF TODO: update range in the comment
     // --------------------------------
-    val romSizeWords = 1536 / 2 // 1.5 KB / 2 bytes per 16-bit word
+    val romSizeWords = 1122 / 2 // 1.5 KB / 2 bytes per 16-bit word
     val rom = Mem16Bits(size = romSizeWords, readOnly = true, initFile = Some(romFilename))
 
     busManager.io.romBus <> rom.io.bus
@@ -135,7 +135,8 @@ object Rt68fTopLevelVhdl extends App {
   //private val romFilename = "uart_hello.hex"
   //private val romFilename = "uart_echo.hex"
   //private val romFilename = "mem_test.hex"
-  private val romFilename = "monitor.hex"
+  //private val romFilename = "monitor.hex"
+  private val romFilename = "min_mon.hex"
   //private val romFilename = "uart16450_echo.hex"
 
   private val report = Config.spinal.generateVhdl(InOutWrapper(Rt68fTopLevel(romFilename)))
