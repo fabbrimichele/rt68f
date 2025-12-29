@@ -2,9 +2,9 @@
 from PIL import Image
 import sys
 
-WIDTH = 640
-HEIGHT = 400
-COLORS = 4
+WIDTH = 320
+HEIGHT = 200
+COLORS = 256
 
 def adjust_image(img):
     img = img.convert("RGB")  # Ensure RGB mode
@@ -27,7 +27,7 @@ def save_with_header(filename, data, load_address):
         f.write(data)
 
 def save_palette(img, filename):
-    raw_palette = img.getpalette()[:48]
+    raw_palette = img.getpalette()[:COLORS * 3]
     pal_data = bytearray()
     for i in range(0, len(raw_palette), 3):
         r, g, b = raw_palette[i] >> 4, raw_palette[i+1] >> 4, raw_palette[i+2] >> 4

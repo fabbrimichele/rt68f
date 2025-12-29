@@ -86,7 +86,7 @@ case class BusManager() extends Component {
     io.keyDevSel := True
   } elsewhen(addr >= 0x00402000 && addr < 0x00402010) {
     io.uartDevSel := True
-  } elsewhen(addr >= 0x00403000 && addr < 0x00403020) {
+  } elsewhen(addr >= 0x00403000 && addr < 0x00403100) {
     io.vgaPaletteSel := True
   } elsewhen(addr === 0x00403100) {
     io.vgaControlSel := True

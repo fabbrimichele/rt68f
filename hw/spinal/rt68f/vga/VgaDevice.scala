@@ -42,24 +42,27 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   val framebuffer = Mem(Bits(16 bits), fbWidth)
 
   // Palette (implemented with registers)
-  // TODO: use 12 bits, this might be necessary when expanding the palette to 256 colors
-  val palette = Vec.fill(16)(Reg(UInt(12 bits)))
-  palette(0).init(U(0x000))  // Black
-  palette(1).init(U(0x00A))  // Blue
-  palette(2).init(U(0x0A0))  // Green
-  palette(3).init(U(0x0AA))  // Cyan
-  palette(4).init(U(0xA00))  // Red
-  palette(5).init(U(0xA0A))  // Magenta
-  palette(6).init(U(0xA50))  // Brown (Special Case: R=A, G=5, B=0)
-  palette(7).init(U(0xAAA))  // Light Gray
-  palette(8).init(U(0x555))  // Dark Gray
-  palette(9).init(U(0x55F))  // Bright Blue
-  palette(10).init(U(0x5F5)) // Bright Green
-  palette(11).init(U(0x5FF)) // Bright Cyan
-  palette(12).init(U(0xF55)) // Bright Red
-  palette(13).init(U(0xF5F)) // Bright Magenta
-  palette(14).init(U(0xFF5)) // Bright Yellow
-  palette(15).init(U(0xFFF)) // Bright White (Pure White)
+  /*
+  val paletteInitContent = Seq(
+    0x000,  // Black
+    0x00A,  // Blue
+    0x0A0,  // Green
+    0x0AA,  // Cyan
+    0xA00,  // Red
+    0xA0A,  // Magenta
+    0xA50,  // Brown (Special Case: R=A, G=5, B=0)
+    0xAAA,  // Light Gray
+    0x555,  // Dark Gray
+    0x55F,  // Bright Blue
+    0x5F5,  // Bright Green
+    0x5FF,  // Bright Cyan
+    0xF55,  // Bright Red
+    0xF5F,  // Bright Magenta
+    0xFF5,  // Bright Yellow
+    0xFFF,  // Bright White (Pure White)
+  )
+   */
+  val palette = Mem(Bits(12 bits), 256)
 
   // Control register
   // Bits 1-0 [Screen mode] : 0 -> 640x400 2 colors, 1 -> 640x200 4 colors, 2 -> 320x200 16 colors (3 same as 2)
@@ -74,7 +77,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   // Palette read/write
   when(!io.bus.AS && io.paletteSel) {
     io.bus.DTACK := False // acknowledge access (active low)
-    val wordAddr = io.bus.ADDR(4 downto 1)
+    val wordAddr = io.bus.ADDR(8 downto 1)
 
     when(io.bus.RW) {
       // Read
@@ -141,10 +144,10 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
     val overscan = controlRegCC(2)
 
     val bitsPerPixel = mode.mux(
-      M0_640X400C004 -> U(2, 3 bits),
-      M1_640X200C016 -> U(4, 3 bits),
-      M2_320X200C256 -> U(4, 3 bits),
-      M3_320X200C016 -> U(4, 3 bits),
+      M0_640X400C004 -> U(2, 4 bits),
+      M1_640X200C016 -> U(4, 4 bits),
+      M2_320X200C256 -> U(8, 4 bits),
+      M3_320X200C016 -> U(4, 4 bits),
     )
     val bitsPerPixelReg = RegNext(bitsPerPixel)
 
@@ -210,7 +213,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
     val fbReadAddr = mode.mux(
       M0_640X400C004 -> pixelCounter(pixelCounter.high downto 3).resize(log2Up(fbWidth)),
       M1_640X200C016 -> pixelCounter(pixelCounter.high downto 2).resize(log2Up(fbWidth)),
-      M2_320X200C256 -> pixelCounter(pixelCounter.high downto 2).resize(log2Up(fbWidth)),
+      M2_320X200C256 -> pixelCounter(pixelCounter.high downto 1).resize(log2Up(fbWidth)),
       M3_320X200C016 -> pixelCounter(pixelCounter.high downto 2).resize(log2Up(fbWidth)),
     )
 
@@ -256,7 +259,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
     val pixelBitIndex = mode.mux(
       M0_640X400C004 -> pixelX(2 downto 0),
       M1_640X200C016 -> pixelX(1 downto 0).resized,
-      M2_320X200C256 -> pixelX(2 downto 1).resized,
+      M2_320X200C256 -> pixelX(1 downto 1).resized,
       M3_320X200C016 -> pixelX(2 downto 1).resized,
     )
 
@@ -271,7 +274,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
     val pixelColorIndex = mode.mux(
       M0_640X400C004 -> shiftRegister(15 downto 14).asUInt.resized,
       M1_640X200C016 -> shiftRegister(15 downto 12).asUInt.resized,
-      M2_320X200C256 -> shiftRegister(15 downto 12).asUInt.resized,
+      M2_320X200C256 -> shiftRegister(15 downto 8).asUInt.resized,
       M3_320X200C016 -> shiftRegister(15 downto 12).asUInt.resized,
     )
     val pixelColor = paletteCC(pixelColorIndex)
