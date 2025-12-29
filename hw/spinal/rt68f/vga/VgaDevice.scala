@@ -177,7 +177,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
     val lineWidthReg = RegNext(lineWidth)
 
     // Configuration
-    val latency = 1
+    val fbLatency = 1
     val numberOfLines = 400
     val vertOffset = 40
 
@@ -235,7 +235,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
     )
 
     val isVisibleVertRange = vCount >= (timings.v.colorStart + vertOffsetReg) && vCount < (timings.v.colorStart + numberOfLines + vertOffsetReg)
-    val isVisibleHorRange = hCount >= (timings.h.colorStart - latency) && hCount < timings.h.colorEnd - latency
+    val isVisibleHorRange = hCount >= (timings.h.colorStart - fbLatency) && hCount < timings.h.colorEnd - fbLatency
 
     when (frameStart) {
       lineCounter := 0
