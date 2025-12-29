@@ -81,20 +81,27 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
 
     when(io.bus.RW) {
       // Read
-      io.bus.DATAI := palette.readSync(wordAddr)
+      io.bus.DATAI := Cat(B(0, 4 bits), palette.readSync(wordAddr))
     } otherwise {
       // ------------------------------------
       // Write Access (Byte strobes MUST be managed)
       // ------------------------------------
-      // io.bus.UDS (D15-D8) -> mask(1)
-      // io.bus.LDS (D7-D0) -> mask(0)
-      val byteMask = Cat(!io.bus.UDS, !io.bus.LDS).asBits // The 2-bit byte write enable mask
+      // writeMixedWidth() works only with bytes and can't be used
+
+      // TODO: find something better,
+      //  e.g. define a mask for UDS and one for LDS and concatenate them
+      val mask = Cat(!io.bus.UDS, !io.bus.LDS).mux(
+        0 -> B"0000_0000_0000", // This can't happen, either UDS or LDS must be selected
+        1 -> B"0000_1111_1111", // UDS = inactive, LDS = active
+        2 -> B"1111_0000_0000", // UDS = active, LDS = inactive
+        3 -> B"1111_1111_1111", // UDS = active, LDS = active
+      )
 
       // Use writeMixedWidth to enable byte-level writing
-      palette.writeMixedWidth(
+      palette.write(
         address = wordAddr,
-        data = io.bus.DATAO,
-        mask = byteMask
+        data = io.bus.DATAO(11 downto 0),
+        mask = mask
       )
     }
   }

@@ -5,9 +5,9 @@ import sys
 from PIL import Image
 import sys
 
-WIDTH = 640
-HEIGHT = 400
-COLORS = 4
+WIDTH = 320
+HEIGHT = 200
+COLORS = 256
 
 def adjust_image(img):
     img = img.convert("RGB")  # Ensure RGB mode
