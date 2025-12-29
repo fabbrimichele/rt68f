@@ -77,8 +77,8 @@ case class BusManager() extends Component {
   } elsewhen(addr >= 0x00200000 && addr < 0x0020FA00) {
     // 64000 bytes, leaves something for the ROM
     io.vgaFramebufferSel := True
-  } elsewhen(addr >= 0x00300000 && addr < 0x00300600) {
-    // 1536 byte, the memory left from the framebuffer
+  } elsewhen(addr >= 0x00300000 && addr < 0x00300462) {
+    // 1122 byte, the memory left from the framebuffer and palette
     io.romSel := True
   } elsewhen(addr === 0x00400000) {
     io.ledDevSel := True

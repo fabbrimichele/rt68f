@@ -37,9 +37,28 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   val fbWidth = 64000 / 2  // 32KB = 640x400, 1 bit color
   val framebuffer = Mem(Bits(16 bits), fbWidth)
 
-  // Palette (implemented with registers)
-  // TODO: use 12 bits
-  val palette = Vec.fill(16)(Reg(UInt(16 bits)))
+  // Palette
+  val paletteValues = Seq(
+    B"12'x000",  // Black
+    B"12'x00A",  // Blue
+    B"12'x0A0",  // Green
+    B"12'x0AA",  // Cyan
+    B"12'xA00",  // Red
+    B"12'xA0A",  // Magenta
+    B"12'xA50",  // Brown (Special Case: R=A, G=5, B=0",
+    B"12'xAAA",  // Light Gray
+    B"12'x555",  // Dark Gray
+    B"12'x55F",  // Bright Blue
+    B"12'x5F5", // Bright Green
+    B"12'x5FF", // Bright Cyan
+    B"12'xF55", // Bright Red
+    B"12'xF5F", // Bright Magenta
+    B"12'xFF5", // Bright Yellow
+    B"12'xFFF", // Bright White (Pure White)
+  )
+
+  val palette = Mem(Bits(16 bits), paletteValues)
+  /*
   palette(0).init(U(0x0000))  // Black
   palette(1).init(U(0x000A))  // Blue
   palette(2).init(U(0x00A0))  // Green
@@ -56,6 +75,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   palette(13).init(U(0x0F5F)) // Bright Magenta
   palette(14).init(U(0x0FF5)) // Bright Yellow
   palette(15).init(U(0x0FFF)) // Bright White (Pure White)
+  */
 
   // Control register
   // Bits 1-0 [Screen mode] : 0 -> 640x400 2 colors, 1 -> 640x200 4 colors, 2 -> 320x200 16 colors (3 same as 2)
@@ -74,16 +94,21 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
 
     when(io.bus.RW) {
       // Read
-      io.bus.DATAI := palette(wordAddr).asBits
+      io.bus.DATAI := palette.readSync(wordAddr)
     } otherwise {
-      // Write
-      when (!io.bus.LDS && !io.bus.UDS) {
-        palette(wordAddr) := io.bus.DATAO.asUInt
-      } elsewhen(!io.bus.LDS) {
-        palette(wordAddr) := Cat(palette(wordAddr)(15 downto 8), io.bus.DATAO(7 downto 0)).asUInt
-      } elsewhen(!io.bus.UDS) {
-        palette(wordAddr) := Cat(io.bus.DATAO(15 downto 8), palette(wordAddr)(7 downto 0)).asUInt
-      }
+      // ------------------------------------
+      // Write Access (Byte strobes MUST be managed)
+      // ------------------------------------
+      // io.bus.UDS (D15-D8) -> mask(1)
+      // io.bus.LDS (D7-D0) -> mask(0)
+      val byteMask = Cat(!io.bus.UDS, !io.bus.LDS).asBits // The 2-bit byte write enable mask
+
+      // Use writeMixedWidth to enable byte-level writing
+      palette.writeMixedWidth(
+        address = wordAddr,
+        data = io.bus.DATAO,
+        mask = byteMask
+      )
     }
   }
 
@@ -132,7 +157,6 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   // ------------ VGA side ------------
   new ClockingArea(clk25) {
     val controlRegCC = BufferCC(controlReg)
-    val paletteCC =  BufferCC(palette)
     val mode = controlRegCC(1 downto 0).asUInt
     val overscan = controlRegCC(2)
 
@@ -270,12 +294,15 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
       M2_320X200C16 -> shiftRegister(15 downto 12).asUInt.resized,
       M3_320X200C16 -> shiftRegister(15 downto 12).asUInt.resized,
     )
-    val pixelColor = paletteCC(pixelColorIndex)
+    val pixelColor = palette.readSync(
+      address = pixelColorIndex,
+      clockCrossing = true
+    )
 
     when(colEn) {
-      ctrl.io.rgb.r := pixelColor(11 downto 8)
-      ctrl.io.rgb.g := pixelColor(7 downto 4)
-      ctrl.io.rgb.b := pixelColor(3 downto 0)
+      ctrl.io.rgb.r := pixelColor(11 downto 8).asUInt
+      ctrl.io.rgb.g := pixelColor(7 downto 4).asUInt
+      ctrl.io.rgb.b := pixelColor(3 downto 0).asUInt
     } otherwise {
       ctrl.io.rgb.clear()
     }
