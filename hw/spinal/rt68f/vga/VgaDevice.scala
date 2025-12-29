@@ -58,24 +58,6 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   )
 
   val palette = Mem(Bits(16 bits), paletteValues)
-  /*
-  palette(0).init(U(0x0000))  // Black
-  palette(1).init(U(0x000A))  // Blue
-  palette(2).init(U(0x00A0))  // Green
-  palette(3).init(U(0x00AA))  // Cyan
-  palette(4).init(U(0x0A00))  // Red
-  palette(5).init(U(0x0A0A))  // Magenta
-  palette(6).init(U(0x0A50))  // Brown (Special Case: R=A, G=5, B=0)
-  palette(7).init(U(0x0AAA))  // Light Gray
-  palette(8).init(U(0x0555))  // Dark Gray
-  palette(9).init(U(0x055F))  // Bright Blue
-  palette(10).init(U(0x05F5)) // Bright Green
-  palette(11).init(U(0x05FF)) // Bright Cyan
-  palette(12).init(U(0x0F55)) // Bright Red
-  palette(13).init(U(0x0F5F)) // Bright Magenta
-  palette(14).init(U(0x0FF5)) // Bright Yellow
-  palette(15).init(U(0x0FFF)) // Bright White (Pure White)
-  */
 
   // Control register
   // Bits 1-0 [Screen mode] : 0 -> 640x400 2 colors, 1 -> 640x200 4 colors, 2 -> 320x200 16 colors (3 same as 2)
@@ -184,8 +166,6 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
     val vertOffsetReg = Reg(UInt()) init 0
 
     val ctrl = VgaCtrl(rgbConfig)
-    ctrl.io.vga <> io.vga
-
     ctrl.io.softReset := False
 
     when(overscan) {
@@ -271,8 +251,6 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
       U(0, 12 bits)
     )
 
-    val colEn = ctrl.io.colorEn && isVisibleVertRange
-
     val pixelBitIndex = mode.mux(
       M0_640X400C02 -> pixelX(3 downto 0),
       M1_640X200C04 -> pixelX(2 downto 0).resized,
@@ -295,11 +273,19 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
       M3_320X200C16 -> shiftRegister(15 downto 12).asUInt.resized,
     )
 
-    // TODO: handle the 1 clock latency
     val pixelColor = palette.readSync(
       address = pixelColorIndex,
       clockCrossing = true
     )
+
+    // --- LATENCY MANAGEMENT ---
+    // The pixelColor is ready 1 cycle AFTER colEn and Sync signals from VgaCtrl.
+    // We must delay the VgaCtrl output signals by 1 cycle to match.
+    val colEn = RegNext(ctrl.io.colorEn && isVisibleVertRange) init False
+
+    io.vga.hSync := RegNext(ctrl.io.vga.hSync)
+    io.vga.vSync := RegNext(ctrl.io.vga.vSync)
+    io.vga.color <> ctrl.io.vga.color
 
     when(colEn) {
       ctrl.io.rgb.r := pixelColor(11 downto 8).asUInt
