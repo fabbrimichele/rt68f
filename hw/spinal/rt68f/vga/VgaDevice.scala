@@ -22,11 +22,6 @@ object VgaDevice {
   }
 }
 
-// TODO: now there are 64000 bytes available ->
-//  * increase colors for all resolutions
-//  * increase palette, you can only use registers, memory is completely used for the fb
-//    -> if it is not possible, reduce the monitor (eventually it'll be a boot loader)
-
 //noinspection TypeAnnotation
 case class VgaDevice(clk25: ClockDomain) extends Component {
   val io = new Bundle {
@@ -61,7 +56,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
     B"12'xFFF", // Bright White (Pure White)
   )
 
-  //val palette = Mem(Bits(16 bits), paletteValues)
+  // TODO: set a default palette
   val palette = Mem(Bits(12 bits), 256)
 
   // Control register
