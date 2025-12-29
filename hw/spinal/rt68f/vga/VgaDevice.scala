@@ -294,6 +294,8 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
       M2_320X200C16 -> shiftRegister(15 downto 12).asUInt.resized,
       M3_320X200C16 -> shiftRegister(15 downto 12).asUInt.resized,
     )
+
+    // TODO: handle the 1 clock latency
     val pixelColor = palette.readSync(
       address = pixelColorIndex,
       clockCrossing = true
