@@ -6,7 +6,7 @@ import rt68f.vga.VgaDevice.rgbConfig
 import spinal.core._
 import spinal.lib.graphic.RgbConfig
 import spinal.lib.graphic.vga.Vga
-import spinal.lib.{BufferCC, master, slave}
+import spinal.lib.{BufferCC, Delay, master, slave}
 
 import scala.language.postfixOps
 
@@ -281,10 +281,11 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
     // --- LATENCY MANAGEMENT ---
     // The pixelColor is ready 1 cycle AFTER colEn and Sync signals from VgaCtrl.
     // We must delay the VgaCtrl output signals by 1 cycle to match.
-    val colEn = RegNext(ctrl.io.colorEn && isVisibleVertRange) init False
+    val paletteLatency = 1
 
-    io.vga.hSync := RegNext(ctrl.io.vga.hSync)
-    io.vga.vSync := RegNext(ctrl.io.vga.vSync)
+    val colEn = Delay(ctrl.io.colorEn && isVisibleVertRange, paletteLatency)
+    io.vga.hSync := Delay(ctrl.io.vga.hSync, paletteLatency)
+    io.vga.vSync := Delay(ctrl.io.vga.vSync, paletteLatency)
     io.vga.color <> ctrl.io.vga.color
 
     when(colEn) {
