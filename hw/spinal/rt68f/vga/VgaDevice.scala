@@ -87,21 +87,14 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
       // Write Access (Byte strobes MUST be managed)
       // ------------------------------------
       // writeMixedWidth() works only with bytes and can't be used
-
-      // TODO: find something better,
-      //  e.g. define a mask for UDS and one for LDS and concatenate them
-      val mask = Cat(!io.bus.UDS, !io.bus.LDS).mux(
-        0 -> B"0000_0000_0000", // This can't happen, either UDS or LDS must be selected
-        1 -> B"0000_1111_1111", // UDS = inactive, LDS = active
-        2 -> B"1111_0000_0000", // UDS = active, LDS = inactive
-        3 -> B"1111_1111_1111", // UDS = active, LDS = active
-      )
+      val upperMask = B(4 bits, default -> !io.bus.UDS)
+      val lowerMask = B(8 bits, default -> !io.bus.LDS)
 
       // Use writeMixedWidth to enable byte-level writing
       palette.write(
         address = wordAddr,
         data = io.bus.DATAO(11 downto 0),
-        mask = mask
+        mask = upperMask ## lowerMask
       )
     }
   }
