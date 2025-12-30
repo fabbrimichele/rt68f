@@ -37,27 +37,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   val framebuffer = Mem(Bits(16 bits), fbWidth)
 
   // Palette
-  val paletteValues = Seq(
-    B"12'x000",  // Black
-    B"12'x00A",  // Blue
-    B"12'x0A0",  // Green
-    B"12'x0AA",  // Cyan
-    B"12'xA00",  // Red
-    B"12'xA0A",  // Magenta
-    B"12'xA50",  // Brown (Special Case: R=A, G=5, B=0",
-    B"12'xAAA",  // Light Gray
-    B"12'x555",  // Dark Gray
-    B"12'x55F",  // Bright Blue
-    B"12'x5F5", // Bright Green
-    B"12'x5FF", // Bright Cyan
-    B"12'xF55", // Bright Red
-    B"12'xF5F", // Bright Magenta
-    B"12'xFF5", // Bright Yellow
-    B"12'xFFF", // Bright White (Pure White)
-  )
-
-  // TODO: set a default palette
-  val palette = Mem(Bits(12 bits), 256)
+  val palette = Mem(Bits(12 bits), InitialPalette.colors)
 
   // Control register
   // Bits 1-0 [Screen mode] : 0 -> 640x400 2 colors, 1 -> 640x200 4 colors, 2 -> 320x200 16 colors (3 same as 2)
