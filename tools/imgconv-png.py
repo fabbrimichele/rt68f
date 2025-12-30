@@ -5,12 +5,16 @@ import sys
 from PIL import Image
 import sys
 
+WIDTH = 320
+HEIGHT = 200
+COLORS = 256
+
 def adjust_image(img):
     img = img.convert("RGB")  # Ensure RGB mode
-    img = img.resize((320, 200), Image.Resampling.LANCZOS)
+    img = img.resize((WIDTH, HEIGHT), Image.Resampling.LANCZOS)
     # Quantize to 16 colors (Indexed mode)
     # 'P' mode is indexed, 'palette=Image.ADAPTIVE' finds the best 16 colors
-    img = img.quantize(colors=16, method=Image.Quantize.MAXCOVERAGE)
+    img = img.quantize(colors=COLORS, method=Image.Quantize.MAXCOVERAGE)
     return img
 
 def convert(in_filename, out_filename):

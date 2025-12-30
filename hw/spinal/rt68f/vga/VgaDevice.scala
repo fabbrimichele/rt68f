@@ -1,7 +1,7 @@
 package rt68f.vga
 
 import rt68f.core._
-import rt68f.vga.VgaDevice.Modes.{M0_640X400C02, M1_640X200C04, M2_320X200C16, M3_320X200C16}
+import rt68f.vga.VgaDevice.Modes.{M0_640X400C004, M1_640X200C016, M2_320X200C256, M3_320X200C016}
 import rt68f.vga.VgaDevice.rgbConfig
 import spinal.core._
 import spinal.lib.graphic.RgbConfig
@@ -15,13 +15,12 @@ object VgaDevice {
 
   object Modes {
     // Mode 0: 640x400, 2 colors (1 bit per pixel)
-    val M0_640X400C02 = 0
-    val M1_640X200C04 = 1
-    val M2_320X200C16 = 2
-    val M3_320X200C16 = 3 // TODO: find a useful res, e.g. 160x200x256 color
+    val M0_640X400C004 = 0
+    val M1_640X200C016 = 1
+    val M2_320X200C256 = 2
+    val M3_320X200C016 = 3 // TODO: find a useful resolution
   }
 }
-
 
 //noinspection TypeAnnotation
 case class VgaDevice(clk25: ClockDomain) extends Component {
@@ -38,26 +37,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   val framebuffer = Mem(Bits(16 bits), fbWidth)
 
   // Palette
-  val paletteValues = Seq(
-    B"12'x000",  // Black
-    B"12'x00A",  // Blue
-    B"12'x0A0",  // Green
-    B"12'x0AA",  // Cyan
-    B"12'xA00",  // Red
-    B"12'xA0A",  // Magenta
-    B"12'xA50",  // Brown (Special Case: R=A, G=5, B=0",
-    B"12'xAAA",  // Light Gray
-    B"12'x555",  // Dark Gray
-    B"12'x55F",  // Bright Blue
-    B"12'x5F5", // Bright Green
-    B"12'x5FF", // Bright Cyan
-    B"12'xF55", // Bright Red
-    B"12'xF5F", // Bright Magenta
-    B"12'xFF5", // Bright Yellow
-    B"12'xFFF", // Bright White (Pure White)
-  )
-
-  val palette = Mem(Bits(16 bits), paletteValues)
+  val palette = Mem(Bits(12 bits), InitialPalette.colors)
 
   // Control register
   // Bits 1-0 [Screen mode] : 0 -> 640x400 2 colors, 1 -> 640x200 4 colors, 2 -> 320x200 16 colors (3 same as 2)
@@ -72,24 +52,24 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   // Palette read/write
   when(!io.bus.AS && io.paletteSel) {
     io.bus.DTACK := False // acknowledge access (active low)
-    val wordAddr = io.bus.ADDR(4 downto 1)
+    val wordAddr = io.bus.ADDR(8 downto 1)
 
     when(io.bus.RW) {
       // Read
-      io.bus.DATAI := palette.readSync(wordAddr)
+      io.bus.DATAI := Cat(B(0, 4 bits), palette.readSync(wordAddr))
     } otherwise {
       // ------------------------------------
       // Write Access (Byte strobes MUST be managed)
       // ------------------------------------
-      // io.bus.UDS (D15-D8) -> mask(1)
-      // io.bus.LDS (D7-D0) -> mask(0)
-      val byteMask = Cat(!io.bus.UDS, !io.bus.LDS).asBits // The 2-bit byte write enable mask
+      // writeMixedWidth() works only with bytes and can't be used
+      val upperMask = B(4 bits, default -> !io.bus.UDS)
+      val lowerMask = B(8 bits, default -> !io.bus.LDS)
 
       // Use writeMixedWidth to enable byte-level writing
-      palette.writeMixedWidth(
+      palette.write(
         address = wordAddr,
-        data = io.bus.DATAO,
-        mask = byteMask
+        data = io.bus.DATAO(11 downto 0),
+        mask = upperMask ## lowerMask
       )
     }
   }
@@ -143,18 +123,18 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
     val overscan = controlRegCC(2)
 
     val bitsPerPixel = mode.mux(
-      M0_640X400C02 -> U(1, 3 bits),
-      M1_640X200C04 -> U(2, 3 bits),
-      M2_320X200C16 -> U(4, 3 bits),
-      M3_320X200C16 -> U(4, 3 bits),
+      M0_640X400C004 -> U(2, 4 bits),
+      M1_640X200C016 -> U(4, 4 bits),
+      M2_320X200C256 -> U(8, 4 bits),
+      M3_320X200C016 -> U(4, 4 bits),
     )
     val bitsPerPixelReg = RegNext(bitsPerPixel)
 
     val lineWidth =  mode.mux(
-      M0_640X400C02 -> U(640, 10 bits),
-      M1_640X200C04 -> U(640, 10 bits),
-      M2_320X200C16 -> U(320, 10 bits),
-      M3_320X200C16 -> U(320, 10 bits),
+      M0_640X400C004 -> U(640, 10 bits),
+      M1_640X200C016 -> U(640, 10 bits),
+      M2_320X200C256 -> U(320, 10 bits),
+      M3_320X200C016 -> U(320, 10 bits),
     )
     val lineWidthReg = RegNext(lineWidth)
 
@@ -208,10 +188,10 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
     val lineCounter = Reg(UInt(9 bits)) init 0
 
     val fbReadAddr = mode.mux(
-      M0_640X400C02 -> pixelCounter(pixelCounter.high downto 4).resize(log2Up(fbWidth)),
-      M1_640X200C04 -> pixelCounter(pixelCounter.high downto 3).resize(log2Up(fbWidth)),
-      M2_320X200C16 -> pixelCounter(pixelCounter.high downto 2).resize(log2Up(fbWidth)),
-      M3_320X200C16 -> pixelCounter(pixelCounter.high downto 2).resize(log2Up(fbWidth)),
+      M0_640X400C004 -> pixelCounter(pixelCounter.high downto 3).resize(log2Up(fbWidth)),
+      M1_640X200C016 -> pixelCounter(pixelCounter.high downto 2).resize(log2Up(fbWidth)),
+      M2_320X200C256 -> pixelCounter(pixelCounter.high downto 1).resize(log2Up(fbWidth)),
+      M3_320X200C016 -> pixelCounter(pixelCounter.high downto 2).resize(log2Up(fbWidth)),
     )
 
     val isVisibleVertRange = vCount >= (timings.v.colorStart + vertOffsetReg) && vCount < (timings.v.colorStart + numberOfLines + vertOffsetReg)
@@ -224,7 +204,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
     } elsewhen(isVisibleVertRange && isVisibleHorRange) {
       // Stretch horizontal resolution for modes M2 and M3
       stretch := !stretch
-      when (mode === M0_640X400C02 || mode === M1_640X200C04 || stretch === False) {
+      when (mode === M0_640X400C004 || mode === M1_640X200C016 || stretch === False) {
         pixelCounter := pixelCounter + 1
       }
     } elsewhen(isVisibleVertRange && (hCount === 0)) {
@@ -232,7 +212,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
       lineCounter := lineCounter + 1
       stretch := True
       // Stretch vertical resolution by 2 for all screen modes but M0_640X400C02
-      when(mode === M0_640X400C02 || lineCounter.lsb === True) {
+      when(mode === M0_640X400C004 || lineCounter.lsb === True) {
         pixelStartLineCounter := pixelStartLineCounter + lineWidthReg
       }
     }
@@ -252,25 +232,25 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
     )
 
     val pixelBitIndex = mode.mux(
-      M0_640X400C02 -> pixelX(3 downto 0),
-      M1_640X200C04 -> pixelX(2 downto 0).resized,
-      M2_320X200C16 -> pixelX(2 downto 1).resized,
-      M3_320X200C16 -> pixelX(2 downto 1).resized,
+      M0_640X400C004 -> pixelX(2 downto 0),
+      M1_640X200C016 -> pixelX(1 downto 0).resized,
+      M2_320X200C256 -> pixelX(1 downto 1).resized,
+      M3_320X200C016 -> pixelX(2 downto 1).resized,
     )
 
     when (pixelBitIndex === 0) {
       shiftRegister := wordData
     } otherwise  {
-      when (mode === M0_640X400C02 || mode === M1_640X200C04 || stretch === False) {
+      when (mode === M0_640X400C004 || mode === M1_640X200C016 || stretch === False) {
         shiftRegister := shiftRegister |<< bitsPerPixelReg
       }
     }
 
     val pixelColorIndex = mode.mux(
-      M0_640X400C02 -> shiftRegister(15 downto 15).asUInt.resized,
-      M1_640X200C04 -> shiftRegister(15 downto 14).asUInt.resized,
-      M2_320X200C16 -> shiftRegister(15 downto 12).asUInt.resized,
-      M3_320X200C16 -> shiftRegister(15 downto 12).asUInt.resized,
+      M0_640X400C004 -> shiftRegister(15 downto 14).asUInt.resized,
+      M1_640X200C016 -> shiftRegister(15 downto 12).asUInt.resized,
+      M2_320X200C256 -> shiftRegister(15 downto 8).asUInt.resized,
+      M3_320X200C016 -> shiftRegister(15 downto 12).asUInt.resized,
     )
 
     val pixelColor = palette.readSync(

@@ -3,15 +3,24 @@ A project in SpinalHDL for the Papilio Duo dev board (Xilinx Spartan 6)
 * The hardware description is into `hw/spinal/projectname/Rt68fTopLevel.scala`
 * The testbench is into `hw/spinal/projectname/Rt68fTopLevelSim.scala`
 
-## 68000 cores
+## Motorola 68000
+* https://www.nxp.com/docs/en/reference-manual/MC68000UM.pdf
+
+### 68000 cores
 * https://github.com/alfikpl/ao68000
 * https://github.com/alfikpl/aoOCS
 * https://github.com/vfinotti/ahb3lite_wb_bridge/blob/master/wb_to_ahb3lite.v
 * https://github.com/TobiFlex/TG68K.C
 
 
-## Motorola 68000
-* https://www.nxp.com/docs/en/reference-manual/MC68000UM.pdf
+
+## ym3812
+* https://www.thingsmadesimple.com/2022/11/28/ym3812-part-1-register-basics/
+
+### ym3812 core
+* https://github.com/jotego/jtopl
+* https://www.fpga4fun.com/OPL.html
+
 
 ## To configure the project
 * Java 17 is required
