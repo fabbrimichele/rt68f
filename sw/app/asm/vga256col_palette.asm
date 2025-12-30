@@ -46,6 +46,6 @@ FILL_LOOP:
     ; ===========================
 DLY_VAL     EQU     1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
 VGA         EQU     $00200000   ; VGA framebuffer base address
-VGA_LEN     EQU     $FA00       ; VGA framebuffer length in words
+VGA_LEN     EQU     $7D00       ; VGA framebuffer length in words
 VGA_PALETTE EQU     $00403000   ; VGA Control (screen mode)
 VGA_CTRL    EQU     $00403200   ; VGA Control (screen mode)
