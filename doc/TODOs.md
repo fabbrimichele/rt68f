@@ -16,11 +16,17 @@
   * ~~640x400 - 2 colors -> 4 colors~~
   * ~~640x200 - 4 colors -> 16 colors~~
   * ~~320x200 - 16 colors -> 256 colors~~
-* Use SRAM for the framebuffer, it'll require prioritize the access between the VGA and the CPU
 * Trigger an interrupt for frame start and 68000 interrupt
+* Use SRAM for the framebuffer, it'll require prioritize the access between the VGA and the CPU
+  * You can start moving the FB ram out of the VGA module and create a module with 2 ports, one for the framebuffer and one for the CPU 
+* Make an interrupt that triggers at a specific line, it could be used to change colors or resolution at half of the screen
+* Implement a sprite (for the mouse pointer)
 
 ### Logic
 * ~~Move address decoding logic and bus multiplex to a separate module/s~~ (DONE)
+
+### Timer
+* Create a programmable timers that triggers an interrupt 
 
 ### UART
 * Use a CPU clock that allows a standard BAUD rate for the UART
