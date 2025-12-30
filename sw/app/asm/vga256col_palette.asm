@@ -15,18 +15,12 @@ START:
     MOVE.W  #199,D4 ; Number of lines -1
 V_LOOP:
     ; Line length in bytes - 1
-    ; each pixel 4 bits -> 320 px * 4 bits = 1280 bits / 8 bits = 160 bytes
-    MOVE.W  #159,D0 ; Line length in words -1
-    MOVE.B  #0,D1   ; 1st pixel color (1st nibble)
-    MOVE.B  #1,D2   ; 2nd pixel color (2nd nibble)
+    ; each pixel 8 bits -> 320 px = 320 bytes
+    MOVE.W  #319,D0 ; Line length in words -1
+    MOVE.B  #0,D1   ; pixel color (1 byte)
 H_LOOP:
-    ADD.B   #2,D1
-    ADD.B   #2,D2
-    AND.B   #$0F,D2
-    MOVE.B  D1,D3
-    LSL.B   #4,D3
-    OR.B    D2,D3
-    MOVE.B  D3,(A0)+
+    MOVE.B  D1,(A0)+
+    ADD.B   #1,D1
     DBRA    D0,H_LOOP
     DBRA    D4,V_LOOP
 
@@ -52,6 +46,6 @@ FILL_LOOP:
     ; ===========================
 DLY_VAL     EQU     1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
 VGA         EQU     $00200000   ; VGA framebuffer base address
-VGA_LEN     EQU     $4000       ; VGA framebuffer length in words
+VGA_LEN     EQU     $FA00       ; VGA framebuffer length in words
 VGA_PALETTE EQU     $00403000   ; VGA Control (screen mode)
-VGA_CTRL    EQU     $00403100   ; VGA Control (screen mode)
+VGA_CTRL    EQU     $00403200   ; VGA Control (screen mode)
