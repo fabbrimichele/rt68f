@@ -17,6 +17,7 @@
   * ~~640x400 - 2 colors -> 4 colors~~
   * ~~640x200 - 4 colors -> 16 colors~~
   * ~~320x200 - 16 colors -> 256 colors~~
+* Use SRAM for the framebuffer, it'll require prioritize the access between the VGA and the CPU
 
 ### Logic
 * ~~Move address decoding logic and bus multiplex to a separate module/s~~ (DONE)
