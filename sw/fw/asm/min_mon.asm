@@ -537,7 +537,7 @@ RAM_END         EQU $00080000               ; End of RAM address (+1)
 SP_START        EQU (RAM_END-MON_MEM_LEN)   ; After SP, allocates monitor RAM
 MON_MEM_START   EQU SP_START                ;
 FB_START        EQU $00200000               ; Start of Framebuffer
-FB_END          EQU $00208000               ; End of Framebuffer (+1)
+FB_END          EQU $0020FA00               ; End of Framebuffer (+1)
 FB_LEN          EQU (FB_END-FB_START)       ; Framebuffer length
 LED             EQU $00400000               ; LED-mapped register base address
 ; 16450 UART
