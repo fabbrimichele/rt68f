@@ -8,7 +8,7 @@ object InitialPalette {
   private val paletteSize = 256
 
   // 1. Standard 16 EGA/CGA colors
-  private val egaColors: Seq[Bits] = Seq(
+  private def egaColors: Seq[Bits] = Seq(
     B"12'x000", // Black
     B"12'x00A", // Blue
     B"12'x0A0", // Green
@@ -28,7 +28,7 @@ object InitialPalette {
   )
 
   // 2. Grayscale Ramp (16 levels)
-  private val grayscaleRamp: Seq[Bits] = (0 to 15).map ( i =>
+  private def grayscaleRamp: Seq[Bits] = (0 to 15).map ( i =>
     B((i << 8) | (i << 4) | i, 12 bits)
   )
 
@@ -39,7 +39,7 @@ object InitialPalette {
    * Group 2: Medium Intensity
    * Group 3: Low Intensity
    */
-  private val colorRamp: Seq[Bits] = {
+  private def colorRamp: Seq[Bits] = {
     // Standard VGA intensity levels (scaled from 6-bit to 4-bit)
     // High: ~100% (15), Med: ~70% (10), Dim: ~40% (6)
     val levels = Seq(15, 10, 6)
@@ -87,5 +87,7 @@ object InitialPalette {
     }
   }
 
-  val colors: Seq[Bits] = (egaColors ++ grayscaleRamp ++ colorRamp).padTo(paletteSize, B"12'x000")
+  // Must be a function, otherwise any error in any component
+  // will trigger a null pointer exception in the Palette init.
+  def colors: Seq[Bits] = (egaColors ++ grayscaleRamp ++ colorRamp).padTo(paletteSize, B"12'x000")
 }

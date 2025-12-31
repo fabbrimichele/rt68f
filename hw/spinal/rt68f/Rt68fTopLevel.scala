@@ -56,7 +56,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     busManager.io.cpuBus <> cpu.io
 
     // --------------------------------
-    // ROM: 1.5 KB @ 0x0000 - 0x4FFFF TODO: update range in the comment
+    // ROM
     // --------------------------------
     val romSizeWords = 1122 / 2 // 1.5 KB / 2 bytes per 16-bit word
     val rom = Mem16Bits(size = romSizeWords, readOnly = true, initFile = Some(romFilename))
@@ -65,7 +65,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     rom.io.sel := busManager.io.romSel
 
     // --------------------------------
-    // RAM: 16 KB @ 0x4000 - 0x7FFF
+    // RAM
     // --------------------------------
     val ramSizeWords = 16384 / 2 // 16384 KB / 2 bytes per 16-bit word
     val ram = Mem16Bits(size = ramSizeWords)
@@ -74,7 +74,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     ram.io.sel := busManager.io.ramSel
 
     // --------------------------------
-    // VGA: 64000 bytes @ 0x8000 - 0xFFFF TODO: update range in the comment
+    // VGA
     // --------------------------------
     val vga = VgaDevice(clkCtrl.clk25)
     io.vga <> vga.io.vga
@@ -85,7 +85,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     vga.io.controlSel := busManager.io.vgaControlSel
 
     // --------------------------------
-    // LED device @ 0x10000
+    // LED device
     // --------------------------------
     val ledDev = LedDevice()
     io.led := ledDev.io.leds
@@ -94,7 +94,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     ledDev.io.sel := busManager.io.ledDevSel
 
     // --------------------------------
-    // Key device @ 0x11000
+    // Key device
     // --------------------------------
     val keyDev = KeyDevice()
     keyDev.io.keys := io.key
@@ -104,7 +104,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
 
     // --------------------------------
-    // UART device @ 0x12000
+    // UART device
     // 8 word registers
     // --------------------------------
     val uartDev = T16450Device()
@@ -114,13 +114,21 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     uartDev.io.sel := busManager.io.uartDevSel
 
     // --------------------------------
-    // SRAM: 512 KB @ 0x100000 - 0x180000
+    // SRAM
     // --------------------------------
     val sramCtrl = SRamCtrl(clkCtrl.clk64)
     io.sram <> sramCtrl.io.sram
 
     busManager.io.sramBus <> sramCtrl.io.bus
     sramCtrl.io.sel := busManager.io.sramSel
+
+    // --------------------------------
+    // Flash Reader: 16 bytes @ 0x100000 - 0x180000
+    // --------------------------------
+    val flash = FlashReader()
+
+    busManager.io.flashBus <> flash.io.bus
+    flash.io.sel := busManager.io.flashSel
   }
 
   // Remove io_ prefix

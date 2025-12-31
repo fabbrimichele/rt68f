@@ -21,6 +21,8 @@ A project in SpinalHDL for the Papilio Duo dev board (Xilinx Spartan 6)
 * https://github.com/jotego/jtopl
 * https://www.fpga4fun.com/OPL.html
 
+## SPI
+* https://github.com/nandland/spi-master
 
 ## To configure the project
 * Java 17 is required
