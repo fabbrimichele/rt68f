@@ -4,8 +4,7 @@
     ORG     $400                ; Start of RAM
 
 START:
-    MOVE.L  #$0,FLASH_ADDRH     ; Reset hi address (only low is used in this test)
-    MOVE.W  #$0,FLASH_ADDRL     ; Set Flash start address
+    MOVE.L  #$0,FLASH_ADDR      ; Reset Flash address
     MOVE.W  #255,D2             ; Bytes to read - 1
     LEA     DATA,A0
 
@@ -34,8 +33,6 @@ DATA:
 FLASH_BASE  EQU     $404000
 FLASH_CTRL  EQU     FLASH_BASE+$1   ; Lower byte contains actual status and control bits
 FLASH_DATA  EQU     FLASH_BASE+$3   ; Lower byte contains data
-FLASH_ADDR  EQU     FLASH_BASE+$4
-FLASH_ADDRH EQU     FLASH_BASE+$4
-FLASH_ADDRL EQU     FLASH_BASE+$6
+FLASH_ADDR  EQU     FLASH_BASE+$4   ; 4 bytes
 
 CTRL_RD     EQU     1
