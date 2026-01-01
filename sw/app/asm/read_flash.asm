@@ -11,13 +11,12 @@ START:
 
 LOOP:
     MOVE.W  D1,FLASH_ADDRL      ; Set flash address
-    MOVE.W  #CTRL_RD,FLASH_CTRL ; Read command
+    MOVE.B  #CTRL_RD,FLASH_CTRL ; Read command
 WAIT:
     ; Status should be checked after sending the
     ; command to wait for the flash to be read.
-    MOVE.W  FLASH_CTRL,D0
-    BTST    #7,D0               ; Is Flash ready?
-    BNE     WAIT                ; Busy if not set to zero
+    TST.B   FLASH_CTRL          ; Is Flash ready (bit 7)?
+    BMI     WAIT                ; Busy if set to 1 (negative test)
     MOVE.B  FLASH_DATA,(A0)+    ; Copy byte read to SRAM
     ADDQ.W  #1,D1               ; Next address
     DBRA    D2,LOOP             ; Next read until all bytes read
@@ -35,7 +34,7 @@ DATA:
     ; Constants
     ; ===========================
 FLASH_BASE  EQU     $404000
-FLASH_CTRL  EQU     FLASH_BASE
+FLASH_CTRL  EQU     FLASH_BASE+$1   ; Lower byte contains actual status and control bits
 FLASH_DATA  EQU     FLASH_BASE+$3   ; Lower byte contains data
 FLASH_ADDR  EQU     FLASH_BASE+$4
 FLASH_ADDRH EQU     FLASH_BASE+$4
