@@ -24,6 +24,9 @@ A project in SpinalHDL for the Papilio Duo dev board (Xilinx Spartan 6)
 ## SPI
 * https://github.com/nandland/spi-master
 
+## Flash ROM
+* [MX25L6445E Datasheet](https://www.macronix.com/Lists/Datasheet/Attachments/8591/MX25L6445E,%203V,%2064Mb,%20v1.8.pdf)
+
 ## To configure the project
 * Java 17 is required
 * Install [GHDL](https://spinalhdl.github.io/SpinalDoc-RTD/master/SpinalHDL/Simulation/install/GHDL.html)

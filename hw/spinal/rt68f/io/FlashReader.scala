@@ -62,7 +62,7 @@ case class FlashReader() extends Component {
       // TODO: manage UDS/LDS
       switch(addr) {
         is(0) { ctrlReg := io.bus.DATAO(7 downto 0) }
-        is(1) { dataReg := io.bus.DATAO(7 downto 0) } // TODO: once debugged remove this
+        is(1) { dataReg := io.bus.DATAO(7 downto 0) }
         is(2) { addrReg(23 downto 16) := io.bus.DATAO(7 downto 0) }
         is(3) { addrReg(15 downto 0) := io.bus.DATAO }
       }
@@ -74,9 +74,11 @@ case class FlashReader() extends Component {
   // -------------------
   val fsm = new StateMachine {
     val idle = new State with EntryPoint
-    val sendCmd, sendCmdB = new State
-    val sendAddr1, sendAddr1b, sendAddr2, sendAddr2b, sendAddr3, sendAddr3b = new State
-    val readByte, readByteB = new State
+    val sendCmd, waitCmd = new State
+    val sendAddr1, waitAddr1 = new State
+    val sendAddr2, waitAddr2 = new State
+    val sendAddr3, waitAddr3 = new State
+    val readByte, waitByte = new State
 
     // Default for SPI Master
     spiMaster.io.i_TX_DV := False
@@ -98,21 +100,19 @@ case class FlashReader() extends Component {
       statReg(7) := True // Mark as BUSY
       spiMaster.io.i_TX_Byte := B"8'x03"
       spiMaster.io.i_TX_DV := True
-      goto(sendCmdB)
+      goto(waitCmd)
     }
-
-    sendCmdB.whenIsActive {
-      spiMaster.io.i_TX_DV := False
+    waitCmd.whenIsActive {
+      spiMaster.io.i_TX_DV := False // This is not strictly necessary since it is set to False in default section
       when(spiMaster.io.o_TX_Ready) { goto(sendAddr1) }
     }
 
     sendAddr1.whenIsActive {
       spiMaster.io.i_TX_Byte := addrReg(23 downto 16).asBits
       spiMaster.io.i_TX_DV := True
-      goto(sendAddr1b)
+      goto(waitAddr1)
     }
-
-    sendAddr1b.whenIsActive {
+    waitAddr1.whenIsActive {
       spiMaster.io.i_TX_DV := False
       when(spiMaster.io.o_TX_Ready) { goto(sendAddr2) }
     }
@@ -120,10 +120,9 @@ case class FlashReader() extends Component {
     sendAddr2.whenIsActive {
       spiMaster.io.i_TX_Byte := addrReg(15 downto 8).asBits
       spiMaster.io.i_TX_DV := True
-      goto(sendAddr2b)
+      goto(waitAddr2)
     }
-
-    sendAddr2b.whenIsActive {
+    waitAddr2.whenIsActive {
       spiMaster.io.i_TX_DV := False
       when(spiMaster.io.o_TX_Ready) { goto(sendAddr3) }
     }
@@ -131,10 +130,9 @@ case class FlashReader() extends Component {
     sendAddr3.whenIsActive {
       spiMaster.io.i_TX_Byte := addrReg(7 downto 0).asBits
       spiMaster.io.i_TX_DV := True
-      goto(sendAddr3b)
+      goto(waitAddr3)
     }
-
-    sendAddr3b.whenIsActive {
+    waitAddr3.whenIsActive {
       spiMaster.io.i_TX_DV := False
       when(spiMaster.io.o_TX_Ready) { goto(readByte) }
     }
@@ -142,10 +140,9 @@ case class FlashReader() extends Component {
     readByte.whenIsActive {
       spiMaster.io.i_TX_Byte := 0
       spiMaster.io.i_TX_DV := True
-      goto(readByteB)
+      goto(waitByte)
     }
-
-    readByteB.whenIsActive {
+    waitByte.whenIsActive {
       spiMaster.io.i_TX_Byte := 0
       spiMaster.io.i_TX_DV := False
 
