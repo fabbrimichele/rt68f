@@ -36,10 +36,11 @@ case class FlashReader() extends Component {
   val dataReg = Reg(Bits(16 bits)) init 0
   val addrReg = Reg(Bits(24 bits)) init 0
 
-  io.led := dataReg(3 downto 0)
+  // Busy logic: A dedicated register is more reliable than FSM state-based flags
+  val isBusy = Reg(Bool()) init(False)
+  statReg(7) := isBusy
 
-  // Alias for logic
-  val startCommand = ctrlReg(0)
+  io.led := dataReg(3 downto 0)
 
   // -------------------
   // 68000 bus
@@ -88,13 +89,13 @@ case class FlashReader() extends Component {
     spiMaster.io.i_TX_Count := 6 // 1 cmd + 3 addr + 2 data = 6 bytes total
 
     idle.whenIsActive {
-      // Update Status: Not busy
-      statReg(7) := False
-
-      when(startCommand) {
+      when(ctrlReg(0)) {
         // Clear the start bit immediately so we don't loop
         ctrlReg(0) := False
+        isBusy := True
         goto(sendCmd)
+      } otherwise {
+        isBusy := False
       }
     }
 
@@ -171,6 +172,7 @@ case class FlashReader() extends Component {
       }
       when(spiMaster.io.o_TX_Ready) {
         addrReg := (addrReg.asUInt + 2).asBits
+        isBusy := False
         goto(idle)
       }
     }
