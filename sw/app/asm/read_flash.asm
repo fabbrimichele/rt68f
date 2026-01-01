@@ -4,13 +4,12 @@
     ORG     $400                ; Start of RAM
 
 START:
-    MOVE.W  #$0,FLASH_ADDRH     ; Reset hi address (only low is used in this test)
-    MOVE.W  #$0,D1              ; Start Flash address
+    MOVE.L  #$0,FLASH_ADDRH     ; Reset hi address (only low is used in this test)
+    MOVE.W  #$0,FLASH_ADDRL     ; Set Flash start address
     MOVE.W  #255,D2             ; Bytes to read - 1
     LEA     DATA,A0
 
 LOOP:
-    MOVE.W  D1,FLASH_ADDRL      ; Set flash address
     MOVE.B  #CTRL_RD,FLASH_CTRL ; Read command
 WAIT:
     ; Status should be checked after sending the
@@ -18,8 +17,7 @@ WAIT:
     TST.B   FLASH_CTRL          ; Is Flash ready (bit 7)?
     BMI     WAIT                ; Busy if set to 1 (negative test)
     MOVE.B  FLASH_DATA,(A0)+    ; Copy byte read to SRAM
-    ADDQ.W  #1,D1               ; Next address
-    DBRA    D2,LOOP             ; Next read until all bytes read
+    DBRA    D2,LOOP             ; Read next byte (address autoincrements)
 
 END:
     TRAP    #14

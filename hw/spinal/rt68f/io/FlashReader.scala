@@ -7,6 +7,9 @@ import spinal.lib.fsm._
 
 import scala.language.postfixOps
 
+/*
+
+ */
 case class FlashReader() extends Component {
   val io = new Bundle {
     val bus = slave(M68kBus())
@@ -147,6 +150,7 @@ case class FlashReader() extends Component {
 
       when(spiMaster.io.o_RX_DV) {
         dataReg := spiMaster.io.o_RX_Byte
+        addrReg := (addrReg.asUInt + 1).asBits
         // Transition back to idle; statReg(7) will clear there
         goto(idle)
       }
