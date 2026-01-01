@@ -33,7 +33,7 @@ case class FlashReader() extends Component {
   val ctrlReg = Reg(Bits(8 bits)) init 0
   // bit 7: BUSY/VALID
   val statReg = Reg(Bits(8 bits)) init 0
-  val dataReg = Reg(Bits(8 bits)) init 0
+  val dataReg = Reg(Bits(16 bits)) init 0
   val addrReg = Reg(Bits(24 bits)) init 0
 
   io.led := dataReg(3 downto 0)
@@ -64,7 +64,6 @@ case class FlashReader() extends Component {
       // TODO: manage UDS/LDS
       switch(addr) {
         is(0) { ctrlReg := io.bus.DATAO(7 downto 0) }
-        is(1) { dataReg := io.bus.DATAO(7 downto 0) }
         is(2) { addrReg(23 downto 16) := io.bus.DATAO(7 downto 0) }
         is(3) { addrReg(15 downto 0) := io.bus.DATAO }
       }
@@ -80,12 +79,13 @@ case class FlashReader() extends Component {
     val sendAddr1, waitAddr1 = new State
     val sendAddr2, waitAddr2 = new State
     val sendAddr3, waitAddr3 = new State
-    val readByte, waitByte = new State
+    val readByte1, waitByte1 = new State
+    val readByte2, waitByte2 = new State
 
     // Default for SPI Master
     spiMaster.io.i_TX_DV := False
     spiMaster.io.i_TX_Byte := B"8'x00"
-    spiMaster.io.i_TX_Count := 5 // 1 cmd + 3 addr + 1 data = 5 bytes total
+    spiMaster.io.i_TX_Count := 6 // 1 cmd + 3 addr + 2 data = 6 bytes total
 
     idle.whenIsActive {
       // Update Status: Not busy
@@ -136,22 +136,41 @@ case class FlashReader() extends Component {
     }
     waitAddr3.whenIsActive {
       spiMaster.io.i_TX_DV := False
-      when(spiMaster.io.o_TX_Ready) { goto(readByte) }
+      when(spiMaster.io.o_TX_Ready) { goto(readByte1) }
     }
 
-    readByte.whenIsActive {
+    readByte1.whenIsActive {
       spiMaster.io.i_TX_Byte := 0
       spiMaster.io.i_TX_DV := True
-      goto(waitByte)
+      goto(waitByte1)
     }
-    waitByte.whenIsActive {
+    waitByte1.whenIsActive {
       spiMaster.io.i_TX_Byte := 0
       spiMaster.io.i_TX_DV := False
 
       when(spiMaster.io.o_RX_DV) {
-        dataReg := spiMaster.io.o_RX_Byte
-        addrReg := (addrReg.asUInt + 1).asBits
-        // Transition back to idle; statReg(7) will clear there
+        dataReg(15 downto 8) := spiMaster.io.o_RX_Byte
+      }
+      // Only move to next byte once the transmitter is ready for the next pulse
+      when(spiMaster.io.o_TX_Ready) {
+        goto(readByte2)
+      }
+    }
+
+    readByte2.whenIsActive {
+      spiMaster.io.i_TX_Byte := 0
+      spiMaster.io.i_TX_DV := True
+      goto(waitByte2)
+    }
+    waitByte2.whenIsActive {
+      spiMaster.io.i_TX_Byte := 0
+      spiMaster.io.i_TX_DV := False
+
+      when(spiMaster.io.o_RX_DV) {
+        dataReg(7 downto 0) := spiMaster.io.o_RX_Byte
+      }
+      when(spiMaster.io.o_TX_Ready) {
+        addrReg := (addrReg.asUInt + 2).asBits
         goto(idle)
       }
     }
