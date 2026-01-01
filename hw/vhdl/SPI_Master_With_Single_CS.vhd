@@ -77,9 +77,13 @@ architecture RTL of SPI_Master_With_Single_CS is
     signal r_TX_Count : integer range 0 to MAX_BYTES_PER_CS + 1;
     signal w_Master_Ready : std_logic;
 
+    -- Internal signals to allow reading values within this architecture
+    signal w_RX_DV      : std_logic;
+    signal r_RX_Count   : unsigned(o_RX_Count'range);
 begin
 
     -- Instantiate Master
+    -- SPI_Master_1 : entity SPI_Master
     SPI_Master_1 : entity work.SPI_Master
         generic map (
             SPI_MODE          => SPI_MODE,
@@ -93,7 +97,7 @@ begin
             i_TX_DV    => i_TX_DV,            -- Data Valid pulse
             o_TX_Ready => w_Master_Ready,     -- Transmit Ready for Byte
             -- RX (MISO) Signals
-            o_RX_DV    => o_RX_DV,            -- Data Valid pulse
+            o_RX_DV    => w_RX_DV,            -- Data Valid pulse
             o_RX_Byte  => o_RX_Byte,          -- Byte received on MISO
             -- SPI Interface
             o_SPI_Clk  => o_SPI_Clk,
@@ -154,13 +158,15 @@ begin
     begin
         if rising_edge(i_Clk) then
             if r_CS_n = '1' then
-                o_RX_Count <= std_logic_vector(to_unsigned(0, o_RX_Count'length));
-            elsif o_RX_DV = '1' then
-                o_RX_Count <= std_logic_vector(unsigned(o_RX_Count) + 1);
+                r_RX_Count <= (others => '0');
+            elsif w_RX_DV = '1' then
+                r_RX_Count <= r_RX_Count + 1;
             end if;
         end if;
     end process RX_COUNT;
 
+    o_RX_DV    <= w_RX_DV;
+    o_RX_Count <= std_logic_vector(r_RX_Count);
     o_SPI_CS_n <= r_CS_n;
 
     o_TX_Ready <= '1' when i_TX_DV /= '1' and ((r_SM_CS = IDLE) or (r_SM_CS = TRANSFER and w_Master_Ready = '1' and r_TX_Count > 0)) else '0';

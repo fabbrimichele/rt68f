@@ -31,13 +31,13 @@ class SpiMasterWithCs(config: SpiMasterConfig) extends BlackBox {
     val i_Clk   = in Bool() // FPGA Clock
 
     // TX (MOSI) Signals
-    val i_TX_Count = in UInt(countWidth) // # bytes per CS low
+    val i_TX_Count = in Bits(countWidth) // # bytes per CS low
     val i_TX_Byte  = in Bits(8 bits)     // Byte to transmit on MOSI
     val i_TX_DV    = in Bool()           // Data Valid Pulse with i_TX_Byte
     val o_TX_Ready = out Bool()          // Transmit Ready for next byte
 
     // RX (MISO) Signals
-    val o_RX_Count = out UInt(countWidth) // Index RX byte
+    val o_RX_Count = out Bits(countWidth) // Index RX byte
     val o_RX_DV    = out Bool()           // Data Valid pulse (1 clock cycle)
     val o_RX_Byte  = out Bits(8 bits);    // Byte received on MISO
 

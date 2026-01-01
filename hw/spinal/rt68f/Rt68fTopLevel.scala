@@ -35,10 +35,11 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val clk = in Bool()
     val reset = in Bool()
     val led = out Bits(4 bits)
-    val key = in Bits(4 bits) // Keys disabled in UCF file due to UART conflict.
+    val key = in Bits(4 bits)
     val uart = master(Uart()) // Expose UART pins (txd, rxd), must be defined in the ucf
     val vga = master(Vga(VgaDevice.rgbConfig, withColorEn = false))
     val sram = master(SRamBus())
+    val flash = master(Spi())
   }
 
   val clkCtrl = ClockCtrl()
@@ -88,7 +89,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // LED device
     // --------------------------------
     val ledDev = LedDevice()
-    io.led := ledDev.io.leds
+    //io.led := ledDev.io.leds
 
     busManager.io.ledBus <> ledDev.io.bus
     ledDev.io.sel := busManager.io.ledDevSel
@@ -126,6 +127,8 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // Flash Reader: 16 bytes @ 0x100000 - 0x180000
     // --------------------------------
     val flash = FlashReader()
+    io.flash <> flash.io.spi
+    io.led := flash.io.led
 
     busManager.io.flashBus <> flash.io.bus
     flash.io.sel := busManager.io.flashSel
