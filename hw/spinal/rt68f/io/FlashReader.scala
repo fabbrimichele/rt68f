@@ -3,7 +3,7 @@ package rt68f.io
 import rt68f.core.M68kBus
 import spinal.core._
 import spinal.lib._
-import spinal.lib.fsm.{EntryPoint, State, StateMachine}
+import spinal.lib.fsm._
 
 import scala.language.postfixOps
 
@@ -18,7 +18,6 @@ case class FlashReader() extends Component {
   // SPI
   val spiConfig = SpiMasterConfig(
     maxBytesPerCs = 8,
-    clksPerHalfBit = 4,
   )
   val spiMaster = new SpiMasterWithCs(spiConfig)
   io.spi.cs := spiMaster.io.o_SPI_CS_n
