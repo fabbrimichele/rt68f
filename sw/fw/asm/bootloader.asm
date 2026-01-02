@@ -19,7 +19,7 @@ START:
     JSR     INIT_VECTOR_TABLE
     LEA     MSG_BOOTING,A0
     BSR     PUTS
-    BSR     LOAD_CMD        ; Load program from serial
+    BSR     LOAD_SER        ; Load program from serial
     LEA     MSG_DONE,A0
     BSR     PUTS
     JMP     (A1)            ; Start program
@@ -54,7 +54,7 @@ TRAP_14_HANDLER:
 ; GTKTerm format:
 ; 00;00;08;10;00;00;00;02;55;55
 ; -------------------------------------------------------------------------
-LOAD_CMD:
+LOAD_SER:
     ; Read header start address (32 bits)
     JSR     READ_32BIT_WORD     ; Result in D1.L
     MOVE.L  D1,A0               ; A0 start address, for loading
@@ -63,21 +63,19 @@ LOAD_CMD:
     JSR     READ_32BIT_WORD     ; Result in D1.L
                                 ; D1 content lenght
     CMP     #0,D1
-    BEQ     LOA_CMD_DONE        ; If D1 = 0, exit
+    BEQ     LOA_SER_DONE        ; If D1 = 0, exit
     SUBQ.L  #2,D1               ; Decrement counter (required by DBRA)
 
     ; Read content
-LOA_CMD_LOOP:
+LOA_SER_LOOP:
     JSR     GETCHAR             ; Read byte from UART to D0
     MOVE.B  D0,(A0)+            ; Copy read byte to memory
-    DBRA    D1,LOA_CMD_LOOP     ; Decrement D1, if != -1 exit
+    DBRA    D1,LOA_SER_LOOP     ; Decrement D1, if != -1 exit
 
-LOA_CMD_DONE:
+LOA_SER_DONE:
     RTS
 
 ; TODO: Load - Add checksum at the end
-; TODO: Load - Print the address where the program has been loaded
-;              or save it and change RUN to start from there
 
 ; -------------------------------------------------------------
 ; READ_32BIT_WORD: Reads 4 bytes from UART and assembles into D1.L
