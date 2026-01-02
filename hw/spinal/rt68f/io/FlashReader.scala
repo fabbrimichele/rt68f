@@ -15,7 +15,6 @@ case class FlashReader() extends Component {
     val bus = slave(M68kBus())
     val sel = in Bool() // chip select from decoder
     val spi = master(Spi())
-    val led = out Bits(4 bits) // For debugging
   }
 
   // SPI
@@ -39,8 +38,6 @@ case class FlashReader() extends Component {
   // Busy logic: A dedicated register is more reliable than FSM state-based flags
   val isBusy = Reg(Bool()) init(False)
   statReg(7) := isBusy
-
-  io.led := dataReg(3 downto 0)
 
   // -------------------
   // 68000 bus

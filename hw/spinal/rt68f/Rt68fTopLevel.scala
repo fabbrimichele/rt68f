@@ -89,7 +89,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // LED device
     // --------------------------------
     val ledDev = LedDevice()
-    //io.led := ledDev.io.leds
+    io.led := ledDev.io.leds
 
     busManager.io.ledBus <> ledDev.io.bus
     ledDev.io.sel := busManager.io.ledDevSel
@@ -128,7 +128,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // --------------------------------
     val flash = FlashReader()
     io.flash <> flash.io.spi
-    io.led := flash.io.led
 
     busManager.io.flashBus <> flash.io.bus
     flash.io.sel := busManager.io.flashSel
@@ -146,9 +145,10 @@ object Rt68fTopLevelVhdl extends App {
   //private val romFilename = "uart_hello.hex"
   //private val romFilename = "uart_echo.hex"
   //private val romFilename = "mem_test.hex"
-  //private val romFilename = "monitor.hex"
-  private val romFilename = "min_mon.hex"
   //private val romFilename = "uart16450_echo.hex"
+  //private val romFilename = "monitor.hex"
+  //private val romFilename = "min_mon.hex"
+  private val romFilename = "bootloader.hex"
 
   private val report = Config.spinal.generateVhdl(InOutWrapper(Rt68fTopLevel(romFilename)))
   report.mergeRTLSource("mergeRTL") // Merge all rtl sources into mergeRTL.vhd and mergeRTL.v files

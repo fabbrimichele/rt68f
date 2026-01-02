@@ -3,7 +3,7 @@ TARGET = Rt68f
 TOPLEVEL = rt68f.Rt68fTopLevel
 DEVICE = xc6slx9-tqg144-2
 UCF = papilio_duo_computing_shield
-ASSEMBLIES = blinker led_on keys uart uart_echo uart_tx_byte uart_hello mem_test monitor uart16450_tx_byte uart16450_echo min_mon
+ASSEMBLIES = blinker led_on keys uart uart_echo uart_tx_byte uart_hello mem_test monitor uart16450_tx_byte uart16450_echo min_mon bootloader
 
 # App
 # Define the source directory for app assembly files
@@ -143,6 +143,9 @@ prog-fpga:
 prog-flash:
 	echo "Programming Flash"
 	papilio-prog -v -s a -r -f target/$(TARGET).bit -b hw/papilio-loader/bscan_spi_xc6slx9.bit
+
+# The command below append a binary file at the address 0x80000 of the Flash memory
+# papilio-prog -v -s a -r -f target/Rt68f.bit -b hw/papilio-loader/bscan_spi_xc6slx9.bit -a 80000:target/app/vga256col_palette.bin
 
 disassemble:
 	m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/led_on.bin

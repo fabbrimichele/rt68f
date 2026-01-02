@@ -4,7 +4,7 @@
     ORG     $400                ; Start of RAM
 
 START:
-    MOVE.L  #$0,FLASH_ADDR      ; Reset Flash address
+    MOVE.L  #$80000,FLASH_ADDR  ; Reset Flash address
     MOVE.W  #127,D2             ; Words to read - 1
     LEA     DATA,A0
 
