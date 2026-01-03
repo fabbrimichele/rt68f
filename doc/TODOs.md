@@ -33,7 +33,7 @@
 * Create a programmable timers that triggers an interrupt 
 
 ### UART
-* Use a CPU clock that allows a standard BAUD rate for the UART
+* Use a CPU clock that allows a standard BAUD rate for the UART (all other clocks must be updated accordingly)
 * try `tio -b 76800 /dev/ttyUSB0`
 
 ### SPI Flash
