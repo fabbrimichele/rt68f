@@ -1,13 +1,10 @@
 ; ------------------------------
-; ROM Monitor (ROM version)
+; ROM Monitor (RAM version)
 ; ------------------------------
-    ORG    $300000          ; ROM Start Address
+    ORG    $400             ; Start of RAM
 
-; ------------------------------
 ; Initial Reset SP and PC in Vector Table
-; ------------------------------
-    DC.L SP_START           ; Reset Stack Pointer (SP, SP move downward far from SO_RAM)
-    DC.L START              ; Reset Program counter (PC) (point to the beginning of code)
+; are set by the bootloader.
 
 ; ------------------------------
 ; Program code

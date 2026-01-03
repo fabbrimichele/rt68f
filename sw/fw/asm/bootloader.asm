@@ -19,6 +19,7 @@ START:
     JSR     INIT_VECTOR_TABLE
     LEA     MSG_BOOTING,A0
     BSR     PUTS
+    ; TODO: make it selectable with a timeout (default ROM)
     ;BSR     LOAD_SERIAL     ; Load program from serial
     BSR     LOAD_FLASH     ; Load program from SPI flash
     LEA     MSG_DONE,A0

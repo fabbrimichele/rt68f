@@ -142,10 +142,8 @@ prog-fpga:
 
 prog-flash:
 	echo "Programming Flash"
-	papilio-prog -v -s a -r -f target/$(TARGET).bit -b hw/papilio-loader/bscan_spi_xc6slx9.bit
-
-# The command below append a binary file at the address 0x80000 of the Flash memory
-# papilio-prog -v -s a -r -f target/Rt68f.bit -b hw/papilio-loader/bscan_spi_xc6slx9.bit -a 80000:target/app/vga256col_palette.bin
+	papilio-prog -v -s a -r -f target/Rt68f.bit -b hw/papilio-loader/bscan_spi_xc6slx9.bit -a 80000:target/app/monitor.bin
+	# papilio-prog -v -s a -r -f target/$(TARGET).bit -b hw/papilio-loader/bscan_spi_xc6slx9.bit
 
 disassemble:
 	m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/led_on.bin
