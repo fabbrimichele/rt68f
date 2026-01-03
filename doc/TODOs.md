@@ -40,6 +40,10 @@
 * ~~Design the registers to read from the SPI~~
 * ~~Read from the SPI Flash data with a 68000 program~~
 * ~~Create a bootloader in ROM that starts the monitor program from the SPI Flash~~
+* Use 64Mhz clock? 
+
+### SD Card
+* Implement an SD Card controller using the SPI device
 
 ### Sound
 * Integrate a sound core synth, see:
