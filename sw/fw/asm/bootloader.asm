@@ -17,27 +17,27 @@
 START:
     JSR     UART_INIT
     JSR     INIT_VECTOR_TABLE
-;    LEA     MSG_SELECT,A0
-;    BSR     PUTS
-;SELECT:
-;    LEA     KEY,A1          ; Load KEY register address into A1
-;    MOVE.L  #200,D2         ; Wait 2 seconds before load from Flash
-;SEL_LOOP:
-;    MOVE.L  #10,D0
-;    JSR     DELAY_MS        ; Wait 10ms
-;    MOVE.B  (A1),D1
-;    BTST    #KEY_DOWN,D1    ; Key down pressed?
-;    BNE     BOOT_SER        ; Yes, jump to boot serial
-;    DBRA    D2,SEL_LOOP
+    LEA     MSG_SELECT,A0
+    BSR     PUTS
+SELECT:
+    LEA     KEY,A1          ; Load KEY register address into A1
+    MOVE.L  #200,D2         ; Wait 2 seconds before load from Flash
+SEL_LOOP:
+    MOVE.L  #10,D0
+    JSR     DELAY_MS        ; Wait 10ms
+    MOVE.W  (A1),D1
+    BTST    #KEY_DOWN,D1    ; Key down pressed?
+    BNE     BOOT_SER        ; Yes, jump to boot serial
+    DBRA    D2,SEL_LOOP
 BOOT_FLASH:
     LEA     MSG_BOOT_FLASH,A0
     BSR     PUTS
     BSR     LOAD_FLASH     ; Load program from SPI flash
     BRA     DONE
-;BOOT_SER:
-;    LEA     MSG_BOOT_SERIAL,A0
-;    BSR     PUTS
-;    BSR     LOAD_SERIAL     ; Load program from serial
+BOOT_SER:
+    LEA     MSG_BOOT_SERIAL,A0
+    BSR     PUTS
+    BSR     LOAD_SERIAL     ; Load program from serial
 DONE:
     LEA     MSG_DONE,A0
     BSR     PUTS

@@ -36,8 +36,9 @@
 * try `tio -b 76800 /dev/ttyUSB0`
 
 ### SPI Flash
-* Design the registers to read from the SPI
-* Read from the SPI Flash data with a 68000 program
+* ~~Design the registers to read from the SPI~~
+* ~~Read from the SPI Flash data with a 68000 program~~
+* ~~Create a bootloader in ROM that starts the monitor program from the SPI Flash~~
 
 ### Sound
 * Integrate a sound core synth, see:

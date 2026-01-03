@@ -6,12 +6,13 @@
 START:
     LEA     KEY,A1          ; Load KEY register address into A1
     LEA     LED,A0
+    MOVE    #0,LED
 
     MOVE.L  #200,D2         ; Wait 2 seconds before load from Flash
 SEL_LOOP:
     MOVE.L  #10,D0
     JSR     DELAY_MS        ; Wait 10ms
-    MOVE.B  (A1),D1
+    MOVE.W  (A1),D1
     BTST    #KEY_DOWN,D1    ; Key down pressed?
     BNE     BOOT_SER        ; Yes, jump to boot serial
     DBRA    D2,SEL_LOOP
