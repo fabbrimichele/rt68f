@@ -182,8 +182,8 @@ DUMP_CELL:
 ; ------------------------------
 ; Libraries
 ; ------------------------------
-    INCLUDE 'lib/console_io_16450.asm'
-    INCLUDE 'lib/conversions.asm'
+    INCLUDE '../../lib/asm/console_io_16450.asm'
+    INCLUDE '../../lib/asm/conversions.asm'
 
 ; ------------------------------
 ; ROM Data Section

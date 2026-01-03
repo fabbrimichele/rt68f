@@ -497,8 +497,8 @@ TRAP_14_HANDLER:
 ; ------------------------------
 ; Libraries
 ; ------------------------------
-    INCLUDE 'lib/console_io_16450.asm'
-    INCLUDE 'lib/conversions.asm'
+    INCLUDE '../../lib/asm/console_io_16450.asm'
+    INCLUDE '../../lib/asm/conversions.asm'
 
 ; -------------------------------------------------------------
 ; READ_32BIT_WORD: Reads 4 bytes from UART and assembles into D1.L
