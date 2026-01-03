@@ -19,10 +19,14 @@ START:
     JSR     INIT_VECTOR_TABLE
     LEA     MSG_BOOTING,A0
     BSR     PUTS
-    BSR     LOAD_SER        ; Load program from serial
+    ;BSR     LOAD_SERIAL     ; Load program from serial
+    BSR     LOAD_FLASH     ; Load program from SPI flash
     LEA     MSG_DONE,A0
     BSR     PUTS
     JMP     (A1)            ; Start program
+    ;JSR     DUMP
+STOP:
+    BRA     STOP
 
 INIT_VECTOR_TABLE:
     MOVE.L  #TRAP_14_HANDLER,VT_TRAP_14
@@ -32,12 +36,10 @@ INIT_VECTOR_TABLE:
 ; useful to reuse existing programs which relay on it.
 TRAP_14_HANDLER:
     MOVE.L  #SP_START,SP
-    JMP     START
+    JMP     STOP
 
 ; -------------------------------------------------------------------------
-; Load from UART a binary content to memory.
-; Return start address in A1.
-;
+; Load File Structure
 ; PROTOCOL: Length-Prefixed Binary (Big-Endian)
 ;
 ; HEADER (8 bytes, sent first):
@@ -54,7 +56,60 @@ TRAP_14_HANDLER:
 ; GTKTerm format:
 ; 00;00;08;10;00;00;00;02;55;55
 ; -------------------------------------------------------------------------
-LOAD_SER:
+
+; -------------------------------------------------------------------------
+; Load from FLASH a binary content to memory.
+; File expcted to be at Flash address: $80000
+; Return start address in A1.
+; -------------------------------------------------------------------------
+LOAD_FLASH:
+    MOVE.L  #$80000,FLASH_ADDR  ; Flash address to read from
+    BSR     FLASH_RD_LONG
+    MOVE.L  D0,A0               ; A0 start address, for loading
+    MOVE.L  D0,A1               ; A0 start address, to be returned
+    BSR     FLASH_RD_LONG       ; D1 content length in bytes
+    MOVE.L  D0,D1
+    LSR     #1,D1               ; D1 content length in words (files have always even length)
+    CMP     #0,D1
+    BEQ     LOAD_FLASH_DONE     ; If D1 = 0, exit
+
+    SUBQ.L  #1,D1               ; Decrement counter (required by DBRA)
+LOAD_FLASH_LOOP:
+    MOVE.B  #FL_CMD_RD,FLASH_CTRL ; Read command
+LOAD_FLASH_WAIT:
+    TST.B   FLASH_CTRL          ; Is Flash ready (bit 7)?
+    BMI     LOAD_FLASH_WAIT     ; Busy if set to 1 (negative test)
+    MOVE.W  FLASH_DATA,(A0)+    ; Copy byte read to SRAM
+    DBRA    D1,LOAD_FLASH_LOOP  ; Read next word, or terminate
+
+LOAD_FLASH_DONE:
+; TODO: Load - Add checksum at the end
+    RTS
+
+FLASH_RD_LONG:
+    BSR     FLASH_RD            ; Read a word in D0
+    LSL.L   #8,D0               ;
+    LSL.L   #8,D0               ;
+    BSR     FLASH_RD            ; Read a word in D0
+    RTS
+
+; Read one word from flash
+; Address should already be set
+; Return the word in D0
+FLASH_RD:
+    MOVE.B  #FL_CMD_RD,FLASH_CTRL ; Read command
+FLASH_WAIT:
+    TST.B   FLASH_CTRL            ; Is Flash ready (bit 7)?
+    BMI     FLASH_WAIT            ; Busy if set to 1 (negative test)
+    MOVE.W  FLASH_DATA,D0
+    RTS
+
+
+; -------------------------------------------------------------------------
+; Load from UART a binary content to memory.
+; Return start address in A1.
+; -------------------------------------------------------------------------
+LOAD_SERIAL:
     ; Read header start address (32 bits)
     JSR     READ_32BIT_WORD     ; Result in D1.L
     MOVE.L  D1,A0               ; A0 start address, for loading
@@ -103,10 +158,32 @@ READ_LOOP:
     MOVEM.L (SP)+,D0/D2      ; Restore registers
     RTS
 
+; A1 - Dump address
+DUMP:
+    MOVE.W  #(8-1),D1       ; Print 8 lines
+DUMP_LINE:
+    MOVE.L  A1,D0
+    BSR     BINTOHEX        ; Print address
+    MOVE.B  #':',D0
+    BSR     PUTCHAR
+    MOVE.W  #(8-1),D2       ; Print 8 cells
+DUMP_CELL:
+    MOVE.B  #' ',D0
+    BSR     PUTCHAR
+    MOVE.W  (A1)+,D0
+    BSR     BINTOHEX_W      ; Print mem value
+    DBRA    D2,DUMP_CELL    ; Decrement D1, branch if D1 is NOT -1
+
+    MOVE.B  #LF,D0
+    BSR     PUTCHAR
+    DBRA    D1,DUMP_LINE    ; Decrement D1, branch if D1 is NOT -1
+    RTS
+
 ; ------------------------------
 ; Libraries
 ; ------------------------------
     INCLUDE 'lib/console_io_16450.asm'
+    INCLUDE 'lib/conversions.asm'
 
 ; ------------------------------
 ; ROM Data Section
@@ -140,6 +217,11 @@ UART_LCR        EQU UART_BASE+$6            ; Line control register
 UART_MCR        EQU UART_BASE+$8            ; MODEM control register
 UART_LSR        EQU UART_BASE+$A            ; Line status register
 UART_MSR        EQU UART_BASE+$C            ; MODEM status register
+; SPI FLASH
+FLASH_BASE      EQU $404000
+FLASH_CTRL      EQU FLASH_BASE+$1           ; Lower byte contains actual status and control bits
+FLASH_DATA      EQU FLASH_BASE+$2           ; Word contains data
+FLASH_ADDR      EQU FLASH_BASE+$4           ; 4 bytes
 ; NOTE: do not remove spaces around +
 
 ; Vector Table
@@ -158,3 +240,6 @@ CR          EQU 13          ; Carriage Return
 LF          EQU 10          ; Line Feed
 BEL         EQU 7           ; Bell character
 NUL         EQU 0
+
+; FLASH Constants
+FL_CMD_RD  EQU 1            ; Read command
