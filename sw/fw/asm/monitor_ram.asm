@@ -1,18 +1,16 @@
 ; ------------------------------
-; ROM Monitor
+; ROM Monitor (RAM version)
 ; ------------------------------
-    ORG    $300000          ; ROM Start Address
+    ORG    $7C000             ; Start of RAM
 
-; ------------------------------
 ; Initial Reset SP and PC in Vector Table
-; ------------------------------
-    DC.L SP_START           ; Reset Stack Pointer (SP, SP move downward far from SO_RAM)
-    DC.L START              ; Reset Program counter (PC) (point to the beginning of code)
+; are set by the bootloader.
 
 ; ------------------------------
 ; Program code
 ; ------------------------------
 START:
+    MOVE.L  #SP_START,SP        ; Update SP according to the memory layout
     JSR     INIT_VECTOR_TABLE
     JSR     UART_INIT
     LEA     MSG_TITLE,A0
@@ -497,8 +495,8 @@ TRAP_14_HANDLER:
 ; ------------------------------
 ; Libraries
 ; ------------------------------
-    INCLUDE 'lib/console_io_16450.asm'
-    INCLUDE 'lib/conversions.asm'
+    INCLUDE '../../lib/asm/console_io_16450.asm'
+    INCLUDE '../../lib/asm/conversions.asm'
 
 ; -------------------------------------------------------------
 ; READ_32BIT_WORD: Reads 4 bytes from UART and assembles into D1.L
@@ -561,16 +559,27 @@ FBCLR_STR   DC.B    'FBCLR',NUL
 ; ===========================
 ; Constants
 ; ===========================
-MON_MEM_LEN EQU 256                     ; RAM allocated for the monitor
-
-; Memory Map
-RAM_START       EQU $00000400               ; Start of RAM address (after the vector table)
+; TODO: use an LD file to define the memory layout
+; ------------------------------
+; Monitor and Programs Memory layout
+; 0x00000 - 0x003FF       : Vector Table      - Exception vectors (TRAP 14, Reset SSP/PC, etc.)
+; 0x00400 - [End of App]  : User Application  - Loaded by monitor; includes app code/data/stack
+; [Free Space]            : Heap/Gap          - Growth space between App and OS
+; 0x7C000 - 0x7EFFF       : Monitor Code      - The OS/Monitor executable code (12 KB)
+; 0x7F000 - 0x7FFFF       ; Monitor Workspace - OS variables, buffers, and the OS Stack (4 KB)
+; ------------------------------
+; RAM
+VT_TRAP_14      EQU $000000B8
+USER_CODE       EQU $00000400               ; Start of RAM address (after the vector table)
+SP_START        EQU $0007C000               ; Stack Pointer
+MON_CODE        EQU SP_START
+MON_MEM_START   EQU $0007F000
 RAM_END         EQU $00080000               ; End of RAM address (+1)
-SP_START        EQU (RAM_END-MON_MEM_LEN)   ; After SP, allocates monitor RAM
-MON_MEM_START   EQU SP_START                ;
+; Framebuffer
 FB_START        EQU $00200000               ; Start of Framebuffer
 FB_END          EQU $0020FA01               ; End of Framebuffer (+1)
 FB_LEN          EQU (FB_END-FB_START)       ; Framebuffer length
+; I/O
 LED             EQU $00400000               ; LED-mapped register base address
 ; 16450 UART
 UART_BASE       EQU $00402000               ; UART base address
@@ -584,7 +593,6 @@ UART_MSR        EQU UART_BASE+$C            ; MODEM status register
 ; NOTE: do not remove spaces around +
 
 ; Vector Table
-VT_TRAP_14      EQU $B8
 
 ; Monitor RAM
 ; Allocated after the stack point, if the monitor needs

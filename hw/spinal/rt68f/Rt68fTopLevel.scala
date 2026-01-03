@@ -35,10 +35,11 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val clk = in Bool()
     val reset = in Bool()
     val led = out Bits(4 bits)
-    val key = in Bits(4 bits) // Keys disabled in UCF file due to UART conflict.
+    val key = in Bits(4 bits)
     val uart = master(Uart()) // Expose UART pins (txd, rxd), must be defined in the ucf
     val vga = master(Vga(VgaDevice.rgbConfig, withColorEn = false))
     val sram = master(SRamBus())
+    val flash = master(Spi())
   }
 
   val clkCtrl = ClockCtrl()
@@ -56,7 +57,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     busManager.io.cpuBus <> cpu.io
 
     // --------------------------------
-    // ROM: 1.5 KB @ 0x0000 - 0x4FFFF TODO: update range in the comment
+    // ROM
     // --------------------------------
     val romSizeWords = 1122 / 2 // 1.5 KB / 2 bytes per 16-bit word
     val rom = Mem16Bits(size = romSizeWords, readOnly = true, initFile = Some(romFilename))
@@ -65,7 +66,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     rom.io.sel := busManager.io.romSel
 
     // --------------------------------
-    // RAM: 16 KB @ 0x4000 - 0x7FFF
+    // RAM
     // --------------------------------
     val ramSizeWords = 16384 / 2 // 16384 KB / 2 bytes per 16-bit word
     val ram = Mem16Bits(size = ramSizeWords)
@@ -74,7 +75,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     ram.io.sel := busManager.io.ramSel
 
     // --------------------------------
-    // VGA: 64000 bytes @ 0x8000 - 0xFFFF TODO: update range in the comment
+    // VGA
     // --------------------------------
     val vga = VgaDevice(clkCtrl.clk25)
     io.vga <> vga.io.vga
@@ -85,7 +86,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     vga.io.controlSel := busManager.io.vgaControlSel
 
     // --------------------------------
-    // LED device @ 0x10000
+    // LED device
     // --------------------------------
     val ledDev = LedDevice()
     io.led := ledDev.io.leds
@@ -94,7 +95,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     ledDev.io.sel := busManager.io.ledDevSel
 
     // --------------------------------
-    // Key device @ 0x11000
+    // Key device
     // --------------------------------
     val keyDev = KeyDevice()
     keyDev.io.keys := io.key
@@ -104,7 +105,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
 
     // --------------------------------
-    // UART device @ 0x12000
+    // UART device
     // 8 word registers
     // --------------------------------
     val uartDev = T16450Device()
@@ -114,13 +115,22 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     uartDev.io.sel := busManager.io.uartDevSel
 
     // --------------------------------
-    // SRAM: 512 KB @ 0x100000 - 0x180000
+    // SRAM
     // --------------------------------
     val sramCtrl = SRamCtrl(clkCtrl.clk64)
     io.sram <> sramCtrl.io.sram
 
     busManager.io.sramBus <> sramCtrl.io.bus
     sramCtrl.io.sel := busManager.io.sramSel
+
+    // --------------------------------
+    // Flash Reader: 16 bytes @ 0x100000 - 0x180000
+    // --------------------------------
+    val flash = FlashReader()
+    io.flash <> flash.io.spi
+
+    busManager.io.flashBus <> flash.io.bus
+    flash.io.sel := busManager.io.flashSel
   }
 
   // Remove io_ prefix
@@ -135,9 +145,10 @@ object Rt68fTopLevelVhdl extends App {
   //private val romFilename = "uart_hello.hex"
   //private val romFilename = "uart_echo.hex"
   //private val romFilename = "mem_test.hex"
-  //private val romFilename = "monitor.hex"
-  private val romFilename = "min_mon.hex"
   //private val romFilename = "uart16450_echo.hex"
+  //private val romFilename = "monitor.hex"
+  //private val romFilename = "min_mon.hex"
+  private val romFilename = "bootloader.hex"
 
   private val report = Config.spinal.generateVhdl(InOutWrapper(Rt68fTopLevel(romFilename)))
   report.mergeRTLSource("mergeRTL") // Merge all rtl sources into mergeRTL.vhd and mergeRTL.v files

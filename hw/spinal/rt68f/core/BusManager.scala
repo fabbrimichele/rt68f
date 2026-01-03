@@ -12,13 +12,14 @@ case class BusManager() extends Component {
     val cpuBus = slave(M68kBus())
 
     // Slave busses (for the Mux)
-    val romBus  = master(M68kBus())
-    val ramBus  = master(M68kBus())
-    val vgaBus  = master(M68kBus())
-    val uartBus = master(M68kBus())
-    val ledBus  = master(M68kBus())
-    val keyBus  = master(M68kBus())
-    val sramBus = master(M68kBus())
+    val romBus   = master(M68kBus())
+    val ramBus   = master(M68kBus())
+    val vgaBus   = master(M68kBus())
+    val uartBus  = master(M68kBus())
+    val ledBus   = master(M68kBus())
+    val keyBus   = master(M68kBus())
+    val sramBus  = master(M68kBus())
+    val flashBus = master(M68kBus())
 
     // Slave select signals (to peripherals)
     val romSel            = out Bool()
@@ -30,6 +31,7 @@ case class BusManager() extends Component {
     val keyDevSel         = out Bool()
     val uartDevSel        = out Bool()
     val sramSel           = out Bool()
+    val flashSel          = out Bool()
   }
 
   // --------------------------------
@@ -37,7 +39,7 @@ case class BusManager() extends Component {
   // --------------------------------
   val peripheralBuses = List(
     io.romBus, io.ramBus, io.vgaBus, io.ledBus,
-    io.keyBus, io.uartBus, io.sramBus
+    io.keyBus, io.uartBus, io.sramBus, io.flashBus
   )
 
   for (bus <- peripheralBuses) {
@@ -62,6 +64,7 @@ case class BusManager() extends Component {
   io.keyDevSel         := False
   io.uartDevSel        := False
   io.sramSel           := False
+  io.flashSel          := False
 
   // Decoding Chain, ensures that even if an address matches
   // two ranges, only the highest priority one is selected.
@@ -90,6 +93,8 @@ case class BusManager() extends Component {
     io.vgaPaletteSel := True
   } elsewhen(addr === 0x00403200) {
     io.vgaControlSel := True
+  } elsewhen(addr >= 0x00404000 && addr < 0x00404008) {
+    io.flashSel := True
   }
 
   // --------------------------------
@@ -120,6 +125,9 @@ case class BusManager() extends Component {
     } elsewhen (io.sramSel) {
       io.cpuBus.DATAI := io.sramBus.DATAI
       io.cpuBus.DTACK := io.sramBus.DTACK
+    } elsewhen (io.flashSel) {
+      io.cpuBus.DATAI := io.flashBus.DATAI
+      io.cpuBus.DTACK := io.flashBus.DTACK
     } otherwise {
       // Optional: Bus Error / Default Response
       // TODO: I should trigger Bus error or at least an interrupt

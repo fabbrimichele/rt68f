@@ -1,5 +1,8 @@
 ## TODOs
 
+### Software
+* Define a linker file (LD) with the memory layout for the monitor (RAM version)
+
 ### Firmware
 * Fix all firmware examples to use the new memory map (monitor is already updated)
 
@@ -17,6 +20,7 @@
   * ~~640x200 - 4 colors -> 16 colors~~
   * ~~320x200 - 16 colors -> 256 colors~~
 * Trigger an interrupt for frame start and 68000 interrupt
+* Design a screen mode 640x480 with 2 colors (will be easier to start working with EmuTOS)
 * Use SRAM for the framebuffer, it'll require prioritize the access between the VGA and the CPU
   * You can start moving the FB ram out of the VGA module and create a module with 2 ports, one for the framebuffer and one for the CPU 
 * Make an interrupt that triggers at a specific line, it could be used to change colors or resolution at half of the screen
@@ -33,8 +37,9 @@
 * try `tio -b 76800 /dev/ttyUSB0`
 
 ### SPI Flash
-* Design the registers to read from the SPI
-* Read from the SPI Flash data with a 68000 program
+* ~~Design the registers to read from the SPI~~
+* ~~Read from the SPI Flash data with a 68000 program~~
+* ~~Create a bootloader in ROM that starts the monitor program from the SPI Flash~~
 
 ### Sound
 * Integrate a sound core synth, see:

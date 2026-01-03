@@ -3,7 +3,7 @@ TARGET = Rt68f
 TOPLEVEL = rt68f.Rt68fTopLevel
 DEVICE = xc6slx9-tqg144-2
 UCF = papilio_duo_computing_shield
-ASSEMBLIES = blinker led_on keys uart uart_echo uart_tx_byte uart_hello mem_test monitor uart16450_tx_byte uart16450_echo min_mon
+ASSEMBLIES = blinker led_on keys uart uart_echo uart_tx_byte uart_hello mem_test monitor_rom uart16450_tx_byte uart16450_echo min_mon bootloader
 
 # App
 # Define the source directory for app assembly files
@@ -17,6 +17,12 @@ ASM_APP_SOURCES := $(wildcard $(ASM_APP_DIR)/*.asm)
 # Target: Create the final .bin files from the list of sources
 BIN_APP_TARGETS := $(patsubst $(ASM_APP_DIR)/%.asm, $(TARGET_APP_DIR)/%.bin, $(ASM_APP_SOURCES))
 RAW_FILE_NAME := $(TARGET_APP_DIR)/$*_raw.bin
+
+# Monitor RAM version
+MONITOR_SRC = sw/fw/asm/monitor_ram.asm
+MONITOR_BIN = $(TARGET_APP_DIR)/monitor_ram.bin
+MONITOR_RAW = $(TARGET_APP_DIR)/monitor_ram_raw.bin
+MONITOR_ADDRESS = 0007C000
 
 # Image
 VGA_ADDRESS := 00200000
@@ -34,7 +40,7 @@ SPINAL_HEX_FILES = $(patsubst %, $(HEX_SPINAL_DIR)/%.hex, $(ASSEMBLIES))
 .PHONY: all apps clean rom prog-fpga prog-flash disassemble
 
 # --- Targets ---
-all: apps $(TARGET)_routed.bit
+all: apps monitor $(TARGET)_routed.bit
 
 $(TARGET)_routed.bit: gen/$(TARGET)TopLevel.vhdl
 	hw/xilinx/build_bitstream.sh ${TARGET} ${DEVICE} ${UCF}
@@ -134,6 +140,22 @@ $(TARGET_APP_DIR)/%.bin: $(ASM_APP_DIR)/%.asm
 	# 3. Clean up the intermediate raw file
 	@rm $(RAW_FILE_NAME)
 
+monitor: $(MONITOR_BIN)
+
+$(MONITOR_BIN): $(MONITOR_SRC)
+	@mkdir -p $(TARGET_APP_DIR)
+	# 1. Assemble to a raw binary image
+	vasmm68k_mot -Fbin -o $(MONITOR_RAW) $(MONITOR_SRC)
+	# 2. Calculate length and prepend the header
+	@SHELL_RAW_FILE="$(MONITOR_RAW)"; \
+	FILE_SIZE=$$(stat -c %s $$SHELL_RAW_FILE); \
+	HEX_SIZE=$$(printf "%08X" "$$FILE_SIZE"); \
+	HEADER_HEX="$(MONITOR_ADDRESS)"$$HEX_SIZE; \
+	echo "$$HEADER_HEX" | xxd -r -p | cat - $$SHELL_RAW_FILE > $@
+	# 3. Clean up
+	@rm $(MONITOR_RAW)
+	@echo "Built $(MONITOR_BIN) with header [$(PROGRAM_ADDRESS) | size: $$FILE_SIZE]"
+
 
 # --- Utility Targets ---
 prog-fpga:
@@ -142,7 +164,8 @@ prog-fpga:
 
 prog-flash:
 	echo "Programming Flash"
-	papilio-prog -v -s a -r -f target/$(TARGET).bit -b hw/papilio-loader/bscan_spi_xc6slx9.bit
+	papilio-prog -v -s a -r -f target/Rt68f.bit -b hw/papilio-loader/bscan_spi_xc6slx9.bit -a 80000:target/app/monitor_ram.bin
+	# papilio-prog -v -s a -r -f target/$(TARGET).bit -b hw/papilio-loader/bscan_spi_xc6slx9.bit
 
 disassemble:
 	m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/led_on.bin

@@ -1,14 +1,5 @@
-; Min Monitor
-; Commnads:
-; DUMP  <ADDR>       - Dump from ADDR (HEX)',LF
-; WRITE <ADDR> <VAL> - Write to ADDR (HEX) the VALUE (HEX)',LF
-; LOAD               - Load from UART to memory',LF
-; RUN   <ADDR>       - Run program at ADDR (HEX)',LF
-; FBCLR              - Clear framebuffer',LF
-
-
 ; ------------------------------
-; ROM Monitor
+; ROM Monitor (ROM version)
 ; ------------------------------
     ORG    $300000          ; ROM Start Address
 
@@ -24,6 +15,8 @@
 START:
     JSR     INIT_VECTOR_TABLE
     JSR     UART_INIT
+    LEA     MSG_TITLE,A0
+    BSR     PUTS
 
 MON_ENTRY:
 NEW_CMD:
@@ -109,6 +102,11 @@ PROCESS_CMD:
     BTST    #0,D0
     BNE     WRITE_CMD       ; D0.0 = 1 execute WRITE
 
+    ; Parse HELP
+    BSR     PARSE_HELP
+    BTST    #0,D0
+    BNE     HELP_CMD        ; D0.0 = 1 execute HELP
+
     ; Parse LOAD
     BSR     PARSE_LOAD
     BTST    #0,D0
@@ -155,6 +153,11 @@ DUMP_CELL:
 ; A1 - Write address
 WRITE_CMD:
     MOVE.W  D1,(A1)       ; Move only 16 bits (argument is 32 bit long)
+    BRA     NEW_CMD
+
+HELP_CMD:
+    LEA     MSG_HELP,A0
+    BSR     PUTS
     BRA     NEW_CMD
 
 ; -------------------------------------------------------------------------
@@ -297,6 +300,26 @@ PARSE_WRITE:
     JSR     CHECK_TRAIL         ; Check for trailing junk
                                 ; D0.0 returned with result flag
 PRS_WRT_DONE:
+    MOVEM.L (SP)+,A0
+    RTS
+
+; ------------------------------------------------------------
+; PARSE_HELP: Checks for 'HELP', no arguments
+; Output
+; - D0.0: 1 if 'HELP' found and address parsed, 0 otherwise.
+; ------------------------------------------------------------
+PARSE_HELP:
+    MOVEM.L A0,-(SP)
+    LEA     HELP_STR,A1
+    LEA     IN_BUF,A0
+
+    JSR     CHECK_CMD           ; Chek expected command
+    BTST    #0,D0               ; D0.0 equals 0, failure
+    BEQ     PRS_HLP_DONE        ; Exit on failure
+
+    JSR     CHECK_TRAIL         ; Check for trailing junk
+                                ; D0.0 returned with result flag
+PRS_HLP_DONE:
     MOVEM.L (SP)+,A0
     RTS
 
@@ -514,14 +537,23 @@ INIT_VECTOR_TABLE:
 ; ------------------------------
 
 ; Messages
-MSG_UNKNOWN     DC.B    'Err',LF,NUL
-MSG_LOADING     DC.B    '...',LF,NUL
-MSG_LOAD_DONE   DC.B    'Dne',LF,NUL
+MSG_TITLE       DC.B    'RT68F Monitor v0.1',LF,NUL
+MSG_UNKNOWN     DC.B    'Error: Unknown command or syntax',LF,NUL
+MSG_HELP        DC.B    'DUMP  <ADDR>       - Dump from ADDR (HEX)',LF
+                DC.B    'WRITE <ADDR> <VAL> - Write to ADDR (HEX) the VALUE (HEX)',LF
+                DC.B    'LOAD               - Load from UART to memory',LF
+                DC.B    'RUN   <ADDR>       - Run program at ADDR (HEX)',LF
+                DC.B    'FBCLR              - Clear framebuffer',LF
+                DC.B    'HELP               - Print this list of commands',LF
+                DC.B    NUL
+MSG_LOADING     DC.B    'Loading...',LF,NUL
+MSG_LOAD_DONE   DC.B    'Done.',LF,NUL
 
 ; Commands
 ; They must be null terminated
 DUMP_STR    DC.B    'DUMP',NUL
 WRITE_STR   DC.B    'WRITE',NUL
+HELP_STR    DC.B    'HELP',NUL
 LOAD_STR    DC.B    'LOAD',NUL
 RUN_STR     DC.B    'RUN',NUL,NUL
 FBCLR_STR   DC.B    'FBCLR',NUL
@@ -537,7 +569,7 @@ RAM_END         EQU $00080000               ; End of RAM address (+1)
 SP_START        EQU (RAM_END-MON_MEM_LEN)   ; After SP, allocates monitor RAM
 MON_MEM_START   EQU SP_START                ;
 FB_START        EQU $00200000               ; Start of Framebuffer
-FB_END          EQU $0020FA00               ; End of Framebuffer (+1)
+FB_END          EQU $0020FA01               ; End of Framebuffer (+1)
 FB_LEN          EQU (FB_END-FB_START)       ; Framebuffer length
 LED             EQU $00400000               ; LED-mapped register base address
 ; 16450 UART
