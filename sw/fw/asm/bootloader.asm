@@ -17,11 +17,28 @@
 START:
     JSR     UART_INIT
     JSR     INIT_VECTOR_TABLE
-    LEA     MSG_BOOTING,A0
+;    LEA     MSG_SELECT,A0
+;    BSR     PUTS
+;SELECT:
+;    LEA     KEY,A1          ; Load KEY register address into A1
+;    MOVE.L  #200,D2         ; Wait 2 seconds before load from Flash
+;SEL_LOOP:
+;    MOVE.L  #10,D0
+;    JSR     DELAY_MS        ; Wait 10ms
+;    MOVE.B  (A1),D1
+;    BTST    #KEY_DOWN,D1    ; Key down pressed?
+;    BNE     BOOT_SER        ; Yes, jump to boot serial
+;    DBRA    D2,SEL_LOOP
+BOOT_FLASH:
+    LEA     MSG_BOOT_FLASH,A0
     BSR     PUTS
-    ; TODO: make it selectable with a timeout (default ROM)
-    ;BSR     LOAD_SERIAL     ; Load program from serial
     BSR     LOAD_FLASH     ; Load program from SPI flash
+    BRA     DONE
+;BOOT_SER:
+;    LEA     MSG_BOOT_SERIAL,A0
+;    BSR     PUTS
+;    BSR     LOAD_SERIAL     ; Load program from serial
+DONE:
     LEA     MSG_DONE,A0
     BSR     PUTS
     JMP     (A1)            ; Start program
@@ -180,6 +197,24 @@ DUMP_CELL:
     DBRA    D1,DUMP_LINE    ; Decrement D1, branch if D1 is NOT -1
     RTS
 
+; ---------------------------------------------------------
+; DELAY_MS
+; Input:  D0.W = Number of milliseconds to wait
+; Assumes: 16MHz CPU Clock
+; ---------------------------------------------------------
+DELAY_MS:
+    MOVE.L  D1,-(SP)        ; Save D1
+
+OUTER_LOOP:
+    ; 1ms is 16,000 cycles.
+    ; The inner loop (DBRA) is 12 cycles. 16000 / 12 approx 1333.
+    MOVE.W  #1333,D1
+INNER_LOOP:
+    DBRA    D1,INNER_LOOP   ; Inner loop (1ms)
+    DBRA    D0,OUTER_LOOP   ; Outer loop (number of ms)
+
+    MOVE.L  (SP)+,D1        ; Restore D1
+    RTS
 ; ------------------------------
 ; Libraries
 ; ------------------------------
@@ -191,8 +226,10 @@ DUMP_CELL:
 ; ------------------------------
 
 ; Messages
-MSG_BOOTING     DC.B    'Booting...',LF,NUL
-MSG_DONE        DC.B    'Done',LF,NUL
+MSG_SELECT      DC.B 'Press <down> to boot from serial (2s).',LF,NUL
+MSG_BOOT_FLASH  DC.B 'Booting from flash...',NUL
+MSG_BOOT_SERIAL DC.B 'Booting from serial...',NUL
+MSG_DONE        DC.B ' OK',LF,LF,NUL
 
 
 ; ===========================
@@ -209,6 +246,7 @@ FB_START        EQU $00200000               ; Start of Framebuffer
 FB_END          EQU $0020FA00               ; End of Framebuffer (+1)
 FB_LEN          EQU (FB_END-FB_START)       ; Framebuffer length
 LED             EQU $00400000               ; LED-mapped register base address
+KEY             EQU $00401000               ; KEY-mapped register base address
 ; 16450 UART
 UART_BASE       EQU $00402000               ; UART base address
 UART_RBR        EQU UART_BASE+$0            ; Receive Buffer Register(RBR) / Transmitter Holding Register(THR) / Divisor Latch (LSB)
@@ -242,5 +280,11 @@ LF          EQU 10          ; Line Feed
 BEL         EQU 7           ; Bell character
 NUL         EQU 0
 
-; FLASH Constants
-FL_CMD_RD  EQU 1            ; Read command
+; Flash Constants
+FL_CMD_RD   EQU 1           ; Read command
+
+; Key bit positions
+KEY_UP      EQU 0           ; Up key bit
+KEY_RIGHT   EQU 1           ; Right key bit
+KEY_DOWN    EQU 2           ; Down key bit
+KEY_LEFT    EQU 3           ; Left key bit

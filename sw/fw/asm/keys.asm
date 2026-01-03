@@ -45,7 +45,7 @@
 
 START:
     LEA     LED,A0          ; Load LED register address into A0
-    LEA     KEY,A1          ; Load KEY refister address into A1
+    LEA     KEY,A1          ; Load KEY reGister address into A1
 
 LOOP:
     MOVE.W  (A1),D1         ; Write Key register into D1

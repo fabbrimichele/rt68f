@@ -1,5 +1,8 @@
 ## TODOs
 
+### Software
+* Define a linker file (LD) with the memory layout for the monitor (RAM version)
+
 ### Firmware
 * Fix all firmware examples to use the new memory map (monitor is already updated)
 
