@@ -199,6 +199,8 @@ clean:
 	rm -f hw/gen/*.vhd
 	rm -f hw/gen/*.bin
 	rm -f hw/gen/*.hex
+	rm -f hw/gen/*.o
+	rm -f hw/gen/*.sym
 	rm -f target/*.edf
 	rm -f target/*.o
 	rm -f target/*.sym
@@ -207,4 +209,5 @@ clean:
 	rm -rf target
 	# Remove hex files in the spinal directory ONLY for listed assemblies
 	rm -f $(SPINAL_HEX_FILES)
+	rm -f $(HEX_SPINAL_DIR)/bootloader.hex
 
