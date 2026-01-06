@@ -1,18 +1,16 @@
-; Bootloader
+; ------------------------------
+; ROM Bootloader
+; ------------------------------
 
+    SECTION .text, code
 ; ------------------------------
-; ROM Monitor
+; Reset Vectors Section
 ; ------------------------------
-    ORG    $300000          ; ROM Start Address
-
-; ------------------------------
-; Initial Reset SP and PC in Vector Table
-; ------------------------------
-    DC.L SP_START           ; Reset Stack Pointer (SP, SP move downward far from SO_RAM)
+    DC.L _bss_start         ; Reset Stack Pointer (SP, SP move downward far from bootloader work ram (bss))
     DC.L START              ; Reset Program counter (PC) (point to the beginning of code)
 
 ; ------------------------------
-; Program code
+; Main Code Section
 ; ------------------------------
 START:
     JSR     UART_INIT
@@ -30,11 +28,15 @@ SEL_LOOP:
     BNE     BOOT_SER        ; Yes, jump to boot serial
     DBRA    D2,SEL_LOOP
 BOOT_FLASH:
+    LEA     MSG_BOOT_FROM,A0
+    BSR     PUTS
     LEA     MSG_BOOT_FLASH,A0
     BSR     PUTS
     BSR     LOAD_FLASH     ; Load program from SPI flash
     BRA     DONE
 BOOT_SER:
+    LEA     MSG_BOOT_FROM,A0
+    BSR     PUTS
     LEA     MSG_BOOT_SERIAL,A0
     BSR     PUTS
     BSR     LOAD_SERIAL     ; Load program from serial
@@ -53,7 +55,9 @@ INIT_VECTOR_TABLE:
 ; The trap handler is not strictly necessary but it's
 ; useful to reuse existing programs which relay on it.
 TRAP_14_HANDLER:
-    MOVE.L  #SP_START,SP
+    MOVE.L  #_bss_start,SP
+    LEA     MSG_PRG_RETURN,A0
+    BSR     PUTS
     JMP     STOP
 
 ; -------------------------------------------------------------------------
@@ -215,76 +219,39 @@ INNER_LOOP:
 
     MOVE.L  (SP)+,D1        ; Restore D1
     RTS
+
 ; ------------------------------
 ; Libraries
 ; ------------------------------
     INCLUDE '../../lib/asm/console_io_16450.asm'
+    INCLUDE '../../lib/asm/spi_flash.asm'
+    INCLUDE '../../lib/asm/key.asm'
+    INCLUDE '../../lib/asm/isr_vector.asm'
     INCLUDE '../../lib/asm/conversions.asm'
 
 ; ------------------------------
 ; ROM Data Section
 ; ------------------------------
-
 ; Messages
-MSG_SELECT      DC.B 'Press <down> to boot from serial (2s).',LF,NUL
-MSG_BOOT_FLASH  DC.B 'Booting from flash...',NUL
-MSG_BOOT_SERIAL DC.B 'Booting from serial...',NUL
+MSG_SELECT      DC.B LF,'Press <down> to boot from serial (2s).',LF,NUL
+MSG_BOOT_FROM   DC.B 'Booting from ',NUL
+MSG_BOOT_FLASH  DC.B 'flash...',NUL
+MSG_BOOT_SERIAL DC.B 'serial...',NUL
 MSG_DONE        DC.B ' OK',LF,LF,NUL
+MSG_PRG_RETURN  DC.B 'Program returned, press reset to restart.',LF,NUL
 
+; ------------------------------
+; RAM Data Section (bootloader mem)
+; ------------------------------
+    SECTION .bss
+
+; No data required so far.
 
 ; ===========================
 ; Constants
 ; ===========================
-MON_MEM_LEN EQU 256                     ; RAM allocated for the monitor
-
-; Memory Map
-RAM_START       EQU $00000400               ; Start of RAM address (after the vector table)
-RAM_END         EQU $00080000               ; End of RAM address (+1)
-SP_START        EQU (RAM_END-MON_MEM_LEN)   ; After SP, allocates monitor RAM
-MON_MEM_START   EQU SP_START                ;
-FB_START        EQU $00200000               ; Start of Framebuffer
-FB_END          EQU $0020FA00               ; End of Framebuffer (+1)
-FB_LEN          EQU (FB_END-FB_START)       ; Framebuffer length
-LED             EQU $00400000               ; LED-mapped register base address
-KEY             EQU $00401000               ; KEY-mapped register base address
-; 16450 UART
-UART_BASE       EQU $00402000               ; UART base address
-UART_RBR        EQU UART_BASE+$0            ; Receive Buffer Register(RBR) / Transmitter Holding Register(THR) / Divisor Latch (LSB)
-UART_IER        EQU UART_BASE+$2            ; Interrupt enable register / Divisor Latch (MSB)
-UART_IIR        EQU UART_BASE+$4            ; Interrupt Identification Register
-UART_LCR        EQU UART_BASE+$6            ; Line control register
-UART_MCR        EQU UART_BASE+$8            ; MODEM control register
-UART_LSR        EQU UART_BASE+$A            ; Line status register
-UART_MSR        EQU UART_BASE+$C            ; MODEM status register
-; SPI FLASH
-FLASH_BASE      EQU $404000
-FLASH_CTRL      EQU FLASH_BASE+$1           ; Lower byte contains actual status and control bits
-FLASH_DATA      EQU FLASH_BASE+$2           ; Word contains data
-FLASH_ADDR      EQU FLASH_BASE+$4           ; 4 bytes
-; NOTE: do not remove spaces around +
-
-; Vector Table
-VT_TRAP_14      EQU $B8
-
-; Monitor RAM
-; Allocated after the stack point, if the monitor needs
-; more memory it's sufficient to move the stack pointer
-; Buffer
-IN_BUF          EQU MON_MEM_START           ; IN_BUF start after the stack pointer
-IN_BUF_LEN      EQU 80                      ; BUFFER LEN should be less than MON_MEM_LEN EQU
-IN_BUF_END      EQU IN_BUF+IN_BUF_LEN       ;
-
 ; ASCII
 CR          EQU 13          ; Carriage Return
 LF          EQU 10          ; Line Feed
 BEL         EQU 7           ; Bell character
 NUL         EQU 0
-
-; Flash Constants
-FL_CMD_RD   EQU 1           ; Read command
-
-; Key bit positions
-KEY_UP      EQU 0           ; Up key bit
-KEY_RIGHT   EQU 1           ; Right key bit
-KEY_DOWN    EQU 2           ; Down key bit
-KEY_LEFT    EQU 3           ; Left key bit

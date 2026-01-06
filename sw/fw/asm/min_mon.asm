@@ -540,15 +540,6 @@ FB_START        EQU $00200000               ; Start of Framebuffer
 FB_END          EQU $0020FA00               ; End of Framebuffer (+1)
 FB_LEN          EQU (FB_END-FB_START)       ; Framebuffer length
 LED             EQU $00400000               ; LED-mapped register base address
-; 16450 UART
-UART_BASE       EQU $00402000               ; UART base address
-UART_RBR        EQU UART_BASE+$0            ; Receive Buffer Register(RBR) / Transmitter Holding Register(THR) / Divisor Latch (LSB)
-UART_IER        EQU UART_BASE+$2            ; Interrupt enable register / Divisor Latch (MSB)
-UART_IIR        EQU UART_BASE+$4            ; Interrupt Identification Register
-UART_LCR        EQU UART_BASE+$6            ; Line control register
-UART_MCR        EQU UART_BASE+$8            ; MODEM control register
-UART_LSR        EQU UART_BASE+$A            ; Line status register
-UART_MSR        EQU UART_BASE+$C            ; MODEM status register
 ; NOTE: do not remove spaces around +
 
 ; Vector Table

@@ -27,6 +27,7 @@ import scala.language.postfixOps
  *   0x00402000 - 0x00402010 : UART
  *   0x00403000 - 0x004031FF : VGA Palette (256 words, only lower 12 bits are used)
  *   0x00403200 - 0x00403200 : VGA Control (1 word)
+ *   0x00404000 - 0x00404007 : SPI Flash
  */
 
 //noinspection TypeAnnotation
