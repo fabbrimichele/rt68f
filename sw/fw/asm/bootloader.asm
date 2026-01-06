@@ -50,7 +50,7 @@ INIT_VECTOR_TABLE:
 ; The trap handler is not strictly necessary but it's
 ; useful to reuse existing programs which relay on it.
 TRAP_14_HANDLER:
-    MOVE.L  #SP_START,SP
+    MOVE.L  #_bss_start,SP
     JMP     STOP
 
 ; -------------------------------------------------------------------------
