@@ -27,11 +27,15 @@ SEL_LOOP:
     BNE     BOOT_SER        ; Yes, jump to boot serial
     DBRA    D2,SEL_LOOP
 BOOT_FLASH:
+    LEA     MSG_BOOT_FROM,A0
+    BSR     PUTS
     LEA     MSG_BOOT_FLASH,A0
     BSR     PUTS
     BSR     LOAD_FLASH     ; Load program from SPI flash
     BRA     DONE
 BOOT_SER:
+    LEA     MSG_BOOT_FROM,A0
+    BSR     PUTS
     LEA     MSG_BOOT_SERIAL,A0
     BSR     PUTS
     BSR     LOAD_SERIAL     ; Load program from serial
@@ -51,6 +55,8 @@ INIT_VECTOR_TABLE:
 ; useful to reuse existing programs which relay on it.
 TRAP_14_HANDLER:
     MOVE.L  #_bss_start,SP
+    LEA     MSG_PRG_RETURN,A0
+    BSR     PUTS
     JMP     STOP
 
 ; -------------------------------------------------------------------------
@@ -224,9 +230,11 @@ INNER_LOOP:
 
 ; Messages
 MSG_SELECT      DC.B 'Press <down> to boot from serial (2s).',LF,NUL
-MSG_BOOT_FLASH  DC.B 'Booting from flash...',NUL
-MSG_BOOT_SERIAL DC.B 'Booting from serial...',NUL
+MSG_BOOT_FROM   DC.B 'Booting from ',NUL
+MSG_BOOT_FLASH  DC.B 'flash...',NUL
+MSG_BOOT_SERIAL DC.B 'serial...',NUL
 MSG_DONE        DC.B ' OK',LF,LF,NUL
+MSG_PRG_RETURN  DC.B 'Program returned, press reset to restart.',LF,NUL
 
 
 ; ===========================
