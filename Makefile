@@ -211,4 +211,3 @@ clean:
 	# Remove hex files in the spinal directory ONLY for listed assemblies
 	rm -f $(SPINAL_HEX_FILES)
 	rm -f $(HEX_SPINAL_DIR)/bootloader.hex
-
