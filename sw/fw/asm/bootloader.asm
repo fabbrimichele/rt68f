@@ -245,16 +245,16 @@ MSG_PRG_RETURN  DC.B 'Program returned, press reset to restart.',LF,NUL
 
 ; No data required so far.
 
-; ===========================
-; Constants
-; ===========================
 
-; Memory Map
-FB_START        EQU $00200000               ; Start of Framebuffer
-FB_END          EQU $0020FA00               ; End of Framebuffer (+1)
-FB_LEN          EQU (FB_END-FB_START)       ; Framebuffer length
+; ===========================
+; Memory Mapped devices
+; ===========================
+; Do not move to linker map definition file
+; Only RAM, ROM and FB should be defined there since they're are large.
+
 LED             EQU $00400000               ; LED-mapped register base address
 KEY             EQU $00401000               ; KEY-mapped register base address
+
 ; 16450 UART
 UART_BASE       EQU $00402000               ; UART base address
 UART_RBR        EQU UART_BASE+$0            ; Receive Buffer Register(RBR) / Transmitter Holding Register(THR) / Divisor Latch (LSB)
@@ -271,8 +271,19 @@ FLASH_DATA      EQU FLASH_BASE+$2           ; Word contains data
 FLASH_ADDR      EQU FLASH_BASE+$4           ; 4 bytes
 ; NOTE: do not remove spaces around +
 
+
+; ===========================
 ; Vector Table
+; ===========================
+; What the vector table contains should be
+; define din the asm file.
+
 VT_TRAP_14      EQU $B8
+
+
+; ===========================
+; Constants
+; ===========================
 
 ; ASCII
 CR          EQU 13          ; Carriage Return

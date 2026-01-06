@@ -15,8 +15,7 @@ SECTIONS
         *(.rodata*)
     } > ROM
 
-    .bss (NOLOAD) :
-    {
+    .bss (NOLOAD) : {
         . = ORIGIN(RAM) + LENGTH(RAM) - __work_mem_size;
         _bss_start = .;
         *(.bss*)
