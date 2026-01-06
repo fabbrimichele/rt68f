@@ -188,9 +188,10 @@ prog-flash:
 	# papilio-prog -v -s a -r -f target/$(TARGET).bit -b hw/papilio-loader/bscan_spi_xc6slx9.bit
 
 disassemble:
-	m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/led_on.bin
-	m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/blinker.bin
-	m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/keys.bin
+	#m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/led_on.bin
+	#m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/blinker.bin
+	#m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/keys.bin
+	m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/bootloader.bin
 
 # TODO: add command to debug timing: trce -v 12 -fastpaths -o design_timing_report Rt68f.ncd Rt68f.pcf
 
