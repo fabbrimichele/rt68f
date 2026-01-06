@@ -1,18 +1,15 @@
-; Bootloader
+; ------------------------------
+; ROM Bootloader
+; ------------------------------
 
+    SECTION .text, code
 ; ------------------------------
-; ROM Monitor
+; Reset Vectors Section
 ; ------------------------------
-    ORG    $300000          ; ROM Start Address
-
-; ------------------------------
-; Initial Reset SP and PC in Vector Table
-; ------------------------------
-    DC.L SP_START           ; Reset Stack Pointer (SP, SP move downward far from SO_RAM)
+    DC.L _bss_start         ; Reset Stack Pointer (SP, SP move downward far from bootloader work ram (bss))
     DC.L START              ; Reset Program counter (PC) (point to the beginning of code)
-
 ; ------------------------------
-; Program code
+; Main Code Section
 ; ------------------------------
 START:
     JSR     UART_INIT

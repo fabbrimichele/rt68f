@@ -3,7 +3,7 @@ TARGET = Rt68f
 TOPLEVEL = rt68f.Rt68fTopLevel
 DEVICE = xc6slx9-tqg144-2
 UCF = papilio_duo_computing_shield
-ASSEMBLIES = blinker led_on keys uart uart_echo uart_tx_byte uart_hello mem_test monitor_rom uart16450_tx_byte uart16450_echo min_mon bootloader
+ASSEMBLIES = blinker led_on keys uart uart_echo uart_tx_byte uart_hello mem_test monitor_rom uart16450_tx_byte uart16450_echo min_mon
 
 # App
 # Define the source directory for app assembly files
@@ -75,6 +75,25 @@ $(HEX_CLASS_DIR)/%.hex: $(ASM_SRC_DIR)/%.asm
 	mkdir -p $(HEX_CLASS_DIR)
 	# 4. Copy the hex file to the Scala classes path for resource loading
 	cp $(HEX_SPINAL_DIR)/$*.hex $@
+
+
+# Make a special target for the bootloader:
+# Use:
+# vasmm68k_mot -Felf -o boot.o boot.asm
+# vlink -T link.ld -b rawbin1 -o boot.bin boot.o
+bootloader.hex: $(ASM_SRC_DIR)/bootloader.asm
+	@echo "--- Assembling and Converting bootloader ---"
+	# 1. Assemble the 68000 code to a binary file
+	vasmm68k_mot -Felf -o $(BIN_GEN_DIR)/bootloader.o $(ASM_SRC_DIR)/bootloader.asm
+	# 2. Link object file
+	vlink -T $(ASM_SRC_DIR)/bootloader.ld -b rawbin1 -M$(BIN_GEN_DIR)/bootloader.sym -o $(BIN_GEN_DIR)/bootloader.bin $(BIN_GEN_DIR)/bootloader.o
+	# 3. Convert binary to a two-byte-per-line hex file, convert to uppercase
+	#xxd -p -c 2 $(BIN_GEN_DIR)/bootloader.bin | awk '{print toupper($$0)}' > $(HEX_SPINAL_DIR)/bootloader.hex
+	# 4. Ensure the destination directory exists
+	#mkdir -p $(HEX_CLASS_DIR)
+	# 5. Copy the hex file to the Scala classes path for resource loading
+	#cp $(HEX_SPINAL_DIR)/bootloader.hex $@
+
 
 blinker.bin:
 	mkdir -p target/app
