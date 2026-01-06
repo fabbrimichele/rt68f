@@ -8,6 +8,7 @@
 ; ------------------------------
     DC.L _bss_start         ; Reset Stack Pointer (SP, SP move downward far from bootloader work ram (bss))
     DC.L START              ; Reset Program counter (PC) (point to the beginning of code)
+
 ; ------------------------------
 ; Main Code Section
 ; ------------------------------
@@ -218,6 +219,7 @@ INNER_LOOP:
 
     MOVE.L  (SP)+,D1        ; Restore D1
     RTS
+
 ; ------------------------------
 ; Libraries
 ; ------------------------------
@@ -229,12 +231,20 @@ INNER_LOOP:
 ; ------------------------------
 
 ; Messages
-MSG_SELECT      DC.B 'Press <down> to boot from serial (2s).',LF,NUL
+MSG_SELECT      DC.B LF,'Press <down> to boot from serial (2s).',LF,NUL
 MSG_BOOT_FROM   DC.B 'Booting from ',NUL
 MSG_BOOT_FLASH  DC.B 'flash...',NUL
 MSG_BOOT_SERIAL DC.B 'serial...',NUL
 MSG_DONE        DC.B ' OK',LF,LF,NUL
 MSG_PRG_RETURN  DC.B 'Program returned, press reset to restart.',LF,NUL
+
+; ------------------------------
+; RAM Data Section (bootloader mem)
+; ------------------------------
+    SECTION .bss
+
+IN_BUF          DS.B 80
+IN_BUF_LEN      EQU 80                      ; BUFFER LEN should be less than MON_MEM_LEN EQU
 
 
 ; ===========================
@@ -270,14 +280,6 @@ FLASH_ADDR      EQU FLASH_BASE+$4           ; 4 bytes
 
 ; Vector Table
 VT_TRAP_14      EQU $B8
-
-; Monitor RAM
-; Allocated after the stack point, if the monitor needs
-; more memory it's sufficient to move the stack pointer
-; Buffer
-IN_BUF          EQU MON_MEM_START           ; IN_BUF start after the stack pointer
-IN_BUF_LEN      EQU 80                      ; BUFFER LEN should be less than MON_MEM_LEN EQU
-IN_BUF_END      EQU IN_BUF+IN_BUF_LEN       ;
 
 ; ASCII
 CR          EQU 13          ; Carriage Return
