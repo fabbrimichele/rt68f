@@ -243,20 +243,13 @@ MSG_PRG_RETURN  DC.B 'Program returned, press reset to restart.',LF,NUL
 ; ------------------------------
     SECTION .bss
 
-IN_BUF          DS.B 80
-IN_BUF_LEN      EQU 80                      ; BUFFER LEN should be less than MON_MEM_LEN EQU
-
+; No data required so far.
 
 ; ===========================
 ; Constants
 ; ===========================
-MON_MEM_LEN EQU 256                     ; RAM allocated for the monitor
 
 ; Memory Map
-RAM_START       EQU $00000400               ; Start of RAM address (after the vector table)
-RAM_END         EQU $00080000               ; End of RAM address (+1)
-SP_START        EQU (RAM_END-MON_MEM_LEN)   ; After SP, allocates monitor RAM
-MON_MEM_START   EQU SP_START                ;
 FB_START        EQU $00200000               ; Start of Framebuffer
 FB_END          EQU $0020FA00               ; End of Framebuffer (+1)
 FB_LEN          EQU (FB_END-FB_START)       ; Framebuffer length
