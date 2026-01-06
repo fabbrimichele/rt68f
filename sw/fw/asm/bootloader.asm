@@ -224,12 +224,14 @@ INNER_LOOP:
 ; Libraries
 ; ------------------------------
     INCLUDE '../../lib/asm/console_io_16450.asm'
+    INCLUDE '../../lib/asm/spi_flash.asm'
+    INCLUDE '../../lib/asm/key.asm'
+    INCLUDE '../../lib/asm/isr_vector.asm'
     INCLUDE '../../lib/asm/conversions.asm'
 
 ; ------------------------------
 ; ROM Data Section
 ; ------------------------------
-
 ; Messages
 MSG_SELECT      DC.B LF,'Press <down> to boot from serial (2s).',LF,NUL
 MSG_BOOT_FROM   DC.B 'Booting from ',NUL
@@ -245,57 +247,11 @@ MSG_PRG_RETURN  DC.B 'Program returned, press reset to restart.',LF,NUL
 
 ; No data required so far.
 
-
-; ===========================
-; Memory Mapped devices
-; ===========================
-; Do not move to linker map definition file
-; Only RAM, ROM and FB should be defined there since they're are large.
-
-LED             EQU $00400000               ; LED-mapped register base address
-KEY             EQU $00401000               ; KEY-mapped register base address
-
-; 16450 UART
-UART_BASE       EQU $00402000               ; UART base address
-UART_RBR        EQU UART_BASE+$0            ; Receive Buffer Register(RBR) / Transmitter Holding Register(THR) / Divisor Latch (LSB)
-UART_IER        EQU UART_BASE+$2            ; Interrupt enable register / Divisor Latch (MSB)
-UART_IIR        EQU UART_BASE+$4            ; Interrupt Identification Register
-UART_LCR        EQU UART_BASE+$6            ; Line control register
-UART_MCR        EQU UART_BASE+$8            ; MODEM control register
-UART_LSR        EQU UART_BASE+$A            ; Line status register
-UART_MSR        EQU UART_BASE+$C            ; MODEM status register
-; SPI FLASH
-FLASH_BASE      EQU $404000
-FLASH_CTRL      EQU FLASH_BASE+$1           ; Lower byte contains actual status and control bits
-FLASH_DATA      EQU FLASH_BASE+$2           ; Word contains data
-FLASH_ADDR      EQU FLASH_BASE+$4           ; 4 bytes
-; NOTE: do not remove spaces around +
-
-
-; ===========================
-; Vector Table
-; ===========================
-; What the vector table contains should be
-; define din the asm file.
-
-VT_TRAP_14      EQU $B8
-
-
 ; ===========================
 ; Constants
 ; ===========================
-
 ; ASCII
 CR          EQU 13          ; Carriage Return
 LF          EQU 10          ; Line Feed
 BEL         EQU 7           ; Bell character
 NUL         EQU 0
-
-; Flash Constants
-FL_CMD_RD   EQU 1           ; Read command
-
-; Key bit positions
-KEY_UP      EQU 0           ; Up key bit
-KEY_RIGHT   EQU 1           ; Right key bit
-KEY_DOWN    EQU 2           ; Down key bit
-KEY_LEFT    EQU 3           ; Left key bit
