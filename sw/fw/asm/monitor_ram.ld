@@ -1,11 +1,9 @@
-/* Define Bootloader working memory size */
-__work_mem_size  = 256;
-
 MEMORY
 {
-    /* The hardware maps the first 8 bytes to ROM, but we define the actual ROM storage */
-    ROM (rx)    : ORIGIN = 0x00300000, LENGTH = 1122
+    /* The hardware maps the first 8 bytes to ROM */
     RAM (rwx)   : ORIGIN = 0x00000400, LENGTH = 512K - 0x400
+    ROM (rx)    : ORIGIN = 0x00300000, LENGTH = 1122
+    FB  (rwx)   : ORIGIN = 0x00200000, LENGTH = 64000
 }
 
 SECTIONS
@@ -26,5 +24,11 @@ SECTIONS
         _bss_start = .;
         *(.bss*)
     } > RAM
+
+    .fb (NOLOAD) : {
+        _fb_start = .;
+        *(.fb*)
+        _fb_end = .;
+    } > FB
 }
 

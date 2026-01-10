@@ -223,8 +223,8 @@ RUN_CMD:
     JMP     (A1)
 
 FBCLR_CMD:
-    LEA     FB_START,A0         ; Framebuffer pointer
-    MOVE.W  #((FB_LEN/2)-1),D1  ; Framebuffer size in words - 1 (DBRA)
+    LEA     _fb_start,A0        ; Framebuffer pointer
+    MOVE.W  #(64000-1),D1       ; Framebuffer size in words - 1 (DBRA)
     MOVE.W  #0,D0
 FBCLR_CMD_LOOP:
     MOVE.W  D0,(A0)+            ; Clear FB
@@ -572,13 +572,6 @@ IN_BUF_END:
 ; ===========================
 ; Constants
 ; ===========================
-; TODO: define FB address in the `monitor_ram.ld` file
-; Framebuffer
-FB_START        EQU $00200000               ; Start of Framebuffer
-FB_END          EQU $0020FA01               ; End of Framebuffer (+1)
-FB_LEN          EQU (FB_END-FB_START)       ; Framebuffer length
-
-
 ; ASCII
 CR          EQU 13          ; Carriage Return
 LF          EQU 10          ; Line Feed
