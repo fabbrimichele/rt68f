@@ -6,12 +6,13 @@ import spinal.lib._
 import scala.language.postfixOps
 
 case class M68k() extends Component {
-  val io = master(M68kBus())
+  val io      = master(M68kBus())
+  val ipl     = in Bits(3 bits) // interrupt priority level
   val tg68000 = new Tg68000BB
 
   // clock and reset managed automatically
   // tg68000.io.clkena_in := True // Managed by mapClockDomain in Tg68000BB
-  tg68000.io.IPL := 0b111 // TODO: move interrupts into the CpuBus?
+  tg68000.io.IPL := ipl
 
   // Bus <-> Core mapping
   io.ADDR := tg68000.io.addr.asUInt

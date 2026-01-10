@@ -56,6 +56,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
     val busManager = BusManager()
     busManager.io.cpuBus <> cpu.io
+    cpu.ipl := busManager.io.ipl
 
     // --------------------------------
     // ROM
@@ -82,6 +83,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     io.vga <> vga.io.vga
 
     busManager.io.vgaBus <> vga.io.bus
+    busManager.io.vgaVSyncInt := vga.io.vBlankInt
     vga.io.framebufferSel := busManager.io.vgaFramebufferSel
     vga.io.paletteSel := busManager.io.vgaPaletteSel
     vga.io.controlSel := busManager.io.vgaControlSel
