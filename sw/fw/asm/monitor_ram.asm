@@ -1,7 +1,7 @@
 ; ------------------------------
 ; ROM Monitor (RAM version)
 ; ------------------------------
-    ORG    $7C000             ; Start of RAM
+    SECTION .text, code
 
 ; Initial Reset SP and PC in Vector Table
 ; are set by the bootloader.

@@ -18,12 +18,6 @@ ASM_APP_SOURCES := $(wildcard $(ASM_APP_DIR)/*.asm)
 BIN_APP_TARGETS := $(patsubst $(ASM_APP_DIR)/%.asm, $(TARGET_APP_DIR)/%.bin, $(ASM_APP_SOURCES))
 RAW_FILE_NAME := $(TARGET_APP_DIR)/$*_raw.bin
 
-# Monitor RAM version
-MONITOR_SRC = sw/fw/asm/monitor_ram.asm
-MONITOR_BIN = $(TARGET_APP_DIR)/monitor_ram.bin
-MONITOR_RAW = $(TARGET_APP_DIR)/monitor_ram_raw.bin
-MONITOR_ADDRESS = 0007C000
-
 # Image
 VGA_ADDRESS := 00200000
 
@@ -77,11 +71,6 @@ $(HEX_CLASS_DIR)/%.hex: $(ASM_SRC_DIR)/%.asm
 	cp $(HEX_SPINAL_DIR)/$*.hex $@
 
 
-# Make a special target for the bootloader:
-# Use:
-# vasmm68k_mot -Felf -o boot.o boot.asm
-# vlink -T link.ld -b rawbin1 -o boot.bin boot.o
-# bootloader: $(ASM_SRC_DIR)/bootloader.asm
 $(HEX_CLASS_DIR)/bootloader.hex: $(ASM_SRC_DIR)/bootloader.asm
 	@echo "--- Assembling and Converting bootloader ---"
 	# 1. Assemble the 68000 code to a binary file
@@ -160,20 +149,26 @@ $(TARGET_APP_DIR)/%.bin: $(ASM_APP_DIR)/%.asm
 	# 3. Clean up the intermediate raw file
 	@rm $(RAW_FILE_NAME)
 
-monitor: $(MONITOR_BIN)
 
-$(MONITOR_BIN): $(MONITOR_SRC)
+# Monitor RAM version
+MONITOR_ADDRESS = 0007C000
+MONITOR_BIN = $(TARGET_APP_DIR)/monitor_ram.bin
+MONITOR_SRC_DIR = sw/fw/asm
+
+monitor: $(MONITOR_BIN)
+$(MONITOR_BIN): $(MONITOR_SRC_DIR)/monitor_ram.asm
 	@mkdir -p $(TARGET_APP_DIR)
-	# 1. Assemble to a raw binary image
-	vasmm68k_mot -Fbin -o $(MONITOR_RAW) $(MONITOR_SRC)
-	# 2. Calculate length and prepend the header
-	@SHELL_RAW_FILE="$(MONITOR_RAW)"; \
+	# 1. Assemble to an elf file
+	vasmm68k_mot -Felf -o $(TARGET_APP_DIR)/monitor_ram.o $(MONITOR_SRC_DIR)/monitor_ram.asm
+	# 2. Link object file
+	vlink -T $(MONITOR_SRC_DIR)/monitor_ram.ld -b rawbin1 -M$(TARGET_APP_DIR)/monitor_ram.sym -o $(TARGET_APP_DIR)/monitor_ram_raw.bin $(TARGET_APP_DIR)/monitor_ram.o
+	# 3. Calculate length and prepend the header
+	@SHELL_RAW_FILE="$(TARGET_APP_DIR)/monitor_ram_raw.bin"; \
 	FILE_SIZE=$$(stat -c %s $$SHELL_RAW_FILE); \
 	HEX_SIZE=$$(printf "%08X" "$$FILE_SIZE"); \
 	HEADER_HEX="$(MONITOR_ADDRESS)"$$HEX_SIZE; \
 	echo "$$HEADER_HEX" | xxd -r -p | cat - $$SHELL_RAW_FILE > $@
-	# 3. Clean up
-	@rm $(MONITOR_RAW)
+	# 4. Clean up
 	@echo "Built $(MONITOR_BIN) with header [$(PROGRAM_ADDRESS) | size: $$FILE_SIZE]"
 
 
