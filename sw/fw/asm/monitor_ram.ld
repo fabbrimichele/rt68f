@@ -14,7 +14,7 @@ SECTIONS
         *(.user*)
     } > RAM
 
-    .text 0x0007F000 : {
+    .text 0x0007C000 : {
         _text_start = .;
         *(.text*)
         *(.rodata*)

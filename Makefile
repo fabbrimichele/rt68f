@@ -186,7 +186,8 @@ disassemble:
 	#m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/led_on.bin
 	#m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/blinker.bin
 	#m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/keys.bin
-	m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/bootloader.bin
+	#m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/bootloader.bin
+	m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 target/app/monitor_ram.bin
 
 # TODO: add command to debug timing: trce -v 12 -fastpaths -o design_timing_report Rt68f.ncd Rt68f.pcf
 
