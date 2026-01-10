@@ -11,17 +11,18 @@ MEMORY
 SECTIONS
 {
     .user (NOLOAD) : {
+        _user_start = .;
         *(.user*)
     } > RAM
 
     .text 0x0007C000 : {
+        _init_sp = .;
         _text_start = .;
         *(.text*)
         *(.rodata*)
     } > RAM
 
     .bss (NOLOAD) : {
-        . = ORIGIN(RAM) + LENGTH(RAM) - __work_mem_size;
         _bss_start = .;
         *(.bss*)
     } > RAM

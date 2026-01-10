@@ -1,16 +1,15 @@
 ; ------------------------------
 ; ROM Monitor (RAM version)
 ; ------------------------------
-    SECTION .text, code
-
 ; Initial Reset SP and PC in Vector Table
 ; are set by the bootloader.
 
 ; ------------------------------
 ; Program code
 ; ------------------------------
+    SECTION .text, code
 START:
-    MOVE.L  #SP_START,SP        ; Update SP according to the memory layout
+    MOVE.L  #_init_sp,SP        ; Update SP according to the memory layout
     JSR     INIT_VECTOR_TABLE
     JSR     UART_INIT
     LEA     MSG_TITLE,A0
@@ -489,7 +488,7 @@ CHK_TRL_DONE:
 ; TRAP handlers
 ; ------------------------------
 TRAP_14_HANDLER:
-    MOVE.L  #SP_START,SP
+    MOVE.L  #_init_sp,SP
     JMP     MON_ENTRY
 
 ; ------------------------------
@@ -497,6 +496,7 @@ TRAP_14_HANDLER:
 ; ------------------------------
     INCLUDE '../../lib/asm/console_io_16450.asm'
     INCLUDE '../../lib/asm/conversions.asm'
+    INCLUDE '../../lib/asm/isr_vector.asm'
 
 ; -------------------------------------------------------------
 ; READ_32BIT_WORD: Reads 4 bytes from UART and assembles into D1.L
@@ -531,7 +531,7 @@ INIT_VECTOR_TABLE:
 
 
 ; ------------------------------
-; ROM Data Section
+; Data Section with initial values
 ; ------------------------------
 
 ; Messages
@@ -553,48 +553,31 @@ DUMP_STR    DC.B    'DUMP',NUL
 WRITE_STR   DC.B    'WRITE',NUL
 HELP_STR    DC.B    'HELP',NUL
 LOAD_STR    DC.B    'LOAD',NUL
-RUN_STR     DC.B    'RUN',NUL,NUL
-FBCLR_STR   DC.B    'FBCLR',NUL
+RUN_STR     DC.B    'RUN',NUL
+FBCLR_STR   DC.B    'FBCLR',NUL,NUL
+; TODO: the 2nd `NUL` after 'FBCLR' is to hack a bug in
+; the serial load, the last char is not read.
+
+
+; ------------------------------
+; Data Section without initial values
+; ------------------------------
+    SECTION .bss
+
+IN_BUF:
+    ds.b    80
+IN_BUF_END:
+
 
 ; ===========================
 ; Constants
 ; ===========================
-; TODO: use an LD file to define the memory layout
-; ------------------------------
-; Monitor and Programs Memory layout
-; 0x00000 - 0x003FF       : Vector Table      - Exception vectors (TRAP 14, Reset SSP/PC, etc.)
-; 0x00400 - [End of App]  : User Application  - Loaded by monitor; includes app code/data/stack
-; [Free Space]            : Heap/Gap          - Growth space between App and OS
-; 0x7C000 - 0x7EFFF       : Monitor Code      - The OS/Monitor executable code (12 KB)
-; 0x7F000 - 0x7FFFF       ; Monitor Workspace - OS variables, buffers, and the OS Stack (4 KB)
-; ------------------------------
-; RAM
-VT_TRAP_14      EQU $000000B8
-USER_CODE       EQU $00000400               ; Start of RAM address (after the vector table)
-SP_START        EQU $0007C000               ; Stack Pointer
-MON_CODE        EQU SP_START
-MON_MEM_START   EQU $0007F000
-RAM_END         EQU $00080000               ; End of RAM address (+1)
+; TODO: define FB address in the `monitor_ram.ld` file
 ; Framebuffer
 FB_START        EQU $00200000               ; Start of Framebuffer
 FB_END          EQU $0020FA01               ; End of Framebuffer (+1)
 FB_LEN          EQU (FB_END-FB_START)       ; Framebuffer length
-; I/O
-LED             EQU $00400000               ; LED-mapped register base address
-; NOTE: do not remove spaces around +
 
-; Vector Table
-
-; Monitor RAM
-; Allocated after the stack point, if the monitor needs
-; more memory it's sufficient to move the stack pointer
-; Buffer
-IN_BUF          EQU MON_MEM_START           ; IN_BUF start after the stack pointer
-IN_BUF_LEN      EQU 80                      ; BUFFER LEN should be less than MON_MEM_LEN EQU
-IN_BUF_END      EQU IN_BUF+IN_BUF_LEN       ;
-
-; Program Constants
-DLY_VAL     EQU 1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
 
 ; ASCII
 CR          EQU 13          ; Carriage Return

@@ -3,6 +3,11 @@
 ### Software
 * Define a linker file (LD) with the memory layout for the monitor (RAM version)
 
+### Bootloader
+* There might be a bug the serial loader:
+  * When loading the `monitor_ram.bin` and then entering a command it prints an error, I think it doesn't read the last character sent.
+  * Depending on the `monitor_ram.bin` size the last command parsing doesn't work, also in this case I think it depends on the last byte not read.
+
 ### Firmware
 * Fix all firmware examples to use the new memory map (monitor is already updated)
 
