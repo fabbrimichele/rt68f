@@ -535,7 +535,7 @@ INIT_VECTOR_TABLE:
 ; ------------------------------
 
 ; Messages
-MSG_TITLE       DC.B    'RT68F Monitor v0.1',LF,NUL
+MSG_TITLE       DC.B    'RT68F Monitor v0.2',LF,NUL
 MSG_UNKNOWN     DC.B    'Error: Unknown command or syntax',LF,NUL
 MSG_HELP        DC.B    'DUMP  <ADDR>       - Dump from ADDR (HEX)',LF
                 DC.B    'WRITE <ADDR> <VAL> - Write to ADDR (HEX) the VALUE (HEX)',LF
