@@ -1,7 +1,7 @@
 ## TODOs
 
 ### Software
-* Define a linker file (LD) with the memory layout for the monitor (RAM version)
+* ~~Define a linker file (LD) with the memory layout for the monitor (RAM version)~~
 
 ### Bootloader
 * There might be a bug the serial loader:
