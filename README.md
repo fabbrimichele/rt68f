@@ -12,8 +12,6 @@ A project in SpinalHDL for the Papilio Duo dev board (Xilinx Spartan 6)
 * https://github.com/vfinotti/ahb3lite_wb_bridge/blob/master/wb_to_ahb3lite.v
 * https://github.com/TobiFlex/TG68K.C
 
-
-
 ## ym3812
 * https://www.thingsmadesimple.com/2022/11/28/ym3812-part-1-register-basics/
 
