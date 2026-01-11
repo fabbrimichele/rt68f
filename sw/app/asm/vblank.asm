@@ -12,6 +12,7 @@ START:
     TRAP    #14
 
 VBL_ISR:
+    OR.W    #$0040,VGA_CTRL     ; Ack interrupt (write high to bit 6)
     SUBQ.B  #1,COUNTER
     BNE     .RET
     MOVE.B  #INT_CNT,COUNTER    ; Reset counter
@@ -23,7 +24,7 @@ VBL_ISR:
 COUNTER     ds.b    1
 
 ; Constants
-INT_CNT     equ     60
+INT_CNT     equ     30
 
 ; ===========================
 ; Include files

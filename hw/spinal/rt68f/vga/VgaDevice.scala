@@ -44,7 +44,28 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   // Bits 1-0 [Screen mode] : 0 -> 640x400 2 colors, 1 -> 640x200 4 colors, 2 -> 320x200 16 colors (3 same as 2)
   // Bit 2    [Overscan]    : 0 -> off, 1 -> on
   // Bit 3    [VBlank int]  : 0 -> off, 1 -> on
+  // Bit 6    [VBlank ack]  : Write to acknowledge VBlank interrupt
   val controlReg = Reg(Bits(16 bits)) init 2 // 320x200, no overscan, no vBlank int
+
+  // ------------ Interrupts ------------
+  // TODO: restore vBlankIntEn
+  // vSync is negative
+  val vBlankIntEn = controlReg(3)
+  val vBlackAckBit = 6
+
+  val vSyncReg = BufferCC(io.vga.vSync)
+
+  val vSyncPending = RegInit(False)
+  when(vSyncReg.fall()) {
+    vSyncPending := True
+  } elsewhen (!io.bus.AS && io.controlSel && !io.bus.RW) {
+    when(!io.bus.LDS && io.bus.DATAO(vBlackAckBit)) {
+      vSyncPending := False
+    }
+  }
+
+  io.vBlankInt := vSyncPending //&& vBlankIntEn
+
 
   // ------------ 68000 BUS side ------------
   // Default response
@@ -123,7 +144,6 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
     val controlRegCC = BufferCC(controlReg)
     val mode = controlRegCC(1 downto 0).asUInt
     val overscanEn = controlRegCC(2)
-    val vBlankIntEn = controlRegCC(3)
 
     val bitsPerPixel = mode.mux(
       M0_640X400C004 -> U(2, 4 bits),
@@ -170,15 +190,6 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
       vertOffsetReg := vertOffset
       ctrl.io.timings.setAs_h640_v480_r60
     }
-
-    // TODO: an acknowledge that the interrupt has been processed
-    //       is required, otherwise the ISR (interrupt subroutine)
-    //       runs multiple time for one single interrupt.
-    // TODO: consider polarity (for the resolutions used is false)
-    // TODO: restore vBlankIntEn
-
-    // vSync should be negative
-    io.vBlankInt := !ctrl.io.vga.vSync //&& vBlankIntEn
 
     // --- Access Exposed Counters and Timings ---
     val hCount = ctrl.io.hCounter
