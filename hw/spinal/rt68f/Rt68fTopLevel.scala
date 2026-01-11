@@ -134,6 +134,16 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
     busManager.io.flashBus <> flash.io.bus
     flash.io.sel := busManager.io.flashSel
+
+    // --------------------------------
+    // Timer
+    // --------------------------------
+    val timer = Timer()
+    busManager.io.timerBus <> timer.io.bus
+    timer.io.sel := busManager.io.timerSel
+
+    busManager.io.timerAInt := timer.io.timerAInt
+    busManager.io.timerBInt := timer.io.timerBInt
   }
 
   // Remove io_ prefix

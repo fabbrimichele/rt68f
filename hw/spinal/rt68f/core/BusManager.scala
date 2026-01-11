@@ -21,6 +21,7 @@ case class BusManager() extends Component {
     val keyBus   = master(M68kBus())
     val sramBus  = master(M68kBus())
     val flashBus = master(M68kBus())
+    val timerBus = master(M68kBus())
 
     // Slave select signals (to peripherals)
     val romSel            = out Bool()
@@ -33,9 +34,12 @@ case class BusManager() extends Component {
     val uartDevSel        = out Bool()
     val sramSel           = out Bool()
     val flashSel          = out Bool()
+    val timerSel          = out Bool()
 
     // Interrupts (from peripherals)
     val vgaVSyncInt       = in Bool()
+    val timerAInt         = in Bool()
+    val timerBInt         = in Bool()
   }
 
   // --------------------------------
@@ -43,7 +47,8 @@ case class BusManager() extends Component {
   // --------------------------------
   val peripheralBuses = List(
     io.romBus, io.ramBus, io.vgaBus, io.ledBus,
-    io.keyBus, io.uartBus, io.sramBus, io.flashBus
+    io.keyBus, io.uartBus, io.sramBus, io.flashBus,
+    io.timerBus,
   )
 
   for (bus <- peripheralBuses) {
@@ -82,6 +87,7 @@ case class BusManager() extends Component {
   io.uartDevSel        := False
   io.sramSel           := False
   io.flashSel          := False
+  io.timerSel          := False
 
   // Decoding Chain, ensures that even if an address matches
   // two ranges, only the highest priority one is selected.
@@ -112,6 +118,8 @@ case class BusManager() extends Component {
     io.vgaControlSel := True
   } elsewhen(addr >= 0x00404000 && addr < 0x00404008) {
     io.flashSel := True
+  } elsewhen(addr >= 0x00405000 && addr < 0x0040500A) {
+    io.timerSel := True
   }
 
   // --------------------------------
@@ -145,6 +153,9 @@ case class BusManager() extends Component {
     } elsewhen (io.flashSel) {
       io.cpuBus.DATAI := io.flashBus.DATAI
       io.cpuBus.DTACK := io.flashBus.DTACK
+    } elsewhen (io.timerSel) {
+      io.cpuBus.DATAI := io.timerBus.DATAI
+      io.cpuBus.DTACK := io.timerBus.DTACK
     } otherwise {
       // Optional: Bus Error / Default Response
       // TODO: I should trigger Bus error or at least an interrupt

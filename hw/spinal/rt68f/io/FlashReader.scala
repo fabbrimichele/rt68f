@@ -62,6 +62,7 @@ case class FlashReader() extends Component {
       // TODO: manage UDS/LDS
       switch(addr) {
         is(0) { ctrlReg := io.bus.DATAO(7 downto 0) }
+        // Skip `is(1)` dataReg which is read only
         is(2) { addrReg(23 downto 16) := io.bus.DATAO(7 downto 0) }
         is(3) { addrReg(15 downto 0) := io.bus.DATAO }
       }
