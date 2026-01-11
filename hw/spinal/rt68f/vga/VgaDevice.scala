@@ -171,7 +171,13 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
       ctrl.io.timings.setAs_h640_v480_r60
     }
 
+    // TODO: an acknowledge that the interrupt has been processed
+    //       is required, otherwise the ISR (interrupt subroutine)
+    //       runs multiple time for one single interrupt.
+    // TODO: consider polarity (for the resolutions used is false)
     // TODO: restore vBlankIntEn
+
+    // vSync should be negative
     io.vBlankInt := !ctrl.io.vga.vSync //&& vBlankIntEn
 
     // --- Access Exposed Counters and Timings ---

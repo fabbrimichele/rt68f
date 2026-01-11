@@ -4,25 +4,26 @@
     ORG    $400             ; Start of RAM
 
 START:
-    ; Set interrupt handler
-    MOVE.W  #$1,LED
-    MOVE.L  #VBL_ISR,VT_INT_1
-
-    ; Enable interrupts (Clear mask bits)
-    MOVE.W  #$2,LED
-    MOVE.W  #$2000,SR    ; Binary: 0010 0000 0000 0000 (Supervisor bit on, Interrupt mask 0)
-    ;AND.W   #$F8FF,SR   ; Bitwise AND to clear bits 8, 9, and 10
-LOOP:
-    MOVE.W  #$0,LED
-    BRA     LOOP
-;END:
-;    TRAP    #14
+    MOVE.B  #INT_CNT,COUNTER    ; Reset counter
+    MOVE.W  #$FFFF,LED          ; Init LED
+    MOVE.L  #VBL_ISR,VT_INT_1   ; Set interrupt handler
+    OR.W    #$0008,VGA_CTRL     ; Enable VBlank interrupt on VGA (bit 3 high)
+    AND.W   #$F8FF,SR           ; Enable all interrupts on 68000 (Clear mask bits)
+    TRAP    #14
 
 VBL_ISR:
-    MOVE.W  #$8,LED
+    SUBQ.B  #1,COUNTER
+    BNE     .RET
+    MOVE.B  #INT_CNT,COUNTER    ; Reset counter
+    NOT.W   LED
+.RET:
     RTE
 
+; Variables
+COUNTER     ds.b    1
 
+; Constants
+INT_CNT     equ     60
 
 ; ===========================
 ; Include files
