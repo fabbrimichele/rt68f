@@ -1,7 +1,7 @@
 package rt68f.core
 
-import spinal.core.{Area, B, Bundle, Component, False, IntToBuilder, Reg, True, UInt, out, when}
-import spinal.lib.{Counter, master, slave}
+import spinal.core._
+import spinal.lib._
 
 import scala.language.postfixOps
 
@@ -10,6 +10,7 @@ case class BusManager() extends Component {
   val io = new Bundle {
     // Master Interface (from CPU)
     val cpuBus = slave(M68kBus())
+    val ipl    = out Bits(3 bits)
 
     // Slave busses (for the Mux)
     val romBus   = master(M68kBus())
@@ -32,6 +33,9 @@ case class BusManager() extends Component {
     val uartDevSel        = out Bool()
     val sramSel           = out Bool()
     val flashSel          = out Bool()
+
+    // Interrupts (from peripherals)
+    val vgaVSyncInt       = in Bool()
   }
 
   // --------------------------------
@@ -51,6 +55,19 @@ case class BusManager() extends Component {
     bus.DATAO := io.cpuBus.DATAO
   }
 
+  // Interrupts
+  /*
+    A real 68000 requires:
+    > For each interrupt request, these signals must remain asserted until
+    > the processor signals interrupt acknowledge (FC2–FC0 and A19–A16 high)
+    > for that request to ensure that the interrupt is recognized.
+    TODO: check that the VBlankSync is long enough
+   */
+
+  // TODO: implement a proper decoder to use all levels
+  // TODO: TG68 has no VPA signal to enable autovectors, check if they're used by default
+  // IPL is active low
+  io.ipl := Cat(B"b11", !io.vgaVSyncInt)
 
   // --------------------------------
   // Address decoding

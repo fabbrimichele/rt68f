@@ -26,9 +26,10 @@ object VgaDevice {
 case class VgaDevice(clk25: ClockDomain) extends Component {
   val io = new Bundle {
     val bus             = slave(M68kBus())
-    val framebufferSel  = in Bool() // Framebuffer select from decoder
-    val paletteSel      = in Bool() // Palette select from decoder
-    val controlSel      = in Bool() // Control select from decoder
+    val framebufferSel  = in Bool()   // Framebuffer select from decoder
+    val paletteSel      = in Bool()   // Palette select from decoder
+    val controlSel      = in Bool()   // Control select from decoder
+    val vBlankInt       = out Bool()  // Vertical blank interrupt
     val vga             = master(Vga(VgaDevice.rgbConfig, withColorEn = false))
   }
 
@@ -42,7 +43,30 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   // Control register
   // Bits 1-0 [Screen mode] : 0 -> 640x400 2 colors, 1 -> 640x200 4 colors, 2 -> 320x200 16 colors (3 same as 2)
   // Bit 2    [Overscan]    : 0 -> off, 1 -> on
-  val controlReg = Reg(Bits(16 bits)) init 2 // 320x200 no overscan
+  // Bit 3    [VBlank int]  : 0 -> off, 1 -> on
+  // Bit 6    [VBlank ack]  : Write to acknowledge VBlank interrupt
+  val controlReg = Reg(Bits(16 bits)) init 2 // 320x200, no overscan, no vBlank int
+
+  // ------------ Interrupts ------------
+  // vSync
+  val vBlankIntEn = controlReg(3)
+  val vBlackAckBit = 6
+
+  val vSyncReg = BufferCC(io.vga.vSync)
+
+  val vSyncPending = RegInit(False)
+  // VSync is negative (for current resolutions)
+  // TODO: consider polarity (for current resolutions)
+  when(vSyncReg.fall() && vBlankIntEn) {
+    vSyncPending := True
+  } elsewhen (!io.bus.AS && io.controlSel && !io.bus.RW) {
+    when(!io.bus.LDS && io.bus.DATAO(vBlackAckBit)) {
+      vSyncPending := False
+    }
+  }
+
+  io.vBlankInt := vSyncPending //&& vBlankIntEn
+
 
   // ------------ 68000 BUS side ------------
   // Default response
@@ -120,7 +144,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   new ClockingArea(clk25) {
     val controlRegCC = BufferCC(controlReg)
     val mode = controlRegCC(1 downto 0).asUInt
-    val overscan = controlRegCC(2)
+    val overscanEn = controlRegCC(2)
 
     val bitsPerPixel = mode.mux(
       M0_640X400C004 -> U(2, 4 bits),
@@ -148,7 +172,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
     val ctrl = VgaCtrl(rgbConfig)
     ctrl.io.softReset := False
 
-    when(overscan) {
+    when(overscanEn) {
       // VGA Signal 640 x 400 @ 70 Hz
       vertOffsetReg := 0
       ctrl.io.timings.setAs(
