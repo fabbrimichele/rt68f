@@ -48,15 +48,16 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   val controlReg = Reg(Bits(16 bits)) init 2 // 320x200, no overscan, no vBlank int
 
   // ------------ Interrupts ------------
-  // TODO: restore vBlankIntEn
-  // vSync is negative
+  // vSync
   val vBlankIntEn = controlReg(3)
   val vBlackAckBit = 6
 
   val vSyncReg = BufferCC(io.vga.vSync)
 
   val vSyncPending = RegInit(False)
-  when(vSyncReg.fall()) {
+  // VSync is negative (for current resolutions)
+  // TODO: consider polarity (for current resolutions)
+  when(vSyncReg.fall() && vBlankIntEn) {
     vSyncPending := True
   } elsewhen (!io.bus.AS && io.controlSel && !io.bus.RW) {
     when(!io.bus.LDS && io.bus.DATAO(vBlackAckBit)) {
