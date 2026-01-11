@@ -38,6 +38,7 @@
 * Create a programmable timers that triggers an interrupt 
 
 ### UART
+* Integrate serial interrupts
 * Use a CPU clock that allows a standard BAUD rate for the UART (all other clocks must be updated accordingly)
 * try `tio -b 76800 /dev/ttyUSB0`
 
