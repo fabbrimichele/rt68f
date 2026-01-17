@@ -8,63 +8,40 @@ import scala.language.postfixOps
 
 /**
  * # ctrlReg (8 bits - read/write)
- * Bit 0: Timer A mode: 0 -> repeat, 1 -> single
- * Bit 1: Timer B mode: 0 -> repeat, 1 -> single
- * Bit 2: Timer A int : 0 -> off, 1 -> on
- * Bit 3: Timer B int : 0 -> off, 1 -> on
- * Bit 6: Timer A ack : Write to acknowledge Timer A interrupt
- * Bit 7: Timer B ack : Write to acknowledge Timer B interrupt
+ * Bit 0: Timer mode: 0 -> repeat, 1 -> single
+ * Bit 2: Timer int : 0 -> off, 1 -> on
+ * Bit 6: Timer ack : Write to acknowledge Timer A interrupt
  *
- * # initPrescX (8 bits - read/write)
- * It divides the clock by the set value, 0 stop counter (A or B)
+ * # initPresc (8 bits - read/write)
+ * It divides the clock by the set value, 0 stop counter
  *
- * # InitCountX (16 bits - write only)
- * Initial value for Counter (A or B)
+ * # InitCount (16 bits - write only)
+ * Initial value for Counter
  *
- * # CounterX (16 bits - read only)
+ * # Counter (16 bits - read only)
  * Current counter value
  */
 //noinspection TypeAnnotation
 case class TimerDevice() extends Component {
   val io = new Bundle {
-    val bus       = slave(M68kBus())
-    val sel       = in Bool()         // chip select from decoder
-    val timerAInt = out Bool()        // Timer A interrupt
-    val timerBInt = out Bool()        // Timer B interrupt
+    val bus = slave(M68kBus())
+    val sel = in Bool()         // chip select from decoder
+    val int = out Bool()        // Timer interrupt
   }
 
   // -- Memory Mapped Registers --
   val ctrlReg    = Reg(Bits(8 bits))  init 0 // Read/Write
 
-  val initPrescA = Reg(UInt(8 bits))  init 0 // Read/Write
-  val initCountA = Reg(UInt(16 bits)) init 0 // Write only
-  val counterA   = Reg(UInt(16 bits)) init 0 // Read only
-
-  // TODO: For some reason timer B blocks the boot loading...
-  // TODO: It might be a good idea to define a TimerDevice class
-  //       that has only 1 timer and then create multiple instances
-  //       of the TimeDevice. This way adding a new timer is trivial
-  /*
-  val initPrescB = Reg(UInt(8 bits))  init 0 // Read/Write
-  val initCountB = Reg(UInt(16 bits)) init 0 // Write only
-  val counterB   = Reg(UInt(16 bits)) init 0 // Read only
-  */
+  val initPresc = Reg(UInt(8 bits))  init 0 // Read/Write
+  val initCount = Reg(UInt(16 bits)) init 0 // Write only
+  val counter   = Reg(UInt(16 bits)) init 0 // Read only
 
   // -- Non-mapped Registers and Signals --
-  val prescCountA = Reg(UInt(8 bits)) init 0
-  val intAPending = RegInit(False)
-  val intAEn      = ctrlReg(2)
-  val intAAckBit  = 6
-  io.timerAInt := intAPending
-
-  /*
-  val prescCountB = Reg(UInt(8 bits)) init 0
-  val intBPending = RegInit(False)
-  val intBEn      = ctrlReg(3)
-  val intBAckBit  = 7
-  io.timerBInt := intBPending
-  */
-  io.timerBInt := False
+  val prescCount = Reg(UInt(8 bits)) init 0
+  val intPending = RegInit(False)
+  val intEn      = ctrlReg(2)
+  val intAckBit  = 6
+  io.int := intPending
 
   // ---- 68000 Bus Interface ----
   // Default bus signals
@@ -79,12 +56,8 @@ case class TimerDevice() extends Component {
       // Read
       io.bus.DATAI := addrWord.mux(
         0 -> ctrlReg.resize(16),
-        1 -> initPrescA.asBits.resize(16),
-        2 -> counterA.asBits,
-        /*
-        3 -> initPrescB.asBits.resize(16),
-        4 -> counterB.asBits,
-        */
+        1 -> initPresc.asBits.resize(16),
+        2 -> counter.asBits,
         default -> B"xFFFF"
       )
     } otherwise {
@@ -93,68 +66,36 @@ case class TimerDevice() extends Component {
       val dataOut = io.bus.DATAO
       switch(addrWord) {
         is(0) { ctrlReg := dataOut(7 downto 0) }
-        is(1) { initPrescA := dataOut(7 downto 0).asUInt }
-        is(2) { initCountA := dataOut.asUInt }
-        /*
-        is(3) { initPrescB := dataOut(7 downto 0).asUInt }
-        is(4) { initCountB := dataOut.asUInt }
-        */
+        is(1) { initPresc := dataOut(7 downto 0).asUInt }
+        is(2) { initCount := dataOut.asUInt }
       }
     }
   }
 
   // ---- Timer Handlers ----
   // TODO: Implement single mode
-  when (initPrescA > 0) {
-    // Prescaler Counter A
-    when (prescCountA === 0) {
-      prescCountA := initPrescA
+  when (initPresc > 0) {
+    // Prescaler
+    when (prescCount === 0) {
+      prescCount := initPresc
     } otherwise {
-      prescCountA := prescCountA - 1
+      prescCount := prescCount - 1
     }
 
-    // Counter A
-    when (counterA === 0) {
-      counterA := initCountA
-    } elsewhen(prescCountA === 0) {
-      counterA := counterA - 1
+    // Counter
+    when (counter === 0) {
+      counter := initCount
+    } elsewhen(prescCount === 0) {
+      counter := counter - 1
     }
 
-    // Interrupt A
-    when (counterA === 0 && intAEn) {
-      intAPending := True
+    // Interrupt
+    when (counter === 0 && intEn) {
+      intPending := True
     } elsewhen (!io.bus.AS && io.sel && !io.bus.RW) {
-      when(!io.bus.LDS && io.bus.DATAO(intAAckBit)) {
-        intAPending := False
+      when(!io.bus.LDS && io.bus.DATAO(intAckBit)) {
+        intPending := False
       }
     }
   }
-
-  /*
-  // TODO: Implement single mode
-  when (initPrescB > 0) {
-    // Prescaler Counter B
-    when (prescCountB === 0) {
-      prescCountB := initPrescB
-    } otherwise {
-      prescCountB := prescCountB - 1
-    }
-
-    // Counter B
-    when (counterB === 0) {
-      counterB := initCountB
-    } elsewhen(prescCountB === 0) {
-      counterB := counterB - 1
-    }
-
-    // Interrupt B
-    when (counterB === 0 && intBEn) {
-      intBPending := True
-    } elsewhen (!io.bus.AS && io.sel && !io.bus.RW) {
-      when(!io.bus.LDS && io.bus.DATAO(intBAckBit)) {
-        intBPending := False
-      }
-    }
-  }
-  */
 }

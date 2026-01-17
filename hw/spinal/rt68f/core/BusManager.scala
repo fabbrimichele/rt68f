@@ -13,15 +13,16 @@ case class BusManager() extends Component {
     val ipl    = out Bits(3 bits)
 
     // Slave busses (for the Mux)
-    val romBus   = master(M68kBus())
-    val ramBus   = master(M68kBus())
-    val vgaBus   = master(M68kBus())
-    val uartBus  = master(M68kBus())
-    val ledBus   = master(M68kBus())
-    val keyBus   = master(M68kBus())
-    val sramBus  = master(M68kBus())
-    val flashBus = master(M68kBus())
-    val timerBus = master(M68kBus())
+    val romBus    = master(M68kBus())
+    val ramBus    = master(M68kBus())
+    val vgaBus    = master(M68kBus())
+    val uartBus   = master(M68kBus())
+    val ledBus    = master(M68kBus())
+    val keyBus    = master(M68kBus())
+    val sramBus   = master(M68kBus())
+    val flashBus  = master(M68kBus())
+    val timerABus = master(M68kBus())
+    val timerBBus = master(M68kBus())
 
     // Slave select signals (to peripherals)
     val romSel            = out Bool()
@@ -34,7 +35,8 @@ case class BusManager() extends Component {
     val uartDevSel        = out Bool()
     val sramSel           = out Bool()
     val flashSel          = out Bool()
-    val timerSel          = out Bool()
+    val timerASel         = out Bool()
+    val timerBSel         = out Bool()
 
     // Interrupts (from peripherals)
     val vgaVSyncInt       = in Bool()
@@ -48,7 +50,7 @@ case class BusManager() extends Component {
   val peripheralBuses = List(
     io.romBus, io.ramBus, io.vgaBus, io.ledBus,
     io.keyBus, io.uartBus, io.sramBus, io.flashBus,
-    io.timerBus,
+    io.timerABus, io.timerBBus
   )
 
   for (bus <- peripheralBuses) {
@@ -80,7 +82,8 @@ case class BusManager() extends Component {
   io.uartDevSel        := False
   io.sramSel           := False
   io.flashSel          := False
-  io.timerSel          := False
+  io.timerASel         := False
+  io.timerBSel         := False
 
   // Decoding Chain, ensures that even if an address matches
   // two ranges, only the highest priority one is selected.
@@ -111,8 +114,10 @@ case class BusManager() extends Component {
     io.vgaControlSel := True
   } elsewhen(addr >= 0x00404000 && addr < 0x00404008) {
     io.flashSel := True
-  } elsewhen(addr >= 0x00405000 && addr < 0x0040500A) {
-    io.timerSel := True
+  } elsewhen(addr >= 0x00405000 && addr < 0x00405008) {
+    io.timerASel := True
+  } elsewhen(addr >= 0x00405010 && addr < 0x00405018) {
+    io.timerASel := True
   }
 
   // --------------------------------
@@ -146,9 +151,12 @@ case class BusManager() extends Component {
     } elsewhen (io.flashSel) {
       io.cpuBus.DATAI := io.flashBus.DATAI
       io.cpuBus.DTACK := io.flashBus.DTACK
-    } elsewhen (io.timerSel) {
-      io.cpuBus.DATAI := io.timerBus.DATAI
-      io.cpuBus.DTACK := io.timerBus.DTACK
+    } elsewhen (io.timerASel) {
+      io.cpuBus.DATAI := io.timerABus.DATAI
+      io.cpuBus.DTACK := io.timerABus.DTACK
+    } elsewhen (io.timerBSel) {
+      io.cpuBus.DATAI := io.timerBBus.DATAI
+      io.cpuBus.DTACK := io.timerBBus.DTACK
     } otherwise {
       // Optional: Bus Error / Default Response
       // TODO: I should trigger Bus error or at least an interrupt

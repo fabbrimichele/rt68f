@@ -139,12 +139,16 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // --------------------------------
     // Timer
     // --------------------------------
-    val timer = TimerDevice()
-    busManager.io.timerBus <> timer.io.bus
-    timer.io.sel := busManager.io.timerSel
+    val timerA = TimerDevice()
+    busManager.io.timerABus <> timerA.io.bus
+    timerA.io.sel := busManager.io.timerASel
+    busManager.io.timerAInt := timerA.io.int
 
-    busManager.io.timerAInt := timer.io.timerAInt
-    busManager.io.timerBInt := timer.io.timerBInt
+    val timerB = TimerDevice()
+    busManager.io.timerBBus <> timerB.io.bus
+    timerB.io.sel := busManager.io.timerBSel
+    //busManager.io.timerBInt := timerB.io.int // TODO: this break the bootloader
+    busManager.io.timerBInt := False
   }
 
   // Remove io_ prefix
