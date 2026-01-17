@@ -133,15 +133,15 @@ case class TimerDevice() extends Component {
     // Prescaler Counter B
     when (prescCountB === 0) {
       prescCountB := initPrescB
-
-      // Counter B
-      when (counterB === 0) {
-        counterB := initCountB
-      } elsewhen(prescCountB === 0) {
-        counterB := counterB - 1
-      }
     } otherwise {
       prescCountB := prescCountB - 1
+    }
+
+    // Counter B
+    when (counterB === 0) {
+      counterB := initCountB
+    } elsewhen(prescCountB === 0) {
+      counterB := counterB - 1
     }
 
     // Interrupt B
