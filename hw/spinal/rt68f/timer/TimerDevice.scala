@@ -41,6 +41,9 @@ case class TimerDevice() extends Component {
   val counterA   = Reg(UInt(16 bits)) init 0 // Read only
 
   // TODO: For some reason timer B blocks the boot loading...
+  // TODO: It might be a good idea to define a TimerDevice class
+  //       that has only 1 timer and then create multiple instances
+  //       of the TimeDevice. This way adding a new timer is trivial
   /*
   val initPrescB = Reg(UInt(8 bits))  init 0 // Read/Write
   val initCountB = Reg(UInt(16 bits)) init 0 // Write only
