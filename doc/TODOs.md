@@ -38,7 +38,9 @@
 * ~~Move address decoding logic and bus multiplex to a separate module/s~~ (DONE)
 
 ### Timer
-* Create a programmable timers that triggers an interrupt 
+* ~~Create a programmable timers that triggers an interrupt~~
+* Implement single mode (repeat mode is only implemented so far)
+* Implement Timer B (for some reason it blocks the bootloader)
 
 ### UART
 * Integrate serial interrupts

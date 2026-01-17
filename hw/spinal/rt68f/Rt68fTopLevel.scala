@@ -3,6 +3,7 @@ package rt68f
 import rt68f.core._
 import rt68f.io._
 import rt68f.memory._
+import rt68f.timer.TimerDevice
 import spinal.core._
 import spinal.lib.com.uart.Uart
 import spinal.lib.graphic.vga.Vga

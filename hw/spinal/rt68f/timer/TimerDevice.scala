@@ -1,12 +1,13 @@
-package rt68f.core
+package rt68f.timer
 
+import rt68f.core.M68kBus
 import spinal.core._
 import spinal.lib._
 
 import scala.language.postfixOps
 
 /**
- * # Control Register (8 bits)
+ * # ctrlReg (8 bits - read/write)
  * Bit 0: Timer A mode: 0 -> repeat, 1 -> single
  * Bit 1: Timer B mode: 0 -> repeat, 1 -> single
  * Bit 2: Timer A int : 0 -> off, 1 -> on
@@ -14,10 +15,14 @@ import scala.language.postfixOps
  * Bit 6: Timer A ack : Write to acknowledge Timer A interrupt
  * Bit 7: Timer B ack : Write to acknowledge Timer B interrupt
  *
- * # Prescaler (8 bits)
- * It divides the clock by the set value, 0 stop counter
+ * # initPrescX (8 bits - read/write)
+ * It divides the clock by the set value, 0 stop counter (A or B)
  *
- * # Init
+ * # InitCountX (16 bits - write only)
+ * Initial value for Counter (A or B)
+ *
+ * # CounterX (16 bits - read only)
+ * Current counter value
  */
 //noinspection TypeAnnotation
 case class TimerDevice() extends Component {
@@ -35,6 +40,7 @@ case class TimerDevice() extends Component {
   val initCountA = Reg(UInt(16 bits)) init 0 // Write only
   val counterA   = Reg(UInt(16 bits)) init 0 // Read only
 
+  // TODO: For some reason timer B blocks the boot loading...
   /*
   val initPrescB = Reg(UInt(8 bits))  init 0 // Read/Write
   val initCountB = Reg(UInt(16 bits)) init 0 // Write only
@@ -94,7 +100,7 @@ case class TimerDevice() extends Component {
     }
   }
 
-  // ---- Timer Handler ----
+  // ---- Timer Handlers ----
   // TODO: Implement single mode
   when (initPrescA > 0) {
     // Prescaler Counter A
@@ -120,4 +126,32 @@ case class TimerDevice() extends Component {
       }
     }
   }
+
+  /*
+  // TODO: Implement single mode
+  when (initPrescB > 0) {
+    // Prescaler Counter B
+    when (prescCountB === 0) {
+      prescCountB := initPrescB
+
+      // Counter B
+      when (counterB === 0) {
+        counterB := initCountB
+      } elsewhen(prescCountB === 0) {
+        counterB := counterB - 1
+      }
+    } otherwise {
+      prescCountB := prescCountB - 1
+    }
+
+    // Interrupt B
+    when (counterB === 0 && intBEn) {
+      intBPending := True
+    } elsewhen (!io.bus.AS && io.sel && !io.bus.RW) {
+      when(!io.bus.LDS && io.bus.DATAO(intBAckBit)) {
+        intBPending := False
+      }
+    }
+  }
+  */
 }
