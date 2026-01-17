@@ -61,18 +61,11 @@ case class BusManager() extends Component {
   }
 
   // Interrupts
-  /*
-    A real 68000 requires:
-    > For each interrupt request, these signals must remain asserted until
-    > the processor signals interrupt acknowledge (FC2–FC0 and A19–A16 high)
-    > for that request to ensure that the interrupt is recognized.
-    TODO: check that the VBlankSync is long enough
-   */
+  // Only autovectors are used for interrupts
 
   // TODO: implement a proper decoder to use all levels
-  // TODO: TG68 has no VPA signal to enable autovectors, check if they're used by default
   // IPL is active low
-  io.ipl := Cat(B"b11", !io.vgaVSyncInt)
+  io.ipl := Cat(!io.timerAInt, !io.timerBInt, !io.vgaVSyncInt)
 
   // --------------------------------
   // Address decoding

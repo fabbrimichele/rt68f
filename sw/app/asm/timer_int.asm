@@ -1,0 +1,36 @@
+; ===========================
+; Program code
+; ===========================
+    ORG    $400             ; Start of RAM
+
+START:
+    MOVE.B  #0,COUNTER          ; Reset counter
+    MOVE.W  COUNTER,LED         ; Init LED
+    MOVE.L  #TMRA_ISR,VT_INT_4  ; Set interrupt handler
+    MOVE.W  #$FF,TMR_PRSA       ; Set prescaler timer A
+    MOVE.W  #$FFFF,TMR_CNTA     ; Set counter timer A -> counter + prescaler = $FFFFFF -> 16M = 1Hz
+    OR.W    #$0004,TMR_CTRL     ; Enable Timer A interrupt (bit 2 high)
+    AND.W   #$F8FF,SR           ; Enable all interrupts on 68000 (Clear mask bits)
+    TRAP    #14
+
+TMRA_ISR:
+    OR.W    #$0040,TMR_CTRL     ; Ack interrupt (write high to bit 6)
+    ADDQ.B  #1,COUNTER
+    MOVE.W  COUNTER,LED
+.RET:
+    RTE
+
+; Variables
+DELAY       ds.b    1
+COUNTER     ds.w    1
+
+; Constants
+INT_CNT     equ     30
+
+; ===========================
+; Include files
+; ===========================
+    INCLUDE '../../lib/asm/isr_vector.asm'
+    INCLUDE '../../lib/asm/timer.asm'
+    INCLUDE '../../lib/asm/led.asm'
+

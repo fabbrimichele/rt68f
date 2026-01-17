@@ -30,12 +30,32 @@ case class Timer() extends Component {
 
   // -- Memory Mapped Registers --
   val ctrlReg    = Reg(Bits(8 bits))  init 0 // Read/Write
-  val initPrescA = Reg(Bits(8 bits))  init 0 // Read/Write
-  val initValueA = Reg(Bits(16 bits)) init 0 // Write only
-  val counterA   = Reg(Bits(16 bits)) init 0 // Read only
-  val initPrescB = Reg(Bits(8 bits))  init 0 // Read/Write
-  val initValueB = Reg(Bits(16 bits)) init 0 // Write only
-  val counterB   = Reg(Bits(16 bits)) init 0 // Read only
+
+  val initPrescA = Reg(UInt(8 bits))  init 0 // Read/Write
+  val initCountA = Reg(UInt(16 bits)) init 0 // Write only
+  val counterA   = Reg(UInt(16 bits)) init 0 // Read only
+
+  /*
+  val initPrescB = Reg(UInt(8 bits))  init 0 // Read/Write
+  val initCountB = Reg(UInt(16 bits)) init 0 // Write only
+  val counterB   = Reg(UInt(16 bits)) init 0 // Read only
+  */
+
+  // -- Non-mapped Registers and Signals --
+  val prescCountA = Reg(UInt(8 bits)) init 0
+  val intAPending = RegInit(False)
+  val intAEn      = ctrlReg(2)
+  val intAAckBit  = 6
+  io.timerAInt := intAPending
+
+  /*
+  val prescCountB = Reg(UInt(8 bits)) init 0
+  val intBPending = RegInit(False)
+  val intBEn      = ctrlReg(3)
+  val intBAckBit  = 7
+  io.timerBInt := intBPending
+  */
+  io.timerBInt := False
 
   // ---- 68000 Bus Interface ----
   // Default bus signals
@@ -50,10 +70,12 @@ case class Timer() extends Component {
       // Read
       io.bus.DATAI := addrWord.mux(
         0 -> ctrlReg.resize(16),
-        1 -> initPrescA.resize(16),
-        2 -> counterA,
-        3 -> initPrescB.resize(16),
-        4 -> counterB,
+        1 -> initPrescA.asBits.resize(16),
+        2 -> counterA.asBits,
+        /*
+        3 -> initPrescB.asBits.resize(16),
+        4 -> counterB.asBits,
+        */
         default -> B"xFFFF"
       )
     } otherwise {
@@ -62,10 +84,39 @@ case class Timer() extends Component {
       val dataOut = io.bus.DATAO
       switch(addrWord) {
         is(0) { ctrlReg := dataOut(7 downto 0) }
-        is(1) { initPrescA := dataOut(7 downto 0) }
-        is(2) { initValueA := dataOut }
-        is(3) { initPrescB := dataOut(7 downto 0) }
-        is(4) { initValueB := dataOut }
+        is(1) { initPrescA := dataOut(7 downto 0).asUInt }
+        is(2) { initCountA := dataOut.asUInt }
+        /*
+        is(3) { initPrescB := dataOut(7 downto 0).asUInt }
+        is(4) { initCountB := dataOut.asUInt }
+        */
+      }
+    }
+  }
+
+  // ---- Timer Handler ----
+  // TODO: Implement single mode
+  when (initPrescA > 0) {
+    // Prescaler Counter A
+    when (prescCountA === 0) {
+      prescCountA := initPrescA
+    } otherwise {
+      prescCountA := prescCountA - 1
+    }
+
+    // Counter A
+    when (counterA === 0) {
+      counterA := initCountA
+    } elsewhen(prescCountA === 0) {
+      counterA := counterA - 1
+    }
+
+    // Interrupt A
+    when (counterA === 0 && intAEn) {
+      intAPending := True
+    } elsewhen (!io.bus.AS && io.sel && !io.bus.RW) {
+      when(!io.bus.LDS && io.bus.DATAO(intAAckBit)) {
+        intAPending := False
       }
     }
   }
