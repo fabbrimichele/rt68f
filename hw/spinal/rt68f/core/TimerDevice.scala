@@ -20,7 +20,7 @@ import scala.language.postfixOps
  * # Init
  */
 //noinspection TypeAnnotation
-case class Timer() extends Component {
+case class TimerDevice() extends Component {
   val io = new Bundle {
     val bus       = slave(M68kBus())
     val sel       = in Bool()         // chip select from decoder

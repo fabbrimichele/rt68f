@@ -138,7 +138,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // --------------------------------
     // Timer
     // --------------------------------
-    val timer = Timer()
+    val timer = TimerDevice()
     busManager.io.timerBus <> timer.io.bus
     timer.io.sel := busManager.io.timerSel
 
