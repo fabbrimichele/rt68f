@@ -40,7 +40,7 @@
 ### Timer
 * ~~Create a programmable timers that triggers an interrupt~~
 * Implement single mode (repeat mode is only implemented so far)
-* Implement Timer B (for some reason it blocks the bootloader)
+* ~~Implement Timer B (for some reason it blocks the bootloader)~~
 
 ### UART
 * Integrate serial interrupts
