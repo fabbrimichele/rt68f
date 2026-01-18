@@ -13,14 +13,16 @@ case class BusManager() extends Component {
     val ipl    = out Bits(3 bits)
 
     // Slave busses (for the Mux)
-    val romBus   = master(M68kBus())
-    val ramBus   = master(M68kBus())
-    val vgaBus   = master(M68kBus())
-    val uartBus  = master(M68kBus())
-    val ledBus   = master(M68kBus())
-    val keyBus   = master(M68kBus())
-    val sramBus  = master(M68kBus())
-    val flashBus = master(M68kBus())
+    val romBus    = master(M68kBus())
+    val ramBus    = master(M68kBus())
+    val vgaBus    = master(M68kBus())
+    val uartBus   = master(M68kBus())
+    val ledBus    = master(M68kBus())
+    val keyBus    = master(M68kBus())
+    val sramBus   = master(M68kBus())
+    val flashBus  = master(M68kBus())
+    val timerABus = master(M68kBus())
+    val timerBBus = master(M68kBus())
 
     // Slave select signals (to peripherals)
     val romSel            = out Bool()
@@ -33,9 +35,13 @@ case class BusManager() extends Component {
     val uartDevSel        = out Bool()
     val sramSel           = out Bool()
     val flashSel          = out Bool()
+    val timerASel         = out Bool()
+    val timerBSel         = out Bool()
 
     // Interrupts (from peripherals)
     val vgaVSyncInt       = in Bool()
+    val timerAInt         = in Bool()
+    val timerBInt         = in Bool()
   }
 
   // --------------------------------
@@ -43,7 +49,8 @@ case class BusManager() extends Component {
   // --------------------------------
   val peripheralBuses = List(
     io.romBus, io.ramBus, io.vgaBus, io.ledBus,
-    io.keyBus, io.uartBus, io.sramBus, io.flashBus
+    io.keyBus, io.uartBus, io.sramBus, io.flashBus,
+    io.timerABus, io.timerBBus
   )
 
   for (bus <- peripheralBuses) {
@@ -55,19 +62,20 @@ case class BusManager() extends Component {
     bus.DATAO := io.cpuBus.DATAO
   }
 
+  // --------------------------------
   // Interrupts
-  /*
-    A real 68000 requires:
-    > For each interrupt request, these signals must remain asserted until
-    > the processor signals interrupt acknowledge (FC2–FC0 and A19–A16 high)
-    > for that request to ensure that the interrupt is recognized.
-    TODO: check that the VBlankSync is long enough
-   */
-
-  // TODO: implement a proper decoder to use all levels
-  // TODO: TG68 has no VPA signal to enable autovectors, check if they're used by default
+  // --------------------------------
+  // Only autovectors are used for interrupts
   // IPL is active low
-  io.ipl := Cat(B"b11", !io.vgaVSyncInt)
+  when(io.vgaVSyncInt) {
+    io.ipl := B"100" // bitwise not 3
+  } elsewhen(io.timerAInt) {
+    io.ipl := B"101" // bitwise not 2
+  } elsewhen(io.timerBInt) {
+    io.ipl := B"110" // bitwise not 1
+  } otherwise {
+    io.ipl := B"111" // bitwise not 0
+  }
 
   // --------------------------------
   // Address decoding
@@ -82,6 +90,8 @@ case class BusManager() extends Component {
   io.uartDevSel        := False
   io.sramSel           := False
   io.flashSel          := False
+  io.timerASel         := False
+  io.timerBSel         := False
 
   // Decoding Chain, ensures that even if an address matches
   // two ranges, only the highest priority one is selected.
@@ -112,6 +122,10 @@ case class BusManager() extends Component {
     io.vgaControlSel := True
   } elsewhen(addr >= 0x00404000 && addr < 0x00404008) {
     io.flashSel := True
+  } elsewhen(addr >= 0x00405000 && addr < 0x00405008) {
+    io.timerASel := True
+  } elsewhen(addr >= 0x00405010 && addr < 0x00405018) {
+    io.timerBSel := True
   }
 
   // --------------------------------
@@ -145,6 +159,12 @@ case class BusManager() extends Component {
     } elsewhen (io.flashSel) {
       io.cpuBus.DATAI := io.flashBus.DATAI
       io.cpuBus.DTACK := io.flashBus.DTACK
+    } elsewhen (io.timerASel) {
+      io.cpuBus.DATAI := io.timerABus.DATAI
+      io.cpuBus.DTACK := io.timerABus.DTACK
+    } elsewhen (io.timerBSel) {
+      io.cpuBus.DATAI := io.timerBBus.DATAI
+      io.cpuBus.DTACK := io.timerBBus.DTACK
     } otherwise {
       // Optional: Bus Error / Default Response
       // TODO: I should trigger Bus error or at least an interrupt

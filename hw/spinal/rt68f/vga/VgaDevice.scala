@@ -65,7 +65,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
     }
   }
 
-  io.vBlankInt := vSyncPending //&& vBlankIntEn
+  io.vBlankInt := vSyncPending
 
 
   // ------------ 68000 BUS side ------------

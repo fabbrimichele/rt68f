@@ -3,6 +3,7 @@ package rt68f
 import rt68f.core._
 import rt68f.io._
 import rt68f.memory._
+import rt68f.timer.TimerDevice
 import spinal.core._
 import spinal.lib.com.uart.Uart
 import spinal.lib.graphic.vga.Vga
@@ -134,6 +135,19 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
     busManager.io.flashBus <> flash.io.bus
     flash.io.sel := busManager.io.flashSel
+
+    // --------------------------------
+    // Timers
+    // --------------------------------
+    val timerA = TimerDevice()
+    busManager.io.timerABus <> timerA.io.bus
+    timerA.io.sel := busManager.io.timerASel
+    busManager.io.timerAInt := timerA.io.int
+
+    val timerB = TimerDevice()
+    busManager.io.timerBBus <> timerB.io.bus
+    timerB.io.sel := busManager.io.timerBSel
+    busManager.io.timerBInt := timerB.io.int
   }
 
   // Remove io_ prefix

@@ -49,8 +49,12 @@ STOP:
     BRA     STOP
 
 INIT_VECTOR_TABLE:
+    MOVE.L  #SPURIOUS_HANDLER,VT_INT_SP
     MOVE.L  #TRAP_14_HANDLER,VT_TRAP_14
     RTS
+
+SPURIOUS_HANDLER:
+    RTE
 
 ; The trap handler is not strictly necessary but it's
 ; useful to reuse existing programs which relay on it.

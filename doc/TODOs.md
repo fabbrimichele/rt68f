@@ -11,6 +11,9 @@
 ### Firmware
 * Fix all firmware examples to use the new memory map (monitor is already updated)
 
+### PS/2 Keyboard
+* Design a PS/2 keyboard memory mapped device 
+
 ### SRAM
 * ~~Implement a simple SRAM controller to map to/from 8-bit data from/to 16-bit data~~
 * ~~Enhance the controller to have no wait states~~
@@ -35,7 +38,9 @@
 * ~~Move address decoding logic and bus multiplex to a separate module/s~~ (DONE)
 
 ### Timer
-* Create a programmable timers that triggers an interrupt 
+* ~~Create a programmable timers that triggers an interrupt~~
+* Implement single mode (repeat mode is only implemented so far)
+* ~~Implement Timer B (for some reason it blocks the bootloader)~~
 
 ### UART
 * Integrate serial interrupts
