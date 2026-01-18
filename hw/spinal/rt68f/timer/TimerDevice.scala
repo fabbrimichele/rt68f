@@ -9,7 +9,7 @@ import scala.language.postfixOps
 /**
  * # ctrlReg (8 bits - read/write)
  * Bit 0: Timer mode: 0 -> repeat, 1 -> single
- * Bit 2: Timer int : 0 -> off, 1 -> on
+ * Bit 1: Timer int : 0 -> off, 1 -> on
  * Bit 6: Timer ack : Write to acknowledge Timer A interrupt
  *
  * # initPresc (8 bits - read/write)
@@ -39,7 +39,7 @@ case class TimerDevice() extends Component {
   // -- Non-mapped Registers and Signals --
   val prescCount = Reg(UInt(8 bits)) init 0
   val intPending = RegInit(False)
-  val intEn      = ctrlReg(2)
+  val intEn      = ctrlReg(1)
   val intAckBit  = 6
   io.int := intPending
 

@@ -9,7 +9,7 @@ START:
     MOVE.L  #TMRB_ISR,VT_INT_1  ; Set interrupt handler
     MOVE.W  #$FF,TMRB_PRS       ; Set prescaler timer B
     MOVE.W  #$8000,TMRB_CNT     ; Set counter timer B -> counter + prescaler = $8000FF -> 8M = 2Hz
-    OR.W    #$0004,TMRB_CTRL    ; Enable Timer B interrupt (bit 2 high)
+    OR.W    #$0002,TMRB_CTRL    ; Enable Timer B interrupt (bit 2 high)
     AND.W   #$F8FF,SR           ; Enable all interrupts on 68000 (Clear mask bits)
     TRAP    #14
 
