@@ -12,13 +12,16 @@ import scala.language.postfixOps
  * Bit 1: Timer int : 0 -> off, 1 -> on
  * Bit 6: Timer ack : Write to acknowledge Timer A interrupt
  *
+ * NOTE: I tried to move timer ack to bit 7, but it
+ *       breaks in interrupts!
+ *
  * # initPresc (8 bits - read/write)
  * It divides the clock by the set value, 0 stop counter
  *
- * # InitCount (16 bits - write only)
+ * # initCount (16 bits - write only)
  * Initial value for Counter
  *
- * # Counter (16 bits - read only)
+ * # counter (16 bits - read only)
  * Current counter value
  */
 //noinspection TypeAnnotation
