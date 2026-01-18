@@ -62,12 +62,20 @@ case class BusManager() extends Component {
     bus.DATAO := io.cpuBus.DATAO
   }
 
+  // --------------------------------
   // Interrupts
+  // --------------------------------
   // Only autovectors are used for interrupts
-
-  // TODO: implement a proper decoder to use all levels
   // IPL is active low
-  io.ipl := Cat(!io.timerAInt, !io.timerBInt, !io.vgaVSyncInt)
+  when(io.vgaVSyncInt) {
+    io.ipl := B"100" // bitwise not 3
+  } elsewhen(io.timerAInt) {
+    io.ipl := B"101" // bitwise not 2
+  } elsewhen(io.timerBInt) {
+    io.ipl := B"110" // bitwise not 1
+  } otherwise {
+    io.ipl := B"111" // bitwise not 0
+  }
 
   // --------------------------------
   // Address decoding
@@ -117,7 +125,7 @@ case class BusManager() extends Component {
   } elsewhen(addr >= 0x00405000 && addr < 0x00405008) {
     io.timerASel := True
   } elsewhen(addr >= 0x00405010 && addr < 0x00405018) {
-    io.timerASel := True
+    io.timerBSel := True
   }
 
   // --------------------------------

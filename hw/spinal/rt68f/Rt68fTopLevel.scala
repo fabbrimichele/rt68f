@@ -137,7 +137,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     flash.io.sel := busManager.io.flashSel
 
     // --------------------------------
-    // Timer
+    // Timers
     // --------------------------------
     val timerA = TimerDevice()
     busManager.io.timerABus <> timerA.io.bus
@@ -147,12 +147,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val timerB = TimerDevice()
     busManager.io.timerBBus <> timerB.io.bus
     timerB.io.sel := busManager.io.timerBSel
-    // TODO: for some reason the timerBInt blocks the bootloader!
-    //       it's really weird, if I set `timerBInt := False` here it works.
-    //       if I set it False in the BusManager `io.ipl := Cat(!io.timerAInt, !io.timerBInt, !io.vgaVSyncInt)`
-    //       it blocks the boot!
-    //busManager.io.timerBInt := timerB.io.int
-    busManager.io.timerBInt := False
+    busManager.io.timerBInt := timerB.io.int
   }
 
   // Remove io_ prefix

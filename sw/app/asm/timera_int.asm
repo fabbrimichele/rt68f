@@ -6,7 +6,7 @@
 START:
     MOVE.B  #0,COUNTER          ; Reset counter
     MOVE.W  COUNTER,LED         ; Init LED
-    MOVE.L  #TMRA_ISR,VT_INT_4  ; Set interrupt handler
+    MOVE.L  #TMRA_ISR,VT_INT_2  ; Set interrupt handler
     MOVE.W  #$FF,TMRA_PRS       ; Set prescaler timer A
     MOVE.W  #$FFFF,TMRA_CNT     ; Set counter timer A -> counter + prescaler = $FFFFFF -> 16M = 1Hz
     OR.W    #$0004,TMRA_CTRL    ; Enable Timer A interrupt (bit 2 high)
@@ -15,17 +15,13 @@ START:
 
 TMRA_ISR:
     OR.W    #$0040,TMRA_CTRL    ; Ack interrupt (write high to bit 6)
-    ADDQ.B  #1,COUNTER
+    ADDQ.W  #1,COUNTER
     MOVE.W  COUNTER,LED
 .RET:
     RTE
 
 ; Variables
-DELAY       ds.b    1
-COUNTER     ds.w    1
-
-; Constants
-INT_CNT     equ     30
+COUNTER     DS.W    1
 
 ; ===========================
 ; Include files

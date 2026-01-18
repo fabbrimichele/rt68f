@@ -1,7 +1,8 @@
 ; ===========================
 ; Vector Table
 ; ===========================
-
+; Spurious Interrupt
+VT_INT_SP       EQU $60
 ; Interrupts (Autovectors)
 VT_INT_1        EQU $64
 VT_INT_2        EQU $68

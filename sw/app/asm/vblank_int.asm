@@ -7,7 +7,7 @@ START:
     MOVE.B  #INT_CNT,DELAY      ; Reset delay
     MOVE.B  #0,COUNTER          ; Reset counter
     MOVE.W  COUNTER,LED         ; Init LED
-    MOVE.L  #VBL_ISR,VT_INT_1   ; Set interrupt handler
+    MOVE.L  #VBL_ISR,VT_INT_3   ; Set interrupt handler
     OR.W    #$0008,VGA_CTRL     ; Enable VBlank interrupt on VGA (bit 3 high)
     AND.W   #$F8FF,SR           ; Enable all interrupts on 68000 (Clear mask bits)
     TRAP    #14
