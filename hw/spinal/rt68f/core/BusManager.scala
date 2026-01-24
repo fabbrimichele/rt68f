@@ -40,6 +40,7 @@ case class BusManager() extends Component {
 
     // Interrupts (from peripherals)
     val vgaVSyncInt       = in Bool()
+    val uartInt           = in Bool()
     val timerAInt         = in Bool()
     val timerBInt         = in Bool()
   }
@@ -67,7 +68,9 @@ case class BusManager() extends Component {
   // --------------------------------
   // Only autovectors are used for interrupts
   // IPL is active low
-  when(io.vgaVSyncInt) {
+  when(io.uartInt) {
+    io.ipl := B"011" // bitwise not 4
+  } elsewhen(io.vgaVSyncInt) {
     io.ipl := B"100" // bitwise not 3
   } elsewhen(io.timerAInt) {
     io.ipl := B"101" // bitwise not 2
