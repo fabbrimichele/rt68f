@@ -2,7 +2,7 @@ package rt68f.io
 
 import rt68f.core.M68kBus
 import spinal.core.in.Bool
-import spinal.core.{Bundle, Component, False, IntToBuilder, Reg, True, in, when}
+import spinal.core.{Bundle, Component, False, IntToBuilder, Reg, True, in, out, when}
 import spinal.lib.com.uart.Uart
 import spinal.lib.fsm.{EntryPoint, State, StateMachine}
 import spinal.lib.{master, slave}
@@ -11,6 +11,7 @@ case class T16450Device() extends Component {
   val io = new Bundle {
     val bus = slave(M68kBus())
     val sel = in Bool() // chip select from decoder
+    val int = out Bool() // UART interrupt
     val uart = master(Uart())
   }
 
@@ -32,13 +33,7 @@ case class T16450Device() extends Component {
   uart.io.RI_n := False
   uart.io.DCD_n := False
   io.uart.txd := uart.io.SOut
-  /*
-		uart.io.RTS_n	  => open,
-		uart.io.DTR_n	  => open,
-		uart.io.OUT1_n  => open,
-		uart.io.OUT2_n  => open,
-    uart.io.Intr	  => open
-  */
+  io.int := uart.io.Intr
 
   io.bus.DTACK := True  // inactive (assuming active low)
   when(uartSel) {

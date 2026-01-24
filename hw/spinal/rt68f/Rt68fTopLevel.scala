@@ -117,6 +117,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
     busManager.io.uartBus <> uartDev.io.bus
     uartDev.io.sel := busManager.io.uartDevSel
+    busManager.io.uartInt := uartDev.io.int
 
     // --------------------------------
     // SRAM
