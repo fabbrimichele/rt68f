@@ -161,6 +161,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
     busManager.io.ps2bBus <> ps2Ctrl.io.bus
     ps2Ctrl.io.sel := busManager.io.ps2bSel
+    busManager.io.ps2bInt := ps2Ctrl.io.int
     // TODO: add interrupt
   }
 

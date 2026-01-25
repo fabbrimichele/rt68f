@@ -6,7 +6,11 @@ import spinal.lib._
 
 import scala.language.postfixOps
 
-// See: https://github.com/wel97459/MySpinalHardware/blob/master/PS2.scala
+/**
+ * # ctrlReg (8 bits - read/write)
+ * Bit 1: PS/2 int : 0 -> off, 1 -> on
+ * Bit 6: PS/2 ack : Write to acknowledge Timer A interrupt
+*/
 case class Ps2Device(Timeout: BigInt = 100) extends Component {
   val io = new Bundle {
     val bus = slave(M68kBus())
@@ -21,8 +25,14 @@ case class Ps2Device(Timeout: BigInt = 100) extends Component {
   ps2rx.io.ps2d := io.ps2.dat
 
   // -- Memory Mapped Registers --
-  val data = ps2rx.io.dout  // It's already a register in ps2rx
-  val ctrlReg = ps2rx.io.rx_done_tick ## B"0000001"
+  val data       = ps2rx.io.dout  // It's already a register in ps2rx
+  val ctrlReg    = Reg(Bits(8 bits))  init 0 // Read/Write
+
+  // -- Non-mapped Registers and Signals --
+  val intEn      = ctrlReg(1)
+  val intPending = Reg(Bool()) init False
+  val intAckBit  = 6
+  io.int := intPending
 
   // -------------------
   // 68000 bus
@@ -44,8 +54,17 @@ case class Ps2Device(Timeout: BigInt = 100) extends Component {
       // Write
       // TODO: manage UDS/LDS
       switch(addr) {
-        //is(0) { ctrlReg := io.bus.DATAO(7 downto 0) }
+        is(0) { ctrlReg := io.bus.DATAO(7 downto 0) }
       }
+    }
+  }
+
+  // Interrupt
+  when (ps2rx.io.rx_done_tick && intEn) {
+    intPending := True
+  } elsewhen (!io.bus.AS && io.sel && !io.bus.RW) {
+    when(!io.bus.LDS && io.bus.DATAO(intAckBit)) {
+      intPending := False
     }
   }
 }
