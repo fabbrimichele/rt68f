@@ -3,6 +3,7 @@ package rt68f
 import rt68f.core._
 import rt68f.io._
 import rt68f.memory._
+import rt68f.ps2.{Ps2, Ps2Device}
 import rt68f.timer.TimerDevice
 import spinal.core._
 import spinal.lib.com.uart.Uart
@@ -40,8 +41,9 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val key = in Bits(4 bits)
     val uart = master(Uart()) // Expose UART pins (txd, rxd), must be defined in the ucf
     val vga = master(Vga(VgaDevice.rgbConfig, withColorEn = false))
-    val sram = master(SRamBus())
+    val sram = master(SRam())
     val flash = master(Spi())
+    val ps2b = master(Ps2())
   }
 
   val clkCtrl = ClockCtrl()
@@ -149,6 +151,17 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     busManager.io.timerBBus <> timerB.io.bus
     timerB.io.sel := busManager.io.timerBSel
     busManager.io.timerBInt := timerB.io.int
+
+
+    // --------------------------------
+    // PS2 devices keyboard and mouse
+    // --------------------------------
+    val ps2Ctrl = Ps2Device()
+    ps2Ctrl.io.ps2 <> io.ps2b
+
+    busManager.io.ps2bBus <> ps2Ctrl.io.bus
+    ps2Ctrl.io.sel := busManager.io.ps2bSel
+    // TODO: add interrupt
   }
 
   // Remove io_ prefix
