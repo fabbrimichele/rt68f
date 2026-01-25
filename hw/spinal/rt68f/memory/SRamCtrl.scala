@@ -9,7 +9,7 @@ import spinal.lib.{IMasterSlave, master, slave}
 
 import scala.language.postfixOps
 
-case class SRamBus(addrWidth: Int = 19, dataWidth: Int = 8) extends Bundle with IMasterSlave {
+case class SRam(addrWidth: Int = 19, dataWidth: Int = 8) extends Bundle with IMasterSlave {
   val addr  = Bits(addrWidth bits)
   val data  = TriState(Bits(dataWidth bits))
   val ce    = Bool()
@@ -32,7 +32,7 @@ case class SRamCtrl(clk64: ClockDomain) extends Component {
   val io = new Bundle {
     val bus = slave(M68kBus())
     val sel = in Bool()
-    val sram = master(SRamBus())
+    val sram = master(SRam())
   }
 
   // Since 64MHz and 16MHz clock are in phase
