@@ -43,6 +43,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val vga = master(Vga(VgaDevice.rgbConfig, withColorEn = false))
     val sram = master(SRam())
     val flash = master(Spi())
+    val ps2a = master(Ps2())
     val ps2b = master(Ps2())
   }
 
@@ -156,13 +157,17 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // --------------------------------
     // PS2 devices keyboard and mouse
     // --------------------------------
-    val ps2Ctrl = Ps2Device()
-    ps2Ctrl.io.ps2 <> io.ps2b
+    val ps2aCtrl = Ps2Device()
+    ps2aCtrl.io.ps2 <> io.ps2a
+    busManager.io.ps2aBus <> ps2aCtrl.io.bus
+    ps2aCtrl.io.sel := busManager.io.ps2aSel
+    busManager.io.ps2aInt := ps2aCtrl.io.int
 
-    busManager.io.ps2bBus <> ps2Ctrl.io.bus
-    ps2Ctrl.io.sel := busManager.io.ps2bSel
-    busManager.io.ps2bInt := ps2Ctrl.io.int
-    // TODO: add interrupt
+    val ps2bCtrl = Ps2Device()
+    ps2bCtrl.io.ps2 <> io.ps2b
+    busManager.io.ps2bBus <> ps2bCtrl.io.bus
+    ps2bCtrl.io.sel := busManager.io.ps2bSel
+    busManager.io.ps2bInt := ps2bCtrl.io.int
   }
 
   // Remove io_ prefix
