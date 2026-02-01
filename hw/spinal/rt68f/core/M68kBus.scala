@@ -10,8 +10,8 @@ case class M68kBus(addrWidth: Int = 32, dataWidth: Int = 16) extends Bundle with
   val UDS = Bool()
   val LDS = Bool()
   val RW = Bool() // 1 = read, 0 = write
-  val ADDR = UInt (addrWidth bits)
-  val DATAI = Bits (dataWidth bits) // from CPU
+  val ADDR = UInt(addrWidth bits)
+  val DATAI = Bits(dataWidth bits) // from CPU
   val DATAO = Bits(dataWidth bits) // to CPU
   val DTACK = Bool()
 

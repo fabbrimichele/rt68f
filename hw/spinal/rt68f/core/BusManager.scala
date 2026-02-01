@@ -23,6 +23,8 @@ case class BusManager() extends Component {
     val flashBus  = master(M68kBus())
     val timerABus = master(M68kBus())
     val timerBBus = master(M68kBus())
+    val ps2aBus   = master(M68kBus())
+    val ps2bBus   = master(M68kBus())
 
     // Slave select signals (to peripherals)
     val romSel            = out Bool()
@@ -37,12 +39,16 @@ case class BusManager() extends Component {
     val flashSel          = out Bool()
     val timerASel         = out Bool()
     val timerBSel         = out Bool()
+    val ps2aSel           = out Bool()
+    val ps2bSel           = out Bool()
 
     // Interrupts (from peripherals)
     val vgaVSyncInt       = in Bool()
     val uartInt           = in Bool()
     val timerAInt         = in Bool()
     val timerBInt         = in Bool()
+    val ps2aInt           = in Bool()
+    val ps2bInt           = in Bool()
   }
 
   // --------------------------------
@@ -51,7 +57,7 @@ case class BusManager() extends Component {
   val peripheralBuses = List(
     io.romBus, io.ramBus, io.vgaBus, io.ledBus,
     io.keyBus, io.uartBus, io.sramBus, io.flashBus,
-    io.timerABus, io.timerBBus
+    io.timerABus, io.timerBBus, io.ps2aBus, io.ps2bBus
   )
 
   for (bus <- peripheralBuses) {
@@ -68,7 +74,12 @@ case class BusManager() extends Component {
   // --------------------------------
   // Only autovectors are used for interrupts
   // IPL is active low
-  when(io.uartInt) {
+  // TODO: revisit interrupt priorities
+  when(io.ps2bInt) {
+    io.ipl := B"001" // bitwise not 6
+  } elsewhen(io.ps2aInt) {
+    io.ipl := B"010" // bitwise not 5
+  } elsewhen(io.uartInt) {
     io.ipl := B"011" // bitwise not 4
   } elsewhen(io.vgaVSyncInt) {
     io.ipl := B"100" // bitwise not 3
@@ -95,6 +106,8 @@ case class BusManager() extends Component {
   io.flashSel          := False
   io.timerASel         := False
   io.timerBSel         := False
+  io.ps2aSel           := False
+  io.ps2bSel           := False
 
   // Decoding Chain, ensures that even if an address matches
   // two ranges, only the highest priority one is selected.
@@ -129,6 +142,10 @@ case class BusManager() extends Component {
     io.timerASel := True
   } elsewhen(addr >= 0x00405010 && addr < 0x00405018) {
     io.timerBSel := True
+  } elsewhen(addr >= 0x00406000 && addr < 0x00406004) {
+    io.ps2aSel := True
+  } elsewhen(addr >= 0x00406004 && addr < 0x00406008) {
+    io.ps2bSel := True
   }
 
   // --------------------------------
@@ -168,6 +185,12 @@ case class BusManager() extends Component {
     } elsewhen (io.timerBSel) {
       io.cpuBus.DATAI := io.timerBBus.DATAI
       io.cpuBus.DTACK := io.timerBBus.DTACK
+    } elsewhen (io.ps2aSel) {
+      io.cpuBus.DATAI := io.ps2aBus.DATAI
+      io.cpuBus.DTACK := io.ps2aBus.DTACK
+    } elsewhen (io.ps2bSel) {
+      io.cpuBus.DATAI := io.ps2bBus.DATAI
+      io.cpuBus.DTACK := io.ps2bBus.DTACK
     } otherwise {
       // Optional: Bus Error / Default Response
       // TODO: I should trigger Bus error or at least an interrupt
