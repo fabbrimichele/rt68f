@@ -1,6 +1,6 @@
 package rt68f.ps2
 
-import spinal.core.{BlackBox, Bundle, IntToBuilder, HIGH, in, out}
+import spinal.core._
 
 import scala.language.postfixOps
 
