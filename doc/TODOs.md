@@ -14,7 +14,7 @@
 ### PS/2 Keyboard
 * ~~Design a PS/2 keyboard memory mapped device~~ 
 * Finish PS/2 Keyboard driver in `ps2keyboard_print.asm` including ps/2 to ASCII handling
-* Print mouse status and coordinates in `ps2mouse_print.asm`
+* ~~Print mouse status and coordinates in `ps2mouse_print.asm`~~
 
 ### SRAM
 * ~~Implement a simple SRAM controller to map to/from 8-bit data from/to 16-bit data~~

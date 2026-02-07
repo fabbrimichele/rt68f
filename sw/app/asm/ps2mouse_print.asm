@@ -21,8 +21,24 @@ START:
     BRA     .LOOP
 
 PRINT_MS:
-    MOVE.W  MS_ST,LED
-    ;TODO: PRINT MOUSE STATUS AND COORDINATES
+    ; Print mouse status
+    LEA     MSG_ST,A0
+    BSR     PUTS
+    MOVE.W  MS_ST,D0
+    BSR     BINTOHEX_W
+    ; Print mouse X
+    LEA     MSG_X,A0
+    BSR     PUTS
+    MOVE.W  MS_X,D0
+    BSR     BINTOHEX_W
+    ; Print mouse Y
+    LEA     MSG_Y,A0
+    BSR     PUTS
+    MOVE.W  MS_Y,D0
+    BSR     BINTOHEX_W
+    ; Print new line
+    MOVE.B  #CR,D0
+    BSR     PUTCHAR
     RTS
 
 MS_READ:
@@ -65,10 +81,22 @@ PS2_WRITE:
     MOVEM.L (SP)+,D1            ; Restore registers
     RTS
 
+; ===========================
 ; Variables
+; ===========================
 MS_ST   DS.W   1
 MS_X    DS.W   1
 MS_Y    DS.W   1
+
+; ===========================
+; Constants
+; ===========================
+MSG_ST  DC.B 'Mouse status: ',NUL
+MSG_X   DC.B ' X: ',NUL
+MSG_Y   DC.B ' Y: ',NUL
+
+NUL     EQU 0
+CR      EQU 13
 
 ; ===========================
 ; Include files
@@ -76,4 +104,5 @@ MS_Y    DS.W   1
     INCLUDE '../../lib/asm/ps2.asm'
     INCLUDE '../../lib/asm/led.asm'
     INCLUDE '../../lib/asm/console_io_16450.asm'
-    INCLUDE '../../lib/asm/ps2_ascii.asm'
+    INCLUDE '../../lib/asm/conversions.asm'
+
