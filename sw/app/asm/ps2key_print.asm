@@ -23,7 +23,8 @@
 
 START:
     MOVE.W  #0,LED              ; Init LED
-    MOVE.W  #$FF,PS2A_DATA      ; Reset PS/2
+    MOVE.W  #$FF,D0             ; FF - reset PS/2
+    BSR     PS2_WRITE
 .LOOP:
     BSR     PS2_GET             ; Read PS/2 control register high nibble
     MOVE.W  D0,LED              ; Display on LED
@@ -45,9 +46,20 @@ PS2_GET:
 PS2_READ:
 .WAIT:
     MOVE.W  PS2A_CTRL,D0        ; BTST can't be used directly because of unimplemented LDS/UDS
-    BTST    #4,D0               ; Wait until char
-    BEQ     .WAIT               ; RX done (Bit 4) was 0
-    MOVE.W  PS2A_DATA,D0        ; Read key code
+    BTST    #4,D0               ; Check RX buffer full
+    BEQ     .WAIT               ; RX buffer full = 0 -> buffer empty, wait
+    MOVE.W  PS2A_DATA,D0        ; Read data to D0
+    RTS
+
+; Write D0 to PS/2 data (blocking)
+PS2_WRITE:
+    MOVEM.L D1,-(SP)            ; Save registers
+.WAIT:
+    MOVE.W  PS2A_CTRL,D1        ; BTST can't be used directly because of unimplemented LDS/UDS
+    BTST    #5,D1               ; Check TX buffer full
+    BNE     .WAIT               ; TX buffer full = 1 -> full, wait
+    MOVE.W  D0,PS2A_DATA        ; Write D0 to data
+    MOVEM.L (SP)+,D1            ; Restore registers
     RTS
 
 ; Variables
