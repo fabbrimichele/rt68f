@@ -1,7 +1,3 @@
-; TODO
-; Implement a program to switch Keyboard's LED on and off
-; Maybe just a simple counter
-;
 ; The Command Sequence
 ; 0. Send reset 0xFF (only new keyboard)
 ; 1. Byte 1: 0xED (Set/Reset Status Indicators)
