@@ -12,8 +12,8 @@ import scala.language.postfixOps
  * Bit 1: PS/2 int  : 0 -> off, 1 -> on
  * Bit 2: unused
  * Bit 3: unused
- * Bit 4: RX done   : read only
- * Bit 5: TX done   : read only
+ * Bit 4: RX Buffer full : read only (cleared when data is read from 68000 bus)
+ * Bit 5: TX Buffer full : read only (cleared when data is written to PS/2 bus)
  * Bit 6: PS/2 ack  : Write to acknowledge Timer A interrupt
  * Bit 7: unused
 */
@@ -30,19 +30,22 @@ case class Ps2Device(Timeout: BigInt = 100) extends Component {
   ps2rx.io.ps2c := io.ps2.clk
   ps2rx.io.ps2d := io.ps2.dat
 
-  // -- Memory Mapped Registers --
+  // Control registers
+  val wrPulse    = Reg(Bool()) init False
+  val rxBufFull  = Reg(Bool()) init False
+  val txBufFull  = wrPulse
+  val intPending = Reg(Bool()) init False
 
+  // -- Memory Mapped Registers --
   val ctrlReg = Reg(Bits(8 bits)) init 0 // Write
   val datain  = Reg(Bits(8 bits)) init 0 // Write
-  val dataout = ps2rx.io.dout  // It's already a register in ps2rxtx
+  val dataout = ps2rx.io.dout // It's already a register in ps2rxtx
   ps2rx.io.din := datain
-  ctrlReg(4) := ps2rx.io.rx_done_tick
-  ctrlReg(5) := ps2rx.io.tx_done_tick
+  ctrlReg(4) := rxBufFull
+  ctrlReg(5) := txBufFull     // wrPulse behaves like a txBufFull
 
   // -- Non-mapped Registers and Signals --
   val intEn      = ctrlReg(1)
-  val intPending = Reg(Bool()) init False
-  val wrPulse    = Reg(Bool()) init False
   val intAckBit  = 6
 
   io.int          := intPending
@@ -87,6 +90,14 @@ case class Ps2Device(Timeout: BigInt = 100) extends Component {
   } elsewhen(!io.bus.AS && io.sel && !io.bus.RW && addr === 1) {
     // Write data, enable write pulse
     wrPulse := True
+  }
+
+  when(ps2rx.io.rx_done_tick) {
+    // Read completed -> receive buffer full
+    rxBufFull := True
+  } elsewhen(!io.bus.AS && io.sel && io.bus.RW && addr === 1) {
+    // Buffer read, clear buffer full signal
+    rxBufFull := False
   }
 
   // Interrupt
