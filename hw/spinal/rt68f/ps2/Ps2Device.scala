@@ -8,11 +8,14 @@ import scala.language.postfixOps
 
 /**
  * # ctrlReg (8 bits - read/write)
- * Bit 0: write PS2 : 1 -> write, 0 -> don't write
+ * Bit 0: unused
  * Bit 1: PS/2 int  : 0 -> off, 1 -> on
+ * Bit 2: unused
+ * Bit 3: unused
  * Bit 4: RX done   : read only
  * Bit 5: TX done   : read only
  * Bit 6: PS/2 ack  : Write to acknowledge Timer A interrupt
+ * Bit 7: unused
 */
 case class Ps2Device(Timeout: BigInt = 100) extends Component {
   val io = new Bundle {

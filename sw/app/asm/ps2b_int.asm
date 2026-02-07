@@ -5,6 +5,8 @@
 
 START:
     MOVE.W  #0,LED              ; Init LED
+    ;MOVE.W  #$FF,PS2B_DATA      ; Reset PS/2, required by keyboard
+    MOVE.W  #$F4,PS2B_DATA      ; Enable mouse stream (COMMENT FOR KEYBOARD)
     MOVE.L  #PS2B_ISR,VT_INT_6  ; Set interrupt handler
     OR.W    #$0002,PS2B_CTRL    ; Enable Timer A interrupt (bit 1 high)
     AND.W   #$F8FF,SR           ; Enable all interrupts on 68000 (Clear mask bits)
