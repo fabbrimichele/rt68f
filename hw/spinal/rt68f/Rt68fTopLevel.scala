@@ -4,6 +4,7 @@ import rt68f.core._
 import rt68f.io._
 import rt68f.memory._
 import rt68f.ps2.{Ps2, Ps2Device}
+import rt68f.sound.{JtOpl2BB, Opl2Device}
 import rt68f.timer.TimerDevice
 import spinal.core._
 import spinal.lib.com.uart.Uart
@@ -153,7 +154,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     timerB.io.sel := busManager.io.timerBSel
     busManager.io.timerBInt := timerB.io.int
 
-
     // --------------------------------
     // PS2 devices keyboard and mouse
     // --------------------------------
@@ -168,6 +168,14 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     busManager.io.ps2bBus <> ps2bCtrl.io.bus
     ps2bCtrl.io.sel := busManager.io.ps2bSel
     busManager.io.ps2bInt := ps2bCtrl.io.int
+
+    // --------------------------------
+    // Opl2 Device (Sound)
+    // --------------------------------
+    val opl2Device = Opl2Device()
+    busManager.io.opl2Bus <> opl2Device.io.bus
+    opl2Device.io.sel := busManager.io.opl2Sel
+    busManager.io.opl2Int := opl2Device.io.int
   }
 
   // Remove io_ prefix
