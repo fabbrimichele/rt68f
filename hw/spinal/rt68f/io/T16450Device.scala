@@ -1,11 +1,11 @@
 package rt68f.io
 
+import spinal.core._
+import spinal.lib._
 import rt68f.core.M68kBus
-import spinal.core.in.Bool
-import spinal.core.{Bundle, Component, False, IntToBuilder, Reg, True, in, out, when}
 import spinal.lib.com.uart.Uart
-import spinal.lib.fsm.{EntryPoint, State, StateMachine}
-import spinal.lib.{master, slave}
+
+import scala.language.postfixOps
 
 case class T16450Device() extends Component {
   val io = new Bundle {

@@ -4,7 +4,7 @@ import rt68f.core._
 import rt68f.io._
 import rt68f.memory._
 import rt68f.ps2.{Ps2, Ps2Device}
-import rt68f.sound.{JtOpl2BB, Opl2Device}
+import rt68f.sound.{Audio, JtOpl2BB, Opl2Device}
 import rt68f.timer.TimerDevice
 import spinal.core._
 import spinal.lib.com.uart.Uart
@@ -46,6 +46,8 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val flash = master(Spi())
     val ps2a = master(Ps2())
     val ps2b = master(Ps2())
+    val audio2 = Audio()
+    //val audio1 = Audio()
   }
 
   val clkCtrl = ClockCtrl()
@@ -176,6 +178,12 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     busManager.io.opl2Bus <> opl2Device.io.bus
     opl2Device.io.sel := busManager.io.opl2Sel
     busManager.io.opl2Int := opl2Device.io.int
+    io.audio2.right := opl2Device.io.pwmAudio
+    io.audio2.left := opl2Device.io.pwmAudio
+    /*
+    io.audio1.right := opl2Device.io.pwmAudio
+    io.audio1.left := opl2Device.io.pwmAudio
+     */
   }
 
   // Remove io_ prefix

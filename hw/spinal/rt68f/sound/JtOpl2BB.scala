@@ -17,16 +17,15 @@ class JtOpl2BB extends BlackBox {
     val irq_n = out Bool()
 
     // Sound output
-    val snd = out Bits(16 bits)
+    val snd = out SInt(16 bits)
     val sample = out Bool()
   }
 
   mapClockDomain(clock = io.clk, reset = io.rst, resetActiveLevel = HIGH)
 
+  // SpinalHDL can't generate both `mergeRTL.v` and `mergeRTL.vhd`
+  // at the same time, so vhdl will still be merged but each verilog
+  // file has to be specified in the file: `hw/xilinx/Rt68f.prj`.
   setDefinitionName("jtopl2") // This tells SpinalHDL which Verilog module to instantiate
-  // TODO: Apparently SpinalHDL can't generate both `mergeRTL.v` and `mergeRTL.vhd`
-  //       at the same time, so for the time being vhdl will still be merged but
-  //       each verilog file has to be specified in the file: `hw/xilinx/Rt68f.prj`
-  // addRTLPath("hw/verilog/jtopl/jtopl2.v") // Merge the file to the generated 'mergeRTL.v' file
   noIoPrefix() // Remove io_ prefix
 }

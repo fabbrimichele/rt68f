@@ -41,8 +41,8 @@ NET key(1)         LOC="P100" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;         
 NET vga_hSync     LOC="P99"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C0
 NET vga_vSync     LOC="P97"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C1
 NET vga_color_b(0)   LOC="P93"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C2
-#NET AUDIO1_LEFT   LOC="P88"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C3
-#NET AUDIO1_RIGHT  LOC="P85"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C4
+#NET audio1_left   LOC="P88"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C3
+#NET audio1_right  LOC="P85"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C4
 NET vga_color_b(1)   LOC="P83"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C5
 NET vga_color_b(2)   LOC="P81"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C6
 NET vga_color_b(3)   LOC="P79"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # C7
@@ -64,8 +64,8 @@ NET vga_color_r(0)    LOC="P47"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;      
 #NET JOYSTICK2_9   LOC="P78"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D7
 NET ps2b_clk      LOC="P74"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D8
 NET ps2b_dat      LOC="P66"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D9
-#NET AUDIO2_RIGHT  LOC="P61"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D10
-#NET AUDIO2_LEFT   LOC="P58"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D11
+NET audio2_right  LOC="P61"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D10
+NET audio2_left   LOC="P58"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D11
 NET led(0)         LOC="P56"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D12
 NET led(1)         LOC="P51"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D13
 NET led(2)         LOC="P48"  | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # D14
