@@ -31,21 +31,11 @@ case class Opl2Device() extends Component {
 
   val opl2 = new JtOpl2BB()
   val deltaSigmaPWM = DeltaSigmaPWM()
+  val clockEnable = ClockEnable().io.enable
 
   deltaSigmaPWM.io.sound := opl2.io.snd
   deltaSigmaPWM.io.sample := opl2.io.sample
   io.pwmAudio := deltaSigmaPWM.io.pwm
-
-  val clockEnable = new Area {
-    // 3.58 / 16 = 0.22375
-    // 0.22375 * 256 = ~57.28 -> Use 57
-    private val acc = Reg(UInt(8 bits)) init 0
-    private val newAcc = acc + 57
-    acc := newAcc
-
-    // The 'enable' is true ONLY on the cycle where the addition overflows
-    val enable = newAcc < acc
-  }
 
   // -------------------
   // 68000 bus
@@ -56,11 +46,11 @@ case class Opl2Device() extends Component {
 
   val devSel = !io.bus.AS && io.sel
 
-  opl2.io.cen := clockEnable.enable
+  opl2.io.cen := clockEnable
   opl2.io.addr := latchedAddr
   opl2.io.din := latchedData
 
-  val doOplWrite = pendingWrite && clockEnable.enable
+  val doOplWrite = pendingWrite && clockEnable
   opl2.io.cs_n := !doOplWrite
   opl2.io.wr_n := !doOplWrite
 
