@@ -23,7 +23,7 @@ case class Ym2149Device() extends Component {
   // -- PSG --
   private val psg = new Ym2149BB()
   psg.io.en_clk_psg_i := True // TODO: set to `psgEnable.tick`, it'll require latching the bus
-  psg.io.sel_n_i := False // Divide by 2 the `io._clk_psg_i` clock (in this case 16 MHz/2 = 8 MHz)
+  psg.io.sel_n_i := True // Divide by 2 the `io._clk_psg_i` clock (in this case 16 MHz/2 = 8 MHz)
   psg.io.data_i := io.bus.DATAO(7 downto 0)
   io.bus.DATAI := psg.io.data_r_o.resized
 
@@ -44,7 +44,11 @@ case class Ym2149Device() extends Component {
   private val psgSel = !io.bus.AS && io.sel
   psg.io.bdir_i := psgSel && !io.bus.RW
   psg.io.bc_i := psgSel && !io.bus.ADDR(1)
+
   io.bus.DTACK := True  // inactive (assuming active low)
+  when(psgSel) {
+    io.bus.DTACK := False // acknowledge access (active low)
+  }
 
   // -- PWM --
   private val pwm = DeltaSigmaPWM(sampleSizeInBits = 14)
