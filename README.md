@@ -12,8 +12,10 @@ A project in SpinalHDL for the Papilio Duo dev board (Xilinx Spartan 6)
 * https://github.com/vfinotti/ahb3lite_wb_bridge/blob/master/wb_to_ahb3lite.v
 * https://github.com/TobiFlex/TG68K.C
 
-## ym3812
+## YM3812
 * https://www.thingsmadesimple.com/2022/11/28/ym3812-part-1-register-basics/
+* [YM3812 Datasheet](https://www.ardent-tool.com/datasheets/Yamaha_YM3812.pdf)
+* [YM3812 Application Manual](https://c64.xentax.com/media/Yamaha_YM3812_Application_Manual.pdf)
 
 ### ym3812 core
 * https://github.com/jotego/jtopl
