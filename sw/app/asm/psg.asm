@@ -16,7 +16,7 @@ START:
     PSG_WR  0,$1C   ; Channel A Low
     PSG_WR  1,$01   ; Channel A High
     PSG_WR  8,$0F   ; Volume A max
-    PSG_WR  7,$3E   ; Mixer Control
+    PSG_WR  7,$3E   ; Enable Channel A
     BSR     DELAY
     PSG_WR  7,$00   ; Mute Channels
 
