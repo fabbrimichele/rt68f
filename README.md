@@ -14,6 +14,7 @@ A project in SpinalHDL for the Papilio Duo dev board (Xilinx Spartan 6)
 
 ## ym2149
 * https://github.com/dnotq/ym2149_audio/tree/master
+* [YM2149 Tone Simulator](https://ym2149-rs.org/tutorials.html)
 
 ## SPI
 * https://github.com/nandland/spi-master

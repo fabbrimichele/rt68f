@@ -3,23 +3,21 @@
 ; ===========================
     ORG    $400             ; Start of RAM
 
+; To simulate tones, see: https://ym2149-rs.org/tutorials.html
+
 START:
-    MOVE.W  #$00,PSG_ADDR   ; Channel A Fine Tune
-    MOVE.W  #$FE,PSG_DATA
+    MOVE.W  #$00,PSG_ADDR   ; Channel A Low
+    MOVE.W  #$1C,PSG_DATA
 
-    MOVE.W  #$00,PSG_ADDR   ; Channel A Fine Tune
-    MOVE.W  #$FE,PSG_DATA
+    MOVE.W  #$01,PSG_ADDR   ; Channel A High
+    MOVE.W  #$01,PSG_DATA
 
-    MOVE.W  #$02,PSG_ADDR   ; Channel A Coarse Tune
-    MOVE.W  #$00,PSG_DATA
+    MOVE.W  #$08,PSG_ADDR   ; Volume A max
+    MOVE.W  #$07,PSG_DATA   ;
 
+    ; TODO: setting the tone to max $0F mute the channel
     MOVE.W  #$07,PSG_ADDR   ; Mixer Control
-    MOVE.W  #$7E,PSG_DATA   ; Bit 0 (Tone A) must be zero (active low)
-
-    ; TODO: check how this register is suppose to work
-    ; This command doesn't work, it mute the volume
-    ;MOVE.W  #08,PSG_ADDR   ; Channel A Amplitude
-    ;MOVE.W  #0F,PSG_DATA   ; Set to maximum volume
+    MOVE.W  #$3E,PSG_DATA   ; Bit 0 (Tone A) must be zero (active low)
 
     BSR     DELAY
     MOVE.W  #$07,PSG_ADDR   ; Mixer Control
