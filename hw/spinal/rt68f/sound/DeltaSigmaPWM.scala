@@ -24,12 +24,12 @@ case class DeltaSigmaPWM(sampleSizeInBits: Int = 16) extends Component {
       val sndUnsigned = io.sound.asUInt ^ offset
       ```
    */
-  val sndUnsigned = io.sound ^ U(0x2000)
 
   // ---------------------------
   // Update accumulator ONLY when a new sample is available
   // ---------------------------
   when(io.sample) {
+    val sndUnsigned = io.sound ^ U(0x2000)
     pwmAcc := pwmAcc(sampleSizeInBits - 1 downto 0).resize(sampleSizeInBits + 1) + sndUnsigned
   }
 
