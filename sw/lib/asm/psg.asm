@@ -7,7 +7,6 @@
 ; (*) Data are read from PSG_ADDR!
 ;     The access mimics the Atari ST
 
-
 PSG      EQU   $00407000 ; PSG Base Address
 PSG_ADDR EQU   PSG       ; Address Register
 PSG_DATA EQU   PSG+2     ; Data Register

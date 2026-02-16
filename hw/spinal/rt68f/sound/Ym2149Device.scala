@@ -47,7 +47,7 @@ case class Ym2149Device() extends Component {
 
   io.bus.DTACK := True  // inactive (assuming active low)
   when(psgSel && enable4Mhz.tick) {
-    io.bus.DTACK := False // acknowledge access (active low)
+    io.bus.DTACK := False // acknowledge access when PSG accessed the data
   }
 
   // -- PWM --
