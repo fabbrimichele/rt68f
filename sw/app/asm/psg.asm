@@ -1,26 +1,24 @@
 ; ===========================
+; Include files (Macro at top)
+; ===========================
+    INCLUDE '../../lib/asm/psg.asm'
+    INCLUDE '../../lib/asm/led.asm'
+
+; ===========================
 ; Program code
 ; ===========================
     ORG    $400             ; Start of RAM
 
 ; YM2149 Tutorial https://ym2149-rs.org/tutorials.html
+; TODO: there is a huge problem, with VGA enabled it stops working...
 
 START:
-    MOVE.W  #$00,PSG_ADDR   ; Channel A Low
-    MOVE.W  #$1C,PSG_DATA
-
-    MOVE.W  #$01,PSG_ADDR   ; Channel A High
-    MOVE.W  #$01,PSG_DATA
-
-    MOVE.W  #$08,PSG_ADDR   ; Volume A max
-    MOVE.W  #$0F,PSG_DATA   ;
-
-    MOVE.W  #$07,PSG_ADDR   ; Mixer Control
-    MOVE.W  #$3E,PSG_DATA   ; Bit 0 (Tone A) must be zero (active low)
-
+    PSG_WR  0,$1C   ; Channel A Low
+    PSG_WR  1,$01   ; Channel A High
+    PSG_WR  8,$0F   ; Volume A max
+    PSG_WR  7,$3E   ; Mixer Control
     BSR     DELAY
-    MOVE.W  #$07,PSG_ADDR   ; Mixer Control
-    MOVE.W  #$00,PSG_DATA   ; Mute all channels
+    PSG_WR  7,$00   ; Mute Channels
 
     TRAP    #14
 
@@ -35,9 +33,3 @@ DLY_LOOP:
 ; Constants
 ; ===========================
 DLY_VAL     EQU     2000000
-
-; ===========================
-; Include files
-; ===========================
-    INCLUDE '../../lib/asm/psg.asm'
-    INCLUDE '../../lib/asm/led.asm'
