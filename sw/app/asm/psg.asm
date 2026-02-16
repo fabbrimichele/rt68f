@@ -3,7 +3,7 @@
 ; ===========================
     ORG    $400             ; Start of RAM
 
-; To simulate tones, see: https://ym2149-rs.org/tutorials.html
+; YM2149 Tutorial https://ym2149-rs.org/tutorials.html
 
 START:
     MOVE.W  #$00,PSG_ADDR   ; Channel A Low
