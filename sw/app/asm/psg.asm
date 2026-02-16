@@ -13,9 +13,8 @@ START:
     MOVE.W  #$01,PSG_DATA
 
     MOVE.W  #$08,PSG_ADDR   ; Volume A max
-    MOVE.W  #$07,PSG_DATA   ;
+    MOVE.W  #$0F,PSG_DATA   ;
 
-    ; TODO: setting the tone to max $0F mute the channel
     MOVE.W  #$07,PSG_ADDR   ; Mixer Control
     MOVE.W  #$3E,PSG_DATA   ; Bit 0 (Tone A) must be zero (active low)
 
