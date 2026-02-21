@@ -32,6 +32,7 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
     val vga             = master(Vga(VgaDevice.rgbConfig, withColorEn = false))
   }
 
+/*
   io.bus.DTACK := True
   io.bus.DATAI := 0
   io.vBlankInt := False
@@ -40,11 +41,11 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   io.vga.color.r := 0
   io.vga.color.g := 0
   io.vga.color.b := 0
+*/
 
   /*
     TODO: try to use 8 bit mem blocks
   */
-  /*
   // Framebuffer
   val fbWidth = 64000 / 2  // 32KB = 640x400, 1 bit color
   val framebuffer = Mem(Bits(16 bits), fbWidth)
@@ -312,5 +313,4 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
       ctrl.io.rgb.clear()
     }
   }
-  */
 }

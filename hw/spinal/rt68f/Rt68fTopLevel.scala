@@ -145,10 +145,12 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     timerA.io.sel := busManager.io.timerASel
     busManager.io.timerAInt := timerA.io.int
 
+    /*
     val timerB = TimerDevice()
     busManager.io.timerBBus <> timerB.io.bus
     timerB.io.sel := busManager.io.timerBSel
     busManager.io.timerBInt := timerB.io.int
+     */
 
     // --------------------------------
     // PS2 devices keyboard and mouse
