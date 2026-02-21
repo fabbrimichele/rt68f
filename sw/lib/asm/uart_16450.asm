@@ -1,7 +1,7 @@
 ;------------------------------------------------------------------------------------
 ; 16450 UART
 ;------------------------------------------------------------------------------------
-UART_BASE       EQU $00402000               ; UART base address
+UART_BASE       EQU $00401000               ; UART base address
 UART_RBR        EQU UART_BASE+$0            ; Receive Buffer Register(RBR) / Transmitter Holding Register(THR) / Divisor Latch (LSB)
 UART_IER        EQU UART_BASE+$2            ; Interrupt enable register / Divisor Latch (MSB)
 UART_IIR        EQU UART_BASE+$4            ; Interrupt Identification Register

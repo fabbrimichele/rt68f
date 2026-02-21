@@ -130,28 +130,28 @@ case class BusManager() extends Component {
   } elsewhen(addr >= 0x00300000 && addr < 0x00300462) {
     // 1122 byte, the memory left from the framebuffer and palette
     io.romSel := True
-  } elsewhen(addr === 0x00400000) {
-    io.ledDevSel := True
-  } elsewhen(addr === 0x00401000) {
-    io.keyDevSel := True
-  } elsewhen(addr >= 0x00402000 && addr < 0x00402010) {
+  } elsewhen(addr(31 downto 12) === 0x00401) {
     io.uartDevSel := True
-  } elsewhen(addr >= 0x00403000 && addr < 0x00403200) {
+  } elsewhen(addr(31 downto 12) === 0x00402) {
     io.vgaPaletteSel := True
-  } elsewhen(addr === 0x00403200) {
+  } elsewhen(addr(31 downto 12) === 0x00403) {
     io.vgaControlSel := True
-  } elsewhen(addr >= 0x00404000 && addr < 0x00404008) {
+  } elsewhen(addr(31 downto 12) === 0x00404) {
     io.flashSel := True
-  } elsewhen(addr >= 0x00405000 && addr < 0x00405008) {
+  } elsewhen(addr(31 downto 12) === 0x00405) {
     io.timerASel := True
-  } elsewhen(addr >= 0x00405010 && addr < 0x00405018) {
+  } elsewhen(addr(31 downto 12) === 0x00406) {
     io.timerBSel := True
-  } elsewhen(addr >= 0x00406000 && addr < 0x00406004) {
+  } elsewhen(addr(31 downto 12) === 0x00407) {
     io.ps2aSel := True
-  } elsewhen(addr >= 0x00406004 && addr < 0x00406008) {
+  } elsewhen(addr(31 downto 12) === 0x00408) {
     io.ps2bSel := True
-  } elsewhen(addr >= 0x00407000 && addr < 0x00407004) {
+  } elsewhen(addr(31 downto 12) === 0x00409) {
     io.psgSel := True
+  } elsewhen(addr(31 downto 12) === 0x0040A) {
+    io.ledDevSel := True
+  } elsewhen(addr(31 downto 12) === 0x0040B) {
+    io.keyDevSel := True
   }
 
   // --------------------------------

@@ -12,6 +12,6 @@ PSG_WR  MACRO
         MOVE.W  #\2,PSG_DATA    ; Write Data (\2 is the second argument)
         ENDM
 
-PSG      EQU   $00407000 ; PSG Base Address
+PSG      EQU   $00409000 ; PSG Base Address
 PSG_ADDR EQU   PSG       ; Address Register
 PSG_DATA EQU   PSG+2     ; Data Register

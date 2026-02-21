@@ -499,6 +499,7 @@ TRAP_14_HANDLER:
 ; ------------------------------
     INCLUDE '../../lib/asm/console_io_16450.asm'
     INCLUDE '../../lib/asm/conversions.asm'
+    INCLUDE '../../lib/asm/led.asm'
 
 ; -------------------------------------------------------------
 ; READ_32BIT_WORD: Reads 4 bytes from UART and assembles into D1.L
@@ -571,7 +572,6 @@ MON_MEM_START   EQU SP_START                ;
 FB_START        EQU $00200000               ; Start of Framebuffer
 FB_END          EQU $0020FA01               ; End of Framebuffer (+1)
 FB_LEN          EQU (FB_END-FB_START)       ; Framebuffer length
-LED             EQU $00400000               ; LED-mapped register base address
 ; NOTE: do not remove spaces around +
 
 ; Vector Table

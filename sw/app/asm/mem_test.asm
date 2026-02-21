@@ -1,6 +1,11 @@
-    ; ------------------------------
-    ; Program code
-    ; ------------------------------
+; ===========================
+; Include files (Macro at top)
+; ===========================
+    INCLUDE '../../lib/asm/led.asm'
+
+; ------------------------------
+; Program code
+; ------------------------------
     ORG    $400                 ; Start of RAM
 
 START:
@@ -14,9 +19,9 @@ START:
     MOVE.B  #NEW_UPPER_B,D3     ; D3 = $AA (New upper byte)
     MOVE.B  #NEW_LOWER_B,D4     ; D4 = $55 (New lower byte)
 
-    ; ------------------------------------------------------------------
-    ; TEST: BYTE ISOLATION TEST (Loops through every word address)
-    ; ------------------------------------------------------------------
+; ------------------------------------------------------------------
+; TEST: BYTE ISOLATION TEST (Loops through every word address)
+; ------------------------------------------------------------------
 BYTE_TEST_LOOP:
     SUBQ.L  #2,D1               ; Decrement byte counter by 2 (word address step)
     BMI     TEST_PASS           ; If counter < 0, test passed
@@ -42,9 +47,9 @@ BYTE_TEST_LOOP:
     ADDA.L  #2,A0               ; Increment address by 2
     BRA     BYTE_TEST_LOOP      ; Continue loop
 
-    * ------------------------------------------------------------------
-    * RESULTS AND HALT
-    * ------------------------------------------------------------------
+* ------------------------------------------------------------------
+* RESULTS AND HALT
+* ------------------------------------------------------------------
 TEST_PASS:
     MOVE.B  #STATUS_PASS,(LED)     ; Success:
     BRA     HALT
@@ -61,16 +66,15 @@ HALT:
     TRAP    #14
 
 
-    ; ------------------------------
-    ; Data Section
-    ; ------------------------------
+; ------------------------------
+; Data Section
+; ------------------------------
 MSG_READY:
     DC.B    'Ready.',10,0 ; String with Newline (10) and Null Terminator (0)
 
-    ; ===========================
-    ; Constants
-    ; ===========================
-LED         EQU $00400000           ; LED-mapped register base address
+; ===========================
+; Constants
+; ===========================
 
     ; --- Memory and Peripheral Map Constants (Based on your decoder) ---
 

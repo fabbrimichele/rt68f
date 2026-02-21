@@ -25,12 +25,7 @@ import scala.language.postfixOps
  *   0x00000008 - 0x0007FFFF : 512 KB RAM (minus 2 longs)
  *   0x00200000 - 0X0020F9FF : 640000 bytes Video Framebuffer (16-bit words)
  *   0x00300000 - 0x00300462 : 1122 bytes ROM (16-bit words)
- *   0x00400000 - 0x00400000 : LED peripheral (lower 4 bits drive LEDs)
- *   0x00401000 - 0x00401000 : KEY peripheral (lower 4 bits reflect key inputs)
- *   0x00402000 - 0x00402010 : UART
- *   0x00403000 - 0x004031FF : VGA Palette (256 words, only lower 12 bits are used)
- *   0x00403200 - 0x00403200 : VGA Control (1 word)
- *   0x00404000 - 0x00404007 : SPI Flash
+ *   Check BusManager.scala for more mapping
  */
 
 //noinspection TypeAnnotation
