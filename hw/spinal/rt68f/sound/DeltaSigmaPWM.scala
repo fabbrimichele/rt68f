@@ -16,15 +16,6 @@ case class DeltaSigmaPWM(sampleSizeInBits: Int = 16) extends Component {
   // ---------------------------
   val pwmAcc = Reg(UInt(sampleSizeInBits + 1 bits)) init 0
 
-  // Convert signed sample to unsigned delta for accumulation
-  /*
-    TODO: parametrized this. e.g.
-      ```
-      val offset = U(1 << (sampleSizeInBits - 1), sampleSizeInBits bits)
-      val sndUnsigned = io.sound.asUInt ^ offset
-      ```
-   */
-
   // ---------------------------
   // Update accumulator ONLY when a new sample is available
   // ---------------------------
