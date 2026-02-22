@@ -1,1 +1,1 @@
-LED             EQU $0040A000               ; LED-mapped register base address
+LED             EQU $004A0000               ; LED-mapped register base address
