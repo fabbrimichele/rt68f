@@ -112,10 +112,6 @@ case class BusManager() extends Component {
 
   // Decoding Chain, ensures that even if an address matches
   // two ranges, only the highest priority one is selected.
-  // TODO: further optimizations should be possible:
-  //  - expand device range (plenty of space unused)
-  //  - reduce the address bus size further, from 24 to less
-  //  - I tried to improve the mapping for video ram and rom without success
   val addr = io.cpuBus.ADDR
   when(addr(31 downto 3) === 0x00000000) { // 0x00000000 < 0x00000008
     // This is required to have Reset SP and PC defined
