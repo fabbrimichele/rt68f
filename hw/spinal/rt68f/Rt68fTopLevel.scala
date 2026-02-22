@@ -4,6 +4,7 @@ import rt68f.core._
 import rt68f.io._
 import rt68f.memory._
 import rt68f.ps2.{Ps2, Ps2Device}
+import rt68f.sound.{Audio, Ym2149Device}
 import rt68f.timer.TimerDevice
 import spinal.core._
 import spinal.lib.com.uart.Uart
@@ -24,12 +25,7 @@ import scala.language.postfixOps
  *   0x00000008 - 0x0007FFFF : 512 KB RAM (minus 2 longs)
  *   0x00200000 - 0X0020F9FF : 640000 bytes Video Framebuffer (16-bit words)
  *   0x00300000 - 0x00300462 : 1122 bytes ROM (16-bit words)
- *   0x00400000 - 0x00400000 : LED peripheral (lower 4 bits drive LEDs)
- *   0x00401000 - 0x00401000 : KEY peripheral (lower 4 bits reflect key inputs)
- *   0x00402000 - 0x00402010 : UART
- *   0x00403000 - 0x004031FF : VGA Palette (256 words, only lower 12 bits are used)
- *   0x00403200 - 0x00403200 : VGA Control (1 word)
- *   0x00404000 - 0x00404007 : SPI Flash
+ *   Check BusManager.scala for more mapping
  */
 
 //noinspection TypeAnnotation
@@ -45,6 +41,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val flash = master(Spi())
     val ps2a = master(Ps2())
     val ps2b = master(Ps2())
+    val audio2 = Audio()
   }
 
   val clkCtrl = ClockCtrl()
@@ -148,11 +145,12 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     timerA.io.sel := busManager.io.timerASel
     busManager.io.timerAInt := timerA.io.int
 
+    /*
     val timerB = TimerDevice()
     busManager.io.timerBBus <> timerB.io.bus
     timerB.io.sel := busManager.io.timerBSel
     busManager.io.timerBInt := timerB.io.int
-
+     */
 
     // --------------------------------
     // PS2 devices keyboard and mouse
@@ -168,6 +166,15 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     busManager.io.ps2bBus <> ps2bCtrl.io.bus
     ps2bCtrl.io.sel := busManager.io.ps2bSel
     busManager.io.ps2bInt := ps2bCtrl.io.int
+
+    // --------------------------------
+    // PSG (Ym2149) devices
+    // --------------------------------
+    val psg = Ym2149Device()
+    io.audio2.left := psg.io.pwmAudio
+    io.audio2.right := psg.io.pwmAudio
+    busManager.io.psgBus <> psg.io.bus
+    psg.io.sel := busManager.io.psgSel
   }
 
   // Remove io_ prefix

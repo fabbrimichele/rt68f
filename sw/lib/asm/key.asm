@@ -1,4 +1,4 @@
-KEY             EQU $00401000               ; KEY-mapped register base address
+KEY             EQU $0040B000               ; KEY-mapped register base address
 
 ; Key bit positions
 KEY_UP      EQU 0           ; Up key bit

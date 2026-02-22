@@ -22,9 +22,10 @@ case class BusManager() extends Component {
     val sramBus   = master(M68kBus())
     val flashBus  = master(M68kBus())
     val timerABus = master(M68kBus())
-    val timerBBus = master(M68kBus())
+    //val timerBBus = master(M68kBus())
     val ps2aBus   = master(M68kBus())
     val ps2bBus   = master(M68kBus())
+    val psgBus    = master(M68kBus())
 
     // Slave select signals (to peripherals)
     val romSel            = out Bool()
@@ -38,15 +39,16 @@ case class BusManager() extends Component {
     val sramSel           = out Bool()
     val flashSel          = out Bool()
     val timerASel         = out Bool()
-    val timerBSel         = out Bool()
+    //val timerBSel         = out Bool()
     val ps2aSel           = out Bool()
     val ps2bSel           = out Bool()
+    val psgSel            = out Bool()
 
     // Interrupts (from peripherals)
     val vgaVSyncInt       = in Bool()
     val uartInt           = in Bool()
     val timerAInt         = in Bool()
-    val timerBInt         = in Bool()
+    //val timerBInt         = in Bool()
     val ps2aInt           = in Bool()
     val ps2bInt           = in Bool()
   }
@@ -57,7 +59,8 @@ case class BusManager() extends Component {
   val peripheralBuses = List(
     io.romBus, io.ramBus, io.vgaBus, io.ledBus,
     io.keyBus, io.uartBus, io.sramBus, io.flashBus,
-    io.timerABus, io.timerBBus, io.ps2aBus, io.ps2bBus
+    io.timerABus, /*io.timerBBus,*/ io.ps2aBus,
+    io.ps2bBus, io.psgBus,
   )
 
   for (bus <- peripheralBuses) {
@@ -85,8 +88,8 @@ case class BusManager() extends Component {
     io.ipl := B"100" // bitwise not 3
   } elsewhen(io.timerAInt) {
     io.ipl := B"101" // bitwise not 2
-  } elsewhen(io.timerBInt) {
-    io.ipl := B"110" // bitwise not 1
+  /*} elsewhen(io.timerBInt) {
+    io.ipl := B"110" // bitwise not 1*/
   } otherwise {
     io.ipl := B"111" // bitwise not 0
   }
@@ -105,20 +108,25 @@ case class BusManager() extends Component {
   io.sramSel           := False
   io.flashSel          := False
   io.timerASel         := False
-  io.timerBSel         := False
+  //io.timerBSel         := False
   io.ps2aSel           := False
   io.ps2bSel           := False
+  io.psgSel            := False
 
   // Decoding Chain, ensures that even if an address matches
   // two ranges, only the highest priority one is selected.
+  // TODO: further optimizations should be possible:
+  //  - expand device range (plenty of space unused)
+  //  - reduce the address bus size further, from 24 to less
+  //  - I tried to improve the mapping for video ram and rom without success
   val addr = io.cpuBus.ADDR
-  when(addr >= 0x00000000 && addr < 0x00000008) {
+  when(addr(31 downto 3) === 0x00000000) { // 0x00000000 < 0x00000008
     // This is required to have Reset SP and PC defined
     // in ROM when the CPU starts, the 2 values are only
     // read during after the reset, there is no point in
     // making them writable.
     io.romSel := True
-  } elsewhen(addr >= 0x00000008 && addr < 0x00080000) {
+  } elsewhen(addr(31 downto 19) === 0x00000000) { // 0x00000000 < 0x00080000
     io.sramSel := True
   } elsewhen(addr >= 0x00200000 && addr < 0x0020FA00) {
     // 64000 bytes, leaves something for the ROM
@@ -126,26 +134,28 @@ case class BusManager() extends Component {
   } elsewhen(addr >= 0x00300000 && addr < 0x00300462) {
     // 1122 byte, the memory left from the framebuffer and palette
     io.romSel := True
-  } elsewhen(addr === 0x00400000) {
-    io.ledDevSel := True
-  } elsewhen(addr === 0x00401000) {
-    io.keyDevSel := True
-  } elsewhen(addr >= 0x00402000 && addr < 0x00402010) {
+  } elsewhen(addr(31 downto 12) === 0x00401) {
     io.uartDevSel := True
-  } elsewhen(addr >= 0x00403000 && addr < 0x00403200) {
+  } elsewhen(addr(31 downto 12) === 0x00402) {
     io.vgaPaletteSel := True
-  } elsewhen(addr === 0x00403200) {
+  } elsewhen(addr(31 downto 12) === 0x00403) {
     io.vgaControlSel := True
-  } elsewhen(addr >= 0x00404000 && addr < 0x00404008) {
+  } elsewhen(addr(31 downto 12) === 0x00404) {
     io.flashSel := True
-  } elsewhen(addr >= 0x00405000 && addr < 0x00405008) {
+  } elsewhen(addr(31 downto 12) === 0x00405) {
     io.timerASel := True
-  } elsewhen(addr >= 0x00405010 && addr < 0x00405018) {
-    io.timerBSel := True
-  } elsewhen(addr >= 0x00406000 && addr < 0x00406004) {
+  /*} elsewhen(addr(31 downto 12) === 0x00406) {
+    io.timerBSel := True*/
+  } elsewhen(addr(31 downto 12) === 0x00407) {
     io.ps2aSel := True
-  } elsewhen(addr >= 0x00406004 && addr < 0x00406008) {
+  } elsewhen(addr(31 downto 12) === 0x00408) {
     io.ps2bSel := True
+  } elsewhen(addr(31 downto 12) === 0x00409) {
+    io.psgSel := True
+  } elsewhen(addr(31 downto 12) === 0x0040A) {
+    io.ledDevSel := True
+  } elsewhen(addr(31 downto 12) === 0x0040B) {
+    io.keyDevSel := True
   }
 
   // --------------------------------
@@ -182,15 +192,18 @@ case class BusManager() extends Component {
     } elsewhen (io.timerASel) {
       io.cpuBus.DATAI := io.timerABus.DATAI
       io.cpuBus.DTACK := io.timerABus.DTACK
-    } elsewhen (io.timerBSel) {
+    /*} elsewhen (io.timerBSel) {
       io.cpuBus.DATAI := io.timerBBus.DATAI
-      io.cpuBus.DTACK := io.timerBBus.DTACK
+      io.cpuBus.DTACK := io.timerBBus.DTACK*/
     } elsewhen (io.ps2aSel) {
       io.cpuBus.DATAI := io.ps2aBus.DATAI
       io.cpuBus.DTACK := io.ps2aBus.DTACK
     } elsewhen (io.ps2bSel) {
       io.cpuBus.DATAI := io.ps2bBus.DATAI
       io.cpuBus.DTACK := io.ps2bBus.DTACK
+    } elsewhen (io.psgSel) {
+      io.cpuBus.DATAI := io.psgBus.DATAI
+      io.cpuBus.DTACK := io.psgBus.DTACK
     } otherwise {
       // Optional: Bus Error / Default Response
       // TODO: I should trigger Bus error or at least an interrupt

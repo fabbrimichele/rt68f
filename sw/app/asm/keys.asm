@@ -1,6 +1,12 @@
-    ; ===========================
-    ; Program code
-    ; ===========================
+; ===========================
+; Include files (Macro at top)
+; ===========================
+    INCLUDE '../../lib/asm/key.asm'
+    INCLUDE '../../lib/asm/led.asm'
+
+; ===========================
+; Program code
+; ===========================
     ORG     $400                ; Start of RAM
 
 START:
@@ -43,16 +49,8 @@ INNER_LOOP:
     MOVE.L  (SP)+,D1        ; Restore D1
     RTS
 
-    ; ===========================
-    ; Constants
-    ; ===========================
-
-LED         EQU $00400000   ; LED-mapped register base address
-KEY         EQU $00401000   ; KEY-mapped register base address
+; ===========================
+; Constants
+; ===========================
 
 CTRL_RD     EQU 1
-
-KEY_UP      EQU 0           ; Up key bit
-KEY_RIGHT   EQU 1           ; Right key bit
-KEY_DOWN    EQU 2           ; Down key bit
-KEY_LEFT    EQU 3           ; Left key bit

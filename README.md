@@ -12,18 +12,23 @@ A project in SpinalHDL for the Papilio Duo dev board (Xilinx Spartan 6)
 * https://github.com/vfinotti/ahb3lite_wb_bridge/blob/master/wb_to_ahb3lite.v
 * https://github.com/TobiFlex/TG68K.C
 
-## ym3812
-* https://www.thingsmadesimple.com/2022/11/28/ym3812-part-1-register-basics/
-
-### ym3812 core
-* https://github.com/jotego/jtopl
-* https://www.fpga4fun.com/OPL.html
+## ym2149
+* [YM2149 Softcore](https://github.com/dnotq/ym2149_audio/tree/master)
+* [YM2149 Tutorial](https://ym2149-rs.org/tutorials.html)
+* [Notes frequency 2 YM tone adjustment values](http://poi.ribbon.free.fr/tmp/freq2regs.htm)
 
 ## SPI
 * https://github.com/nandland/spi-master
 
 ## Flash ROM
 * [MX25L6445E Datasheet](https://www.macronix.com/Lists/Datasheet/Attachments/8591/MX25L6445E,%203V,%2064Mb,%20v1.8.pdf)
+
+## ym3812
+* https://www.thingsmadesimple.com/2022/11/28/ym3812-part-1-register-basics/
+
+### ym3812 core
+* https://github.com/jotego/jtopl
+* https://www.fpga4fun.com/OPL.html
 
 ## To configure the project
 * Java 17 is required

@@ -1,6 +1,11 @@
-    ; ===========================
-    ; Program code
-    ; ===========================
+; ===========================
+; Include files (Macro at top)
+; ===========================
+    INCLUDE '../../lib/asm/led.asm'
+
+; ===========================
+; Program code
+; ===========================
     ORG    $400             ; Start of RAM
 
 START:
@@ -20,8 +25,7 @@ DLY_LOOP:
     RTS
 
 
-    ; ===========================
-    ; Constants
-    ; ===========================
+; ===========================
+; Constants
+; ===========================
 DLY_VAL     EQU     666666      ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
-LED         EQU     $00400000   ; LED-mapped register base address

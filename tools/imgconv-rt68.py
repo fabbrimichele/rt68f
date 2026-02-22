@@ -34,7 +34,7 @@ def save_palette(img, filename):
         color_16bit = (r << 8) | (g << 4) | b
         pal_data.extend(color_16bit.to_bytes(2, 'big'))
 
-    save_with_header(filename, pal_data, 0x00403000)
+    save_with_header(filename, pal_data, 0x00402000)
 
 def save_packed_img(img, filename):
     pixels = list(img.getdata())

@@ -15,7 +15,7 @@ case class M68k() extends Component {
   tg68000.io.IPL := ipl
 
   // Bus <-> Core mapping
-  io.ADDR := tg68000.io.addr.asUInt
+  io.ADDR := (B"00000000" ## tg68000.io.addr(23 downto 0)).asUInt // Reducing the address bus size saves LUTs
   io.DATAO := tg68000.io.data_out
   io.RW := tg68000.io.rw
   io.AS := tg68000.io.as

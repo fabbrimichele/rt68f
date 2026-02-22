@@ -84,11 +84,12 @@ FILL_LOOP:
     MOVEM.L (SP)+,D0/D1/A0      ; Done
     RTS
 
-    ; ===========================
-    ; Constants
-    ; ===========================
+; ===========================
+; Constants
+; ===========================
 DLY_VAL     EQU     1333333     ; Delay iterations, 1.33 million = 0.5 sec at 32MHz
-VGA         EQU     $00200000   ; VGA framebuffer base address
-VGA_LEN     EQU     $4000       ; VGA framebuffer length in words
-VGA_PALETTE EQU     $00403000   ; VGA Control (screen mode)
-VGA_CTRL    EQU     $00403100   ; VGA Control (screen mode)
+
+; ===========================
+; Include files
+; ===========================
+    INCLUDE '../../lib/asm/vga.asm'
