@@ -12,15 +12,13 @@
 ; YM2149 Tutorial https://ym2149-rs.org/tutorials.html
 
 START:
-    MOVE.B  #C_4_HI,D1
-    MOVE.B  #C_4_LO,D0
+    MOVE.W  #(LEN-1),D2     ; -1 required by DBRA
+    LEA     TUNE,A0
+.LOOP:
+    MOVE.B  (A0)+,D1
+    MOVE.B  (A0)+,D0
     JSR     PLAY_NOTE
-    MOVE.B  #D_4_HI,D1
-    MOVE.B  #D_4_LO,D0
-    JSR     PLAY_NOTE
-    MOVE.B  #E_4_HI,D1
-    MOVE.B  #E_4_LO,D0
-    JSR     PLAY_NOTE
+    DBRA    D2,.LOOP
     TRAP    #14
 
 ; D0: Channel A low
@@ -36,7 +34,6 @@ PLAY_NOTE:
     BSR     DELAY
     RTS
 
-
 DELAY:
     MOVE.L  #DLY_VAL,D3     ;
 DLY_LOOP:
@@ -49,7 +46,7 @@ DLY_LOOP:
 ; ===========================
 DLY_VAL     EQU     2000000
 
-TUNE_LEN    EQU     6
+LEN         EQU     3
 TUNE:
     DC.B    C_4_HI, C_4_LO, D_4_HI, D_4_LO, E_4_HI, E_4_LO
 
