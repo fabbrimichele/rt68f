@@ -14,7 +14,6 @@ case class BusManager() extends Component {
 
     // Slave busses (for the Mux)
     val romBus    = master(M68kBus())
-    val ramBus    = master(M68kBus())
     val vgaBus    = master(M68kBus())
     val uartBus   = master(M68kBus())
     val ledBus    = master(M68kBus())
@@ -29,7 +28,6 @@ case class BusManager() extends Component {
 
     // Slave select signals (to peripherals)
     val romSel            = out Bool()
-    val ramSel            = out Bool()
     val vgaFramebufferSel = out Bool()
     val vgaPaletteSel     = out Bool()
     val vgaControlSel     = out Bool()
@@ -57,7 +55,7 @@ case class BusManager() extends Component {
   // Broadcast Logic
   // --------------------------------
   val peripheralBuses = List(
-    io.romBus, io.ramBus, io.vgaBus, io.ledBus,
+    io.romBus, io.vgaBus, io.ledBus,
     io.keyBus, io.uartBus, io.sramBus, io.flashBus,
     io.timerABus, /*io.timerBBus,*/ io.ps2aBus,
     io.ps2bBus, io.psgBus,
@@ -98,7 +96,6 @@ case class BusManager() extends Component {
   // Address decoding
   // --------------------------------
   io.romSel            := False
-  io.ramSel            := False
   io.vgaFramebufferSel := False
   io.vgaPaletteSel     := False
   io.vgaControlSel     := False
@@ -168,9 +165,6 @@ case class BusManager() extends Component {
     when(io.romSel) {
       io.cpuBus.DATAI := io.romBus.DATAI
       io.cpuBus.DTACK := io.romBus.DTACK
-    } elsewhen (io.ramSel) {
-      io.cpuBus.DATAI := io.ramBus.DATAI
-      io.cpuBus.DTACK := io.ramBus.DTACK
     } elsewhen (io.vgaFramebufferSel || io.vgaPaletteSel || io.vgaControlSel) {
       io.cpuBus.DATAI := io.vgaBus.DATAI
       io.cpuBus.DTACK := io.vgaBus.DTACK

@@ -69,15 +69,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     rom.io.sel := busManager.io.romSel
 
     // --------------------------------
-    // RAM
-    // --------------------------------
-    val ramSizeWords = 16384 / 2 // 16384 KB / 2 bytes per 16-bit word
-    val ram = Mem16Bits(size = ramSizeWords)
-
-    busManager.io.ramBus <> ram.io.bus
-    ram.io.sel := busManager.io.ramSel
-
-    // --------------------------------
     // VGA
     // --------------------------------
     val vga = VgaDevice(clkCtrl.clk25)
