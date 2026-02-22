@@ -10,7 +10,6 @@
     ORG    $400             ; Start of RAM
 
 ; YM2149 Tutorial https://ym2149-rs.org/tutorials.html
-; TODO: there is a huge problem, with VGA enabled it stops working...
 
 START:
     PSG_WR  0,$1C   ; Channel A Low
