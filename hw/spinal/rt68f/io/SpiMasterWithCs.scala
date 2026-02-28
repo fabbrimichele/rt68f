@@ -6,14 +6,14 @@ import spinal.lib.experimental.chisel.Bundle
 import scala.language.postfixOps
 
 // Define the Generics for the VHDL component
-case class SpiMasterConfig(
+case class SpiMasterWithCsConfig(
   spiMode: Int = 0,
   clksPerHalfBit: Int = 2,
   maxBytesPerCs: Int = 2,
   csInactiveClks: Int = 1
 )
 
-class SpiMasterWithCs(config: SpiMasterConfig) extends BlackBox {
+class SpiMasterWithCs(config: SpiMasterWithCsConfig) extends BlackBox {
   // Calculate the bit width required for the counters based on maxBytesPerCs
   // We use log2Up to find the number of bits needed to represent the max value
   val countWidth = log2Up(config.maxBytesPerCs + 1) bits

@@ -20,12 +20,7 @@ import scala.language.postfixOps
  *
  * @param romFilename name of the file containing the ROM content
  *
- * SimpleSoC Memory Map
- *   0x00000000 - 0x00000007 : Shadowed ROM (for Reset SP and PC)
- *   0x00000008 - 0x0007FFFF : 512 KB RAM (minus 2 longs)
- *   0x00200000 - 0X0020F9FF : 640000 bytes Video Framebuffer (16-bit words)
- *   0x00300000 - 0x00300462 : 1122 bytes ROM (16-bit words)
- *   Check BusManager.scala for more mapping
+ * SimpleSoC Memory Map: check BusManager.scala
  */
 
 //noinspection TypeAnnotation
@@ -42,6 +37,8 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val ps2a = master(Ps2())
     val ps2b = master(Ps2())
     val audio2 = Audio()
+    val sd = master(Spi())
+    val sd_cd = in Bool() // SD card detect
   }
 
   val clkCtrl = ClockCtrl()
@@ -84,7 +81,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // LED device
     // --------------------------------
     val ledDev = LedDevice()
-    io.led := ledDev.io.leds
+    //io.led := ledDev.io.leds
 
     busManager.io.ledBus <> ledDev.io.bus
     ledDev.io.sel := busManager.io.ledDevSel
@@ -97,7 +94,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
 
     busManager.io.keyBus <> keyDev.io.bus
     keyDev.io.sel := busManager.io.keyDevSel
-
 
     // --------------------------------
     // UART device
@@ -124,9 +120,26 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // --------------------------------
     val flash = FlashReader()
     io.flash <> flash.io.spi
-
     busManager.io.flashBus <> flash.io.bus
     flash.io.sel := busManager.io.flashSel
+
+    // --------------------------------
+    // SD Card reader
+    // --------------------------------
+    /*
+      `clksPerHalfBit` set to integer number of clocks for each
+      half-bit of SPI data.  E.g. 100 MHz i_Clk, CLKS_PER_HALF_BIT = 2
+      would create o_SPI_CLK of 25 MHz.
+      SD Card clock must be between 100 KHz and 400 KHz:
+      16 MHz / 100 KHz = 160 -> it's half-bit thus * 2 = 160 * 2 = 320
+     */
+    // TODO: read the clock frequency from the current domain
+    val sdCard = SpiDevice(SpiMasterConfig(clksPerHalfBit = 16000000 / 100000 * 2))
+    io.sd <> sdCard.io.spi
+    sdCard.io.cd := io.sd_cd
+    busManager.io.sdCardBus <> sdCard.io.bus
+    sdCard.io.sel := busManager.io.sdCardSel
+    io.led := B"000" ## io.sd_cd
 
     // --------------------------------
     // Timers
@@ -166,6 +179,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     io.audio2.right := psg.io.pwmAudio
     busManager.io.psgBus <> psg.io.bus
     psg.io.sel := busManager.io.psgSel
+
   }
 
   // Remove io_ prefix
