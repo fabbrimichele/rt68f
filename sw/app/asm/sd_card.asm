@@ -1,27 +1,41 @@
 ; ===========================
-; Include files (Macro at top)
-; ===========================
-    INCLUDE '../../lib/asm/sd_card.asm'
-    INCLUDE '../../lib/asm/led.asm'
-
-; ===========================
 ; Program code
 ; ===========================
     ORG    $400             ; Start of RAM
 
 
 START:
+    ; RESET
+    LEA     MSG_RESET,A0
+    BSR     PUTS
     BSR     SD_RESET
-    BSR     SD_CMD0
-    CMP.B   $01,D0
-    BNE     .ERR
-    ;BSR     SD_CMD8
-    ;CMP.B   $01,D0
-    ;BNE     .ERR
+    MOVE.W  #$01,LED
 
+    ; CMD0
+    LEA     MSG_CMD0,A0
+    BSR     PUTS
+    BSR     SD_CMD0
+    CMP.B   #$01,D0
+    BNE     .ERR
+    MOVE.W  #$02,LED
+
+    ; CMD8
+    LEA     MSG_CMD8,A0
+    BSR     PUTS
+    BSR     SD_CMD8
+    CMP.B   #$AA,D0
+    BNE     .ERR
+    MOVE.W  #$04,LED
+
+    ; OK
+    LEA     MSG_OK,A0
+    BSR     PUTS
+    BRA     .END
 .ERR:
+    BSR     BINTOHEX_W
+    LEA     MSG_ERR,A0
+    BSR     PUTS
 .END:
-    MOVE.W  D0,LED
     TRAP    #14
 
 
@@ -55,7 +69,7 @@ SD_CMD0:
 
 ; -----------------------------------------
 ; SD_CMD8: Sends CMD8
-; Output: D0 result, $01 OK
+; Output: D0 result, if $01 OK else ERROR
 ; -----------------------------------------
 SD_CMD8:
     MOVEM.L A0,-(SP)
@@ -63,6 +77,17 @@ SD_CMD8:
     LEA     CMD8,A0
     BSR     SD_SEND_CMD
     BSR     WAIT_R1
+    CMP.B   #$01,D0         ; Is it $01?
+    BNE     .EXIT           ; If not $01, card rejected CMD8
+    ; Read remaining bytes
+    MOVE.B  #$FF,D0         ; Send dummy to get clock
+.LOOP:
+    JSR     SD_WRITE
+    JSR     SD_WRITE
+    JSR     SD_WRITE
+    JSR     SD_WRITE
+    MOVE.B  SD_DATA,D0      ; Wait until different from $FF
+.EXIT:
     MOVE.B  #$FF,SD_CTRL    ; Set CS high (inactive)
     MOVEM.L (SP)+,A0
     RTS
@@ -130,6 +155,27 @@ DLY_VAL     EQU     1000
 ; SD card commands
 CMD0        DC.B    $40, $00, $00, $00, $00, $95
 CMD8        DC.B    $48, $00, $00, $01, $AA, $87
+
+; Messages
+MSG_RESET   DC.B LF,'RESET ',NUL
+MSG_CMD0    DC.B LF,'CMD0 ',NUL
+MSG_CMD8    DC.B LF,'CMD8 ',NUL
+MSG_OK      DC.B LF,'OK',NUL
+MSG_ERR     DC.B LF,'ERR',NUL
+
+; ASCII
+CR          EQU 13          ; Carriage Return
+LF          EQU 10          ; Line Feed
+BEL         EQU 7           ; Bell character
+NUL         EQU 0
+
+; ===========================
+; Include files (Macro at top)
+; ===========================
+    INCLUDE '../../lib/asm/sd_card.asm'
+    INCLUDE '../../lib/asm/led.asm'
+    INCLUDE '../../lib/asm/console_io_16450.asm'
+    INCLUDE '../../lib/asm/conversions.asm'
 
 
 ; Send ten times to reset the card (set also CS high)
