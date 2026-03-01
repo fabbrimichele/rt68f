@@ -9,32 +9,56 @@ PRINT MACRO
     ENDM
 
 START:
+    PRINT   MSG_INIT
+    BSR     SD_INIT
+    CMP.B   #0,D0
+    BNE     .ERR
+    PRINT   MSG_OK
+    BRA     .END
+.ERR:
+    PRINT   MSG_ERR
+    BSR     BINTOHEX_W  ; Print last byte read
+    MOVE.B  D1,D0
+    BSR     BINTOHEX_W  ; Print last command
+.END:
+    TRAP    #14
+
+
+; -----------------------------------------
+; SD_INIT: Initialize SD card
+; Outputs: D0 - last byte read
+;          D1 - last command executed (e.g. $55)
+;          D2 - 0 OK, 1 error
+; -----------------------------------------
+SD_INIT:
+    MOVEM.L A0,-(SP)
+
     ; RESET
-    PRINT   MSG_RESET
     BSR     SD_RESET
 
     ; CMD0
-    PRINT   MSG_CMD0
+    MOVE.B  #$00,D1
     LEA     CMD0,A0
     BSR     SD_CMD
     CMP.B   #$01,D0
     BNE     .ERR
 
     ; CMD8
-    PRINT   MSG_CMD8
+    MOVE.B  #$08,D1
     BSR     SD_CMD8
     CMP.B   #$AA,D0
     BNE     .ERR
+
 .INIT_LOOP:
     ; CMD55
-    PRINT   MSG_CMD55
+    MOVE.B  #$55,D1
     LEA     CMD55,A0
     BSR     SD_CMD
     CMP.B   #$01,D0
     BNE     .ERR
 
     ; ACMD41
-    PRINT   MSG_ACMD41
+    MOVE.B  #$41,D1
     LEA     ACMD41,A0
     BSR     SD_CMD
     CMP.B   #$01,D0
@@ -43,19 +67,13 @@ START:
     BNE     .ERR
 
     ; Card initialized
-    PRINT   MSG_OK
+    MOVE.B  #$0,D2      ; D2 = OK
     BRA     .END
 .ERR:
-    BSR     BINTOHEX_W
-    PRINT   MSG_ERR,A0
+    MOVE.B  #$1,D2      ; D2 = ERR
 .END:
-    TRAP    #14
-
-
-; -----------------------------------------
-; SD_INIT: Initialize SD card
-; -----------------------------------------
-; TODO: move from START:
+    MOVEM.L (SP)+,A0
+    RTS
 
 ; -----------------------------------------
 ; SD_RESET: Resets SD card
@@ -79,20 +97,6 @@ SD_RESET:
 SD_CMD:
     MOVEM.L A0,-(SP)
     MOVE.B  #$00,SD_CTRL    ; Set CS low (active)
-    BSR     SD_SEND_CMD
-    BSR     WAIT_R1
-    MOVE.B  #$FF,SD_CTRL    ; Set CS high (inactive)
-    MOVEM.L (SP)+,A0
-    RTS
-
-; -----------------------------------------
-; SD_CMD0: Sends CMD0
-; Output: D0 result, $01 OK
-; -----------------------------------------
-SD_CMD0:
-    MOVEM.L A0,-(SP)
-    MOVE.B  #$00,SD_CTRL    ; Set CS low (active)
-    LEA     CMD0,A0
     BSR     SD_SEND_CMD
     BSR     WAIT_R1
     MOVE.B  #$FF,SD_CTRL    ; Set CS high (inactive)
@@ -195,13 +199,9 @@ CMD55       DC.B  $77, $00, $00, $00, $00, $FF
 ACMD41      DC.B  $69, $40, $00, $00, $00, $FF
 
 ; Messages
-MSG_RESET   DC.B LF,'RESET ',NUL
-MSG_CMD0    DC.B LF,'CMD0 ',NUL
-MSG_CMD8    DC.B LF,'CMD8 ',NUL
-MSG_CMD55   DC.B LF,'CMD55 ',NUL
-MSG_ACMD41  DC.B LF,'ACMD41 ',NUL
-MSG_OK      DC.B LF,'OK',NUL
-MSG_ERR     DC.B LF,'ERR',NUL
+MSG_INIT    DC.B 'INIT SD CARD... ',NUL
+MSG_OK      DC.B 'OK',LF,NUL
+MSG_ERR     DC.B 'ERR',LF,NUL
 
 ; ASCII
 CR          EQU 13          ; Carriage Return
