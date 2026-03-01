@@ -32,8 +32,8 @@ SD_RESET:
     MOVEM.L D0/D1,-(SP)
     MOVE.B  #$FF,SD_CTRL    ; Set CS high (inactive)
     MOVE.B  #9,D1           ; Repeat 10-1 times (DBRA)
-.LOOP:
     MOVE.B  #$FF,D0
+.LOOP:
     BSR     SD_WRITE
     DBRA    D1,.LOOP
     MOVEM.L (SP)+,D0/D1
