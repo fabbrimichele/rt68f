@@ -29,12 +29,14 @@ START:
 ; SD_RESET: Resets SD card
 ; -----------------------------------------
 SD_RESET:
+    MOVEM.L D0/D1,-(SP)
     MOVE.B  #$FF,SD_CTRL    ; Set CS high (inactive)
     MOVE.B  #9,D1           ; Repeat 10-1 times (DBRA)
 .LOOP:
     MOVE.B  #$FF,D0
     BSR     SD_WRITE
     DBRA    D1,.LOOP
+    MOVEM.L (SP)+,D0/D1
     RTS
 
 ; -----------------------------------------
@@ -103,14 +105,16 @@ SD_WRITE:
     BSR     DELAY           ; TODO: use TX ready
     RTS
 
-
 ; ---------------------------------
+; DELAY: Delay
 ; ---------------------------------
 DELAY:
+    MOVEM.L D3,-(SP)
     MOVE.L  #DLY_VAL,D3     ;
 DLY_LOOP:
     SUBQ.L  #1,D3           ; 4 cycles
     BNE     DLY_LOOP        ; 10 cycles when taken
+    MOVEM.L (SP)+,D3
     RTS
 
 
