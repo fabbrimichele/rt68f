@@ -3,38 +3,37 @@
 ; ===========================
     ORG    $400             ; Start of RAM
 
+PRINT MACRO
+    LEA     \1,A0
+    BSR     PUTS
+    ENDM
 
 START:
     ; RESET
-    LEA     MSG_RESET,A0
-    BSR     PUTS
+    PRINT   MSG_RESET
     BSR     SD_RESET
 
     ; CMD0
-    LEA     MSG_CMD0,A0
-    BSR     PUTS
-    BSR     SD_CMD0
+    PRINT   MSG_CMD0
+    LEA     CMD0,A0
+    BSR     SD_CMD
     CMP.B   #$01,D0
     BNE     .ERR
 
     ; CMD8
-    LEA     MSG_CMD8,A0
-    BSR     PUTS
+    PRINT   MSG_CMD8
     BSR     SD_CMD8
     CMP.B   #$AA,D0
     BNE     .ERR
 
     ; OK
-    LEA     MSG_OK,A0
-    BSR     PUTS
+    PRINT   MSG_OK
     BRA     .END
 .ERR:
     BSR     BINTOHEX_W
-    LEA     MSG_ERR,A0
-    BSR     PUTS
+    PRINT   MSG_ERR,A0
 .END:
     TRAP    #14
-
 
 ; -----------------------------------------
 ; SD_RESET: Resets SD card
@@ -48,6 +47,20 @@ SD_RESET:
     BSR     SD_WRITE
     DBRA    D1,.LOOP
     MOVEM.L (SP)+,D0/D1
+    RTS
+
+; -----------------------------------------
+; SD_CMD: Sends CMD
+; Inputs: A0 command pointer
+; Output: D0 result
+; -----------------------------------------
+SD_CMD:
+    MOVEM.L A0,-(SP)
+    MOVE.B  #$00,SD_CTRL    ; Set CS low (active)
+    BSR     SD_SEND_CMD
+    BSR     WAIT_R1
+    MOVE.B  #$FF,SD_CTRL    ; Set CS high (inactive)
+    MOVEM.L (SP)+,A0
     RTS
 
 ; -----------------------------------------
