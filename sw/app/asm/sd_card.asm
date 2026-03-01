@@ -25,8 +25,24 @@ START:
     BSR     SD_CMD8
     CMP.B   #$AA,D0
     BNE     .ERR
+.INIT_LOOP:
+    ; CMD55
+    PRINT   MSG_CMD55
+    LEA     CMD55,A0
+    BSR     SD_CMD
+    CMP.B   #$01,D0
+    BNE     .ERR
 
-    ; OK
+    ; ACMD41
+    PRINT   MSG_ACMD41
+    LEA     ACMD41,A0
+    BSR     SD_CMD
+    CMP.B   #$01,D0
+    BEQ     .INIT_LOOP  ; Card is still busy, repeat init loop
+    CMP.B   #$00,D0
+    BNE     .ERR
+
+    ; Card initialized
     PRINT   MSG_OK
     BRA     .END
 .ERR:
@@ -34,6 +50,12 @@ START:
     PRINT   MSG_ERR,A0
 .END:
     TRAP    #14
+
+
+; -----------------------------------------
+; SD_INIT: Initialize SD card
+; -----------------------------------------
+; TODO: move from START:
 
 ; -----------------------------------------
 ; SD_RESET: Resets SD card
@@ -167,13 +189,17 @@ DLY_LOOP:
 DLY_VAL     EQU     1000
 
 ; SD card commands
-CMD0        DC.B    $40, $00, $00, $00, $00, $95
-CMD8        DC.B    $48, $00, $00, $01, $AA, $87
+CMD0        DC.B  $40, $00, $00, $00, $00, $95
+CMD8        DC.B  $48, $00, $00, $01, $AA, $87
+CMD55       DC.B  $77, $00, $00, $00, $00, $FF
+ACMD41      DC.B  $69, $40, $00, $00, $00, $FF
 
 ; Messages
 MSG_RESET   DC.B LF,'RESET ',NUL
 MSG_CMD0    DC.B LF,'CMD0 ',NUL
 MSG_CMD8    DC.B LF,'CMD8 ',NUL
+MSG_CMD55   DC.B LF,'CMD55 ',NUL
+MSG_ACMD41  DC.B LF,'ACMD41 ',NUL
 MSG_OK      DC.B LF,'OK',NUL
 MSG_ERR     DC.B LF,'ERR',NUL
 
