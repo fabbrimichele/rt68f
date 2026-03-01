@@ -9,7 +9,6 @@ START:
     LEA     MSG_RESET,A0
     BSR     PUTS
     BSR     SD_RESET
-    MOVE.W  #$01,LED
 
     ; CMD0
     LEA     MSG_CMD0,A0
@@ -17,7 +16,6 @@ START:
     BSR     SD_CMD0
     CMP.B   #$01,D0
     BNE     .ERR
-    MOVE.W  #$02,LED
 
     ; CMD8
     LEA     MSG_CMD8,A0
@@ -25,7 +23,6 @@ START:
     BSR     SD_CMD8
     CMP.B   #$AA,D0
     BNE     .ERR
-    MOVE.W  #$04,LED
 
     ; OK
     LEA     MSG_OK,A0
@@ -129,9 +126,13 @@ WAIT_R1:
 ; Inputs: D0 - byte to be written
 ; -----------------------------------------
 SD_WRITE:
-    ; TODO: check TX is ready
-    MOVE.B  D0,SD_DATA
-    BSR     DELAY           ; TODO: use TX ready
+    MOVEM.L D1,-(SP)
+.WAIT:
+    MOVE.B  SD_CTRL,D1      ; Check status
+    BTST    #6,D1           ; Test TX Ready
+    BEQ     .WAIT           ; Bit 6 = 0 wait
+    MOVE.B  D0,SD_DATA      ; Write data
+    MOVEM.L (SP)+,D1
     RTS
 
 ; ---------------------------------
@@ -176,25 +177,3 @@ NUL         EQU 0
     INCLUDE '../../lib/asm/led.asm'
     INCLUDE '../../lib/asm/console_io_16450.asm'
     INCLUDE '../../lib/asm/conversions.asm'
-
-
-; Send ten times to reset the card (set also CS high)
-; WRITE 4C0000 FFFF
-;
-; Reset command
-; CS low (enabled)
-; WRITE 4C0000 0000
-; CMD0 Resets the card and puts it into SPI mode.
-; WRITE 4C0002 0040
-; WRITE 4C0002 0000
-; WRITE 4C0002 0000
-; WRITE 4C0002 0000
-; WRITE 4C0002 0000
-; WRITE 4C0002 0095
-; Wait for $01
-; WRITE 4C0002 00FF
-; DUMP 4C0000
-; CS high (disabled)
-; WRITE 4C0000 FFFF
-
-; DUMP 4C0000
