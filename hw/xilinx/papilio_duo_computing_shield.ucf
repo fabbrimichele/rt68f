@@ -15,7 +15,7 @@ NET sd_cs          LOC="P112" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;         
 NET sd_clk         LOC="P114" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B1
 NET sd_mosi        LOC="P115" | IOSTANDARD=LVTTL | DRIVE=8 | SLEW=FAST;          # B0
 NET sd_miso        LOC="P118" | IOSTANDARD=LVTTL;                                # A2
-NET sd_cd          LOC="P119" | IOSTANDARD=LVTTL;                                # A3
+NET sd_cd          LOC="P119" | IOSTANDARD=LVTTL | PULLUP;                       # A3
 NET ps2a_dat       LOC="P120" | IOSTANDARD=LVTTL;                                # A4
 NET ps2a_clk       LOC="P121" | IOSTANDARD=LVTTL;                                # A5
 #NET JOYSTICK1_5   LOC="P123" | IOSTANDARD=LVTTL;                                # A6

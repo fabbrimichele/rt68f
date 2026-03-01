@@ -15,11 +15,10 @@ import scala.language.postfixOps
     4-0: Unused
     5  : Card Detect
     6  : TX Ready
-    7  : RX Data valid
+    7  : RX Data valid (TODO: this doesn't work)
 
     Control Register (write):
     0  : SPI CS - 0 active/1 inactive
-    // 1  : TX Data Valid - should be a pulse: TODO: remove this line
  */
 case class SpiDevice(config: SpiMasterConfig = SpiMasterConfig()) extends Component {
   val io = new Bundle {
@@ -39,8 +38,6 @@ case class SpiDevice(config: SpiMasterConfig = SpiMasterConfig()) extends Compon
   //       for any SPI device, including the Flash ROM, I could rename
   //       it and use it for an SdCardReader AND create a new Flash ROM reader.
   // TODO: o_RX_DV doesn't work
-  // TODO: o_RX_DV doesn't work
-  // TODO: io.cd (card detected) doesn't work
 
   // ctrlReg (write)
   private val ctrlReg = Reg(Bits(8 bits)) init B"00000001" // CS is inactive high
