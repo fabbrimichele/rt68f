@@ -8,6 +8,11 @@ PRINT MACRO
     BSR     PUTS
     ENDM
 
+PCHAR MACRO
+    MOVE.B  \1,D0
+    BSR     PUTCHAR
+    ENDM
+
 START:
     PRINT   MSG_INIT
     BSR     SD_INIT
@@ -17,9 +22,13 @@ START:
     BRA     .END
 .ERR:
     PRINT   MSG_ERR
+    PRINT   MSG_BYTE
     BSR     BINTOHEX_W  ; Print last byte read
+    PCHAR   #LF
+    PRINT   MSG_CMD
     MOVE.B  D1,D0
     BSR     BINTOHEX_W  ; Print last command
+    PCHAR   #LF
 .END:
     TRAP    #14
 
@@ -202,6 +211,8 @@ ACMD41      DC.B  $69, $40, $00, $00, $00, $FF
 MSG_INIT    DC.B 'INIT SD CARD... ',NUL
 MSG_OK      DC.B 'OK',LF,NUL
 MSG_ERR     DC.B 'ERR',LF,NUL
+MSG_BYTE    DC.B 'BYTE: ',NUL
+MSG_CMD     DC.B 'CMD: ',NUL
 
 ; ASCII
 CR          EQU 13          ; Carriage Return

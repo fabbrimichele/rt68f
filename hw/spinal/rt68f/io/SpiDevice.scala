@@ -35,10 +35,12 @@ case class SpiDevice(config: SpiMasterConfig = SpiMasterConfig()) extends Compon
   // Registers
   // ---------------
   // TODO: Interrupts
-
   // TODO: besides the configuration this component is generic enough
   //       for any SPI device, including the Flash ROM, I could rename
   //       it and use it for an SdCardReader AND create a new Flash ROM reader.
+  // TODO: o_RX_DV doesn't work
+  // TODO: o_RX_DV doesn't work
+  // TODO: io.cd (card detected) doesn't work
 
   // ctrlReg (write)
   private val ctrlReg = Reg(Bits(8 bits)) init B"00000001" // CS is inactive high
