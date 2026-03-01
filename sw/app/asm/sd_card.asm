@@ -16,7 +16,7 @@ PCHAR MACRO
 START:
     PRINT   MSG_INIT
     BSR     SD_INIT
-    CMP.B   #0,D0
+    CMP.B   #0,D2
     BNE     .ERR
     PRINT   MSG_OK
     BRA     .END
@@ -36,13 +36,20 @@ START:
 ; -----------------------------------------
 ; SD_INIT: Initialize SD card
 ; Outputs: D0 - last byte read
-;          D1 - last command executed (e.g. $55)
+;          D1 - last command executed ($FF no card)
 ;          D2 - 0 OK, 1 error
 ; -----------------------------------------
 SD_INIT:
-    MOVEM.L A0,-(SP)
+    MOVEM.L D4/A0,-(SP)
+    MOVE.B  #$FF,D0
+    MOVE.B  #$FF,D1
 
-    ; RESET
+    ; Detect card
+    MOVE.B  SD_CTRL,D4      ; Check status
+    BTST    #5,D4           ; Test card detect
+    BEQ     .ERR            ; Bit 5 = 0 card no detected, err
+
+    ; Reset
     BSR     SD_RESET
 
     ; CMD0
@@ -81,7 +88,7 @@ SD_INIT:
 .ERR:
     MOVE.B  #$1,D2      ; D2 = ERR
 .END:
-    MOVEM.L (SP)+,A0
+    MOVEM.L (SP)+,D4/A0
     RTS
 
 ; -----------------------------------------
