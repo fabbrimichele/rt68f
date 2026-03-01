@@ -44,11 +44,13 @@ SD_RESET:
 ; Output: D0 result, $01 OK
 ; -----------------------------------------
 SD_CMD0:
+    MOVEM.L A0,-(SP)
     MOVE.B  #$00,SD_CTRL    ; Set CS low (active)
     LEA     CMD0,A0
     BSR     SD_SEND_CMD
     BSR     WAIT_R1
     MOVE.B  #$FF,SD_CTRL    ; Set CS high (inactive)
+    MOVEM.L (SP)+,A0
     RTS
 
 ; -----------------------------------------
@@ -56,11 +58,13 @@ SD_CMD0:
 ; Output: D0 result, $01 OK
 ; -----------------------------------------
 SD_CMD8:
+    MOVEM.L A0,-(SP)
     MOVE.B  #$00,SD_CTRL    ; Set CS low (active)
     LEA     CMD8,A0
     BSR     SD_SEND_CMD
     BSR     WAIT_R1
     MOVE.B  #$FF,SD_CTRL    ; Set CS high (inactive)
+    MOVEM.L (SP)+,A0
     RTS
 
 ; -----------------------------------------
