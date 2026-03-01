@@ -81,7 +81,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // LED device
     // --------------------------------
     val ledDev = LedDevice()
-    //io.led := ledDev.io.leds
+    io.led := ledDev.io.leds
 
     busManager.io.ledBus <> ledDev.io.bus
     ledDev.io.sel := busManager.io.ledDevSel
@@ -139,7 +139,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     sdCard.io.cd := io.sd_cd
     busManager.io.sdCardBus <> sdCard.io.bus
     sdCard.io.sel := busManager.io.sdCardSel
-    io.led := B"000" ## io.sd_cd
 
     // --------------------------------
     // Timers

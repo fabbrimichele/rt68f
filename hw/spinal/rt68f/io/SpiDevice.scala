@@ -87,9 +87,11 @@ case class SpiDevice(config: SpiMasterConfig = SpiMasterConfig()) extends Compon
         }
         is(1) {
           txData := io.bus.DATAO(7 downto 0)
-          spiMaster.io.i_TX_DV := True // TODO: is this pulse long enough?
+          spiMaster.io.i_TX_DV := True
         }
       }
     }
+  } otherwise {
+    spiMaster.io.i_TX_DV := False
   }
 }

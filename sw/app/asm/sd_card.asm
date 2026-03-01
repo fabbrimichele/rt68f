@@ -11,10 +11,101 @@
 
 
 START:
-.LOOP:
+    BSR     SD_RESET
+    BSR     SD_CMD0
+    CMP.B   $01,D0
+    BNE     .ERR
+    ;BSR     SD_CMD8
+    ;CMP.B   $01,D0
+    ;BNE     .ERR
+
+.ERR:
+.END:
+    MOVE.W  D0,LED
     TRAP    #14
 
 
+; -----------------------------------------
+; SD_RESET: Resets SD card
+; -----------------------------------------
+SD_RESET:
+    MOVE.B  #$FF,SD_CTRL    ; Set CS high (inactive)
+    MOVE.B  #9,D1           ; Repeat 10-1 times (DBRA)
+.LOOP:
+    MOVE.B  #$FF,D0
+    BSR     SD_WRITE
+    DBRA    D1,.LOOP
+    RTS
+
+; -----------------------------------------
+; SD_CMD0: Sends CMD0
+; Output: D0 result, $01 OK
+; -----------------------------------------
+SD_CMD0:
+    MOVE.B  #$00,SD_CTRL    ; Set CS low (active)
+    LEA     CMD0,A0
+    BSR     SD_SEND_CMD
+    BSR     WAIT_R1
+    MOVE.B  #$FF,SD_CTRL    ; Set CS high (inactive)
+    RTS
+
+; -----------------------------------------
+; SD_CMD8: Sends CMD8
+; Output: D0 result, $01 OK
+; -----------------------------------------
+SD_CMD8:
+    MOVE.B  #$00,SD_CTRL    ; Set CS low (active)
+    LEA     CMD8,A0
+    BSR     SD_SEND_CMD
+    BSR     WAIT_R1
+    MOVE.B  #$FF,SD_CTRL    ; Set CS high (inactive)
+    RTS
+
+; -----------------------------------------
+; SD_SEND_CMD: Sends the 6-byte from memory
+; Inputs: A0 - packet address
+; -----------------------------------------
+SD_SEND_CMD:
+    MOVEM.L D0/D1/A0,-(SP)
+    MOVE.W  #5,D1               ; Send 6 bytes
+.LOOP:
+    MOVE.B  (A0)+,D0
+    JSR     SD_WRITE            ; Write byte
+    DBRA    D1,.LOOP
+    MOVEM.L (SP)+,D0/D1/A0
+    RTS
+
+; ---------------------------------
+; WAIT_R1
+; Outputs: D0 response byte
+; ---------------------------------
+; TODO: timeout if returns always $FF
+WAIT_R1:
+    MOVEM.L D1,-(SP)
+    MOVE.B  #$FF,D0         ; Dummy write data
+.WAIT:
+    BSR     SD_WRITE        ; Clock SPI while wait
+    MOVE.B  SD_DATA,D1      ; Wait until different from $FF
+    CMP.B   #$FF,D1
+    BEQ     .WAIT
+.EXIT:
+    MOVE.B  D1,D0
+    MOVEM.L (SP)+,D1
+    RTS
+
+; -----------------------------------------
+; SD_WRITE: Writes 1 byte to SD card
+; Inputs: D0 - byte to be written
+; -----------------------------------------
+SD_WRITE:
+    ; TODO: check TX is ready
+    MOVE.B  D0,SD_DATA
+    BSR     DELAY           ; TODO: use TX ready
+    RTS
+
+
+; ---------------------------------
+; ---------------------------------
 DELAY:
     MOVE.L  #DLY_VAL,D3     ;
 DLY_LOOP:
@@ -22,35 +113,34 @@ DLY_LOOP:
     BNE     DLY_LOOP        ; 10 cycles when taken
     RTS
 
+
 ; ===========================
 ; Constants
 ; ===========================
-DLY_VAL     EQU     2000000
+DLY_VAL     EQU     1000
+
+; SD card commands
+CMD0        DC.B    $40, $00, $00, $00, $00, $95
+CMD8        DC.B    $48, $00, $00, $01, $AA, $87
 
 
-; http://poi.ribbon.free.fr/tmp/freq2regs.htm
-; Note	        Hex Period (hi/lo)
-C_4_HI      EQU $01
-C_4_LO	    EQU $DE
-Cc4_HI	    EQU $01
-Cc4_LO	    EQU $C2
-D_4_HI	    EQU $01
-D_4_LO	    EQU $A8
-Dc4_HI	    EQU $01
-Dc4_LO	    EQU $90
-E_4_HI	    EQU $01
-E_4_LO	    EQU $7B
-F_4_HI	    EQU $01
-F_4_LO	    EQU $66
-Fc4_HI	    EQU $01
-Fc4_LO	    EQU $52
-G_4_HI	    EQU $01
-G_4_LO	    EQU $40
-Gc4_HI	    EQU $01
-Gc4_LO	    EQU $2E
-A_4_HI	    EQU $01
-A_4_LO	    EQU $1C
-Ac4_HI	    EQU $01
-Ac4_LO	    EQU $0C
-B_4_HI	    EQU $00
-B_4_LO	    EQU $FD
+; Send ten times to reset the card (set also CS high)
+; WRITE 4C0000 FFFF
+;
+; Reset command
+; CS low (enabled)
+; WRITE 4C0000 0000
+; CMD0 Resets the card and puts it into SPI mode.
+; WRITE 4C0002 0040
+; WRITE 4C0002 0000
+; WRITE 4C0002 0000
+; WRITE 4C0002 0000
+; WRITE 4C0002 0000
+; WRITE 4C0002 0095
+; Wait for $01
+; WRITE 4C0002 00FF
+; DUMP 4C0000
+; CS high (disabled)
+; WRITE 4C0000 FFFF
+
+; DUMP 4C0000
