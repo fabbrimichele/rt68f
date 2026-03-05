@@ -14,11 +14,31 @@ PCHAR MACRO
     ENDM
 
 START:
+    MOVE.W  #$00,LED
+
+    ; Init
     PRINT   MSG_INIT
     BSR     SD_INIT
     CMP.B   #0,D2
     BNE     .ERR
     PRINT   MSG_OK
+
+    ; Read Sector
+    PRINT   MSG_RD_SEC
+    LEA     SECT_BUFF,A1
+    BSR     SD_READ_SEC
+
+    ; TODO: restore error check
+    ;CMP.B   #0,D2
+    ;BNE     .ERR
+    PRINT   MSG_OK
+
+    ; Print Buffer address
+    PRINT   MSG_BUF_AD
+    LEA     SECT_BUFF,A0
+    MOVE.L  A0,D0
+    BSR     BINTOHEX
+
     BRA     .END
 .ERR:
     PRINT   MSG_ERR
@@ -32,6 +52,12 @@ START:
 .END:
     TRAP    #14
 
+; -----------------------------------------
+; PRINT_SEC: Print buf sector
+; Inputs     A1   = Dest buffer (512 bytes)
+; -----------------------------------------
+PRINT_SEC:
+    RTS
 
 ; -----------------------------------------
 ; SD_INIT: Initialize SD card
@@ -90,6 +116,51 @@ SD_INIT:
 .END:
     MOVEM.L (SP)+,D4/A0
     RTS
+
+; -----------------------------------------
+; SD_READ_SEC: Sends CMD10 (Read block)
+; Inputs: D1.L = Sector address (4 bytes)
+;         A1   = Dest buffer (512 bytes)
+; Output: D2   = result, if 0 OK else ERROR
+; -----------------------------------------
+SD_READ_SEC:
+    MOVEM.L D0-D1/A0-A1,-(SP)
+    MOVE.B  #$00,SD_CTRL    ; Set CS low (active)
+    LEA     CMD17,A0        ;  ***** TODO: here the sector address is hardcoded!!! *****
+    BSR     SD_SEND_CMD
+    BSR     WAIT_R1
+    CMP.B   #$00,D0         ; Is it $00?
+    BNE     .EXIT           ; If not $00 error
+
+    ; Wait start token $FE
+    MOVE.B  #$FF,D0         ; Dummy write data
+.WAIT_START:
+    BSR     SD_WRITE        ; Clock SPI while wait
+    MOVE.B  SD_DATA,D1      ; Wait until different from $FF
+    CMP.B   #$FE,D1
+    BNE     .WAIT_START     ; TODO: Implement timeout
+
+    ; Read sector data
+    MOVE.B  #$FF,D0         ; Dummy write data
+    MOVE.W  #511,D2         ; Read 512 bytes (-1 for DBRA)
+.READ_DATA:
+    BSR     SD_WRITE        ; Clock SPI while wait
+    MOVE.B  SD_DATA,D0      ; Read data
+    MOVE.B  D0,(A1)+        ; Copy to buffer
+    DBRA    D2,.READ_DATA
+
+    ; Read CRC
+    BSR     SD_WRITE        ; Clock SPI while wait
+    MOVE.B  SD_DATA,D1      ; Read CRC (1st byte)
+    BSR     SD_WRITE        ; Clock SPI while wait
+    MOVE.B  SD_DATA,D2      ; Read CRC (2nd byte)
+    ;MOVE.W  #$01,LED
+    ; TODO: calculate CRC
+    MOVE.B  #0,D1           ; Read successful
+
+.EXIT:
+    MOVE.B  D1,D2
+    MOVEM.L (SP)+,D0-D1/A0-A1
 
 ; -----------------------------------------
 ; SD_RESET: Resets SD card
@@ -202,7 +273,6 @@ DLY_LOOP:
     MOVEM.L (SP)+,D3
     RTS
 
-
 ; ===========================
 ; Constants
 ; ===========================
@@ -214,8 +284,15 @@ CMD8        DC.B  $48, $00, $00, $01, $AA, $87
 CMD55       DC.B  $77, $00, $00, $00, $00, $FF
 ACMD41      DC.B  $69, $40, $00, $00, $00, $FF
 
+; TODO: bytes 1-4 are actually the address to read
+;       thus this approach doesn't really work,
+;       the address should be dynamic and not hardcoded
+CMD17       DC.B  $51, $00, $00, $00, $00, $FF
+
 ; Messages
-MSG_INIT    DC.B 'INIT SD CARD... ',NUL
+MSG_INIT    DC.B 'Init SD Card... ',NUL
+MSG_RD_SEC  DC.B 'Read 1st Sector... ',NUL
+MSG_BUF_AD  DC.B 'Buffer Address: ',NUL
 MSG_OK      DC.B 'OK',LF,NUL
 MSG_ERR     DC.B 'ERR',LF,NUL
 MSG_BYTE    DC.B 'BYTE: ',NUL
@@ -226,6 +303,13 @@ CR          EQU 13          ; Carriage Return
 LF          EQU 10          ; Line Feed
 BEL         EQU 7           ; Bell character
 NUL         EQU 0
+
+; ===========================
+; Variables
+; ===========================
+    ALIGN 2
+SECT_BUFF   DS.B 512
+
 
 ; ===========================
 ; Include files (Macro at top)
