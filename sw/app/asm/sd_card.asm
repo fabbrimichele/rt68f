@@ -27,10 +27,8 @@ START:
     PRINT   MSG_RD_SEC
     LEA     SECT_BUFF,A1
     BSR     SD_READ_SEC
-
-    ; TODO: restore error check
-    ;CMP.B   #0,D2
-    ;BNE     .ERR
+    CMP.B   #0,D2
+    BNE     .ERR
     PRINT   MSG_OK
 
     ; Print Buffer address
