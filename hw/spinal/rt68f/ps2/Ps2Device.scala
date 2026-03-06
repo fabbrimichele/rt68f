@@ -78,7 +78,7 @@ case class Ps2Device(Timeout: BigInt = 100) extends Component {
           ctrlReg(7 downto 7) := io.bus.DATAO(7 downto 7)
         }
         is(1) {
-          datain :=  io.bus.DATAO(7 downto 0)
+          datain := io.bus.DATAO(7 downto 0)
         }
       }
     }

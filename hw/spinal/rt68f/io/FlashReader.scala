@@ -18,7 +18,7 @@ case class FlashReader() extends Component {
   }
 
   // SPI
-  val spiConfig = SpiMasterConfig(
+  val spiConfig = SpiMasterWithCsConfig(
     maxBytesPerCs = 8,
   )
   val spiMaster = new SpiMasterWithCs(spiConfig)
