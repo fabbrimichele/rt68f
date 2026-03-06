@@ -63,11 +63,11 @@ case class SpiDevice(config: SpiMasterConfig = SpiMasterConfig()) extends Compon
   // -------------------
   // 68000 bus
   // -------------------
+  private val addr = io.bus.ADDR(1 downto 1) // 2 registers, Each register is 16 bit wide
   // Instead of combinatorial, make DTACK a registered process
   private val dtAckReg = RegInit(True) // Inactive by default
-  private val addr = io.bus.ADDR(1 downto 1) // 2 registers, Each register is 16 bit wide
-  io.bus.DATAI := 0 // default
   io.bus.DTACK := dtAckReg
+  io.bus.DATAI := 0 // default
 
   when(!io.bus.AS && io.sel) {
     dtAckReg := False // acknowledge access (active low)

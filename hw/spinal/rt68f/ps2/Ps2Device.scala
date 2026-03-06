@@ -55,12 +55,13 @@ case class Ps2Device(Timeout: BigInt = 100) extends Component {
   // -------------------
   // 68000 bus
   // -------------------
-  io.bus.DATAI := 0 // default
-  io.bus.DTACK := True // inactive (assuming active low)
   val addr = io.bus.ADDR(1 downto 1) // 2 registers, Each register is 16 bit wide
+  private val dtAckReg = RegInit(True) // Inactive by default
+  io.bus.DTACK := dtAckReg // inactive (assuming active low)
+  io.bus.DATAI := 0 // default
 
   when(!io.bus.AS && io.sel) {
-    io.bus.DTACK := False // acknowledge access (active low)
+    dtAckReg := False // acknowledge access (active low)
 
     when(io.bus.RW) {
       // Read
@@ -82,6 +83,8 @@ case class Ps2Device(Timeout: BigInt = 100) extends Component {
         }
       }
     }
+  } otherwise {
+    dtAckReg := True
   }
 
   when(ps2rx.io.tx_done_tick) {
