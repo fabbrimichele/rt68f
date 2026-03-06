@@ -42,7 +42,6 @@ case class SpiDevice(config: SpiMasterConfig = SpiMasterConfig()) extends Compon
   // ctrlReg (write)
   private val ctrlReg = Reg(Bits(8 bits)) init B"00000001" // CS is inactive high
   private val spiCsN = ctrlReg(0)
-  //private val txDataValid = ctrlReg(1)
 
   // statReg (read)
   private val statReg = spiMaster.io.o_RX_DV ## spiMaster.io.o_TX_Ready ## io.cd ## B"00000"
@@ -64,12 +63,14 @@ case class SpiDevice(config: SpiMasterConfig = SpiMasterConfig()) extends Compon
   // -------------------
   // 68000 bus
   // -------------------
-  io.bus.DATAI := 0 // default
-  io.bus.DTACK := True // inactive (assuming active low)
+  // Instead of combinatorial, make DTACK a registered process
+  private val dtAckReg = RegInit(True) // Inactive by default
   private val addr = io.bus.ADDR(1 downto 1) // 2 registers, Each register is 16 bit wide
+  io.bus.DATAI := 0 // default
+  io.bus.DTACK := dtAckReg
 
   when(!io.bus.AS && io.sel) {
-    io.bus.DTACK := False // acknowledge access (active low)
+    dtAckReg := False // acknowledge access (active low)
 
     when(io.bus.RW) {
       // Read
@@ -92,5 +93,6 @@ case class SpiDevice(config: SpiMasterConfig = SpiMasterConfig()) extends Compon
     }
   } otherwise {
     spiMaster.io.i_TX_DV := False
+    dtAckReg := True
   }
 }
