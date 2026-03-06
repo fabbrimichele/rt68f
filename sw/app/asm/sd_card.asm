@@ -25,9 +25,15 @@ START:
 
     ; Read Sector
     PRINT   MSG_RD_SEC
-    LEA     SECT_BUFF,A1
+    MOVE.L  #0,D1           ; Sector 0
+    LEA     SECT_BUFF,A1    ; Buffer pointer
     BSR     SD_READ_SEC
     CMP.B   #0,D2
+    BNE     .ERR
+    ; Check the MBR signature (last 2 bytes)
+    CMP.B   #$55,510(A1)
+    BNE     .ERR
+    CMP.B   #$AA,511(A1)
     BNE     .ERR
     PRINT   MSG_OK
 
@@ -124,7 +130,21 @@ SD_INIT:
 SD_READ_SEC:
     MOVEM.L D0-D1/A0-A1,-(SP)
     MOVE.B  #$00,SD_CTRL    ; Set CS low (active)
-    LEA     CMD17,A0        ;  ***** TODO: here the sector address is hardcoded!!! *****
+
+    ; CMD17 is created dinamically because of the sector address
+    LEA     CMD_BUFF,A0
+    MOVE.B  #$51,0(A0)      ; CMD17 Header
+    MOVE.L  D1,D2           ; CMD17 Sector address
+    MOVE.B  D2,4(A0)        ; Copy byte 0
+    LSR.L   #8,D2
+    MOVE.B  D2,3(A0)        ; Copy byte 1
+    LSR.L   #8,D2
+    MOVE.B  D2,2(A0)        ; Copy byte 1
+    LSR.L   #8,D2
+    MOVE.B  D2,1(A0)        ; Copy byte 1
+    MOVE.B  #$FF,5(A0)      ; CMD17 CRC (dummy)
+
+    ; Send CMD17 command
     BSR     SD_SEND_CMD
     BSR     WAIT_R1
     CMP.B   #$00,D0         ; Is it $00?
@@ -282,11 +302,6 @@ CMD8        DC.B  $48, $00, $00, $01, $AA, $87
 CMD55       DC.B  $77, $00, $00, $00, $00, $FF
 ACMD41      DC.B  $69, $40, $00, $00, $00, $FF
 
-; TODO: bytes 1-4 are actually the address to read
-;       thus this approach doesn't really work,
-;       the address should be dynamic and not hardcoded
-CMD17       DC.B  $51, $00, $00, $00, $00, $FF
-
 ; Messages
 MSG_INIT    DC.B 'Init SD Card... ',NUL
 MSG_RD_SEC  DC.B 'Read 1st Sector... ',NUL
@@ -305,6 +320,7 @@ NUL         EQU 0
 ; ===========================
 ; Variables
 ; ===========================
+CMD_BUFF    DS.B 5
     ALIGN 2
 SECT_BUFF   DS.B 512
 
