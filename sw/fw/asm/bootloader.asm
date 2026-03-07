@@ -85,7 +85,7 @@ TRAP_14_HANDLER:
 
 ; -------------------------------------------------------------------------
 ; Load from FLASH a binary content to memory.
-; File expcted to be at Flash address: $80000
+; File expected to be at Flash address: $80000
 ; Return start address in A1.
 ; -------------------------------------------------------------------------
 LOAD_FLASH:
@@ -97,18 +97,19 @@ LOAD_FLASH:
     MOVE.L  D0,D1
     LSR     #1,D1               ; D1 content length in words (files have always even length)
     CMP     #0,D1
-    BEQ     LOAD_FLASH_DONE     ; If D1 = 0, exit
+    BEQ     .DONE               ; If D1 = 0, exit
 
     SUBQ.L  #1,D1               ; Decrement counter (required by DBRA)
-LOAD_FLASH_LOOP:
+.LOOP:
     MOVE.B  #FL_CMD_RD,FLASH_CTRL ; Read command
-LOAD_FLASH_WAIT:
+.WAIT:
     TST.B   FLASH_CTRL          ; Is Flash ready (bit 7)?
-    BMI     LOAD_FLASH_WAIT     ; Busy if set to 1 (negative test)
+    BMI     .WAIT               ; Busy if set to 1 (negative test)
     MOVE.W  FLASH_DATA,(A0)+    ; Copy byte read to SRAM
-    DBRA    D1,LOAD_FLASH_LOOP  ; Read next word, or terminate
+    SUBQ.L  #1,D1
+    BNE     .LOOP               ; Decrement D1, if == 0 exit
 
-LOAD_FLASH_DONE:
+.DONE:
 ; TODO: Load - Add checksum at the end
     RTS
 
@@ -144,16 +145,17 @@ LOAD_SERIAL:
     JSR     READ_32BIT_WORD     ; Result in D1.L
                                 ; D1 content lenght
     CMP     #0,D1
-    BEQ     LOA_SER_DONE        ; If D1 = 0, exit
+    BEQ     .DONE               ; If D1 = 0, exit
     SUBQ.L  #2,D1               ; Decrement counter (required by DBRA)
 
     ; Read content
-LOA_SER_LOOP:
+.LOOP:
     JSR     GETCHAR             ; Read byte from UART to D0
     MOVE.B  D0,(A0)+            ; Copy read byte to memory
-    DBRA    D1,LOA_SER_LOOP     ; Decrement D1, if != -1 exit
+    SUBQ.L  #1,D1
+    BNE     .LOOP                ; Decrement D1, if == 0 exit
 
-LOA_SER_DONE:
+.DONE:
     RTS
 
 ; TODO: Load - Add checksum at the end

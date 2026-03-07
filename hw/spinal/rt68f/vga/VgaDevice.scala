@@ -57,7 +57,9 @@ case class VgaDevice(clk25: ClockDomain) extends Component {
   // Bit 2    [Overscan]    : 0 -> off, 1 -> on
   // Bit 3    [VBlank int]  : 0 -> off, 1 -> on
   // Bit 6    [VBlank ack]  : Write to acknowledge VBlank interrupt
-  val controlReg = Reg(Bits(16 bits)) init 2 // 320x200, no overscan, no vBlank int
+  val controlReg = Reg(Bits(16 bits)) init 3 // 640X400C002, no overscan, no vBlank int
+  // TODO: it seems 640X400C002 is not working, it skips one byte
+  //       write a program to test it
 
   // ------------ Interrupts ------------
   // vSync
