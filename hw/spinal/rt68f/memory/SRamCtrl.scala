@@ -2,7 +2,7 @@ package rt68f.memory
 
 import rt68f.core.M68kBus
 import spinal.core.in.Bool
-import spinal.core.{B, Bits, Bundle, Cat, ClockDomain, ClockingArea, Component, False, IntToBuilder, LiteralBuilder, Reg, True, in, out, when}
+import spinal.core.{B, Bits, Bundle, Cat, ClockDomain, ClockingArea, Component, False, IntToBuilder, LiteralBuilder, Reg, True, crossClockDomain, in, out, when}
 import spinal.lib.fsm.{EntryPoint, State, StateMachine}
 import spinal.lib.io.TriState
 import spinal.lib.{IMasterSlave, master, slave}
