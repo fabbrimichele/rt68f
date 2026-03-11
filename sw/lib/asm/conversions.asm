@@ -55,7 +55,7 @@ BTH_PRINT:
 ; BINTOHEX_W: Converts D0.W to 4 ASCII hex characters.
 ; --------------------------------------------------------
 BINTOHEX_W:
-    MOVEM.L D1/D2,-(SP)         ; Save D1, D2
+    MOVEM.L D0/D1/D2,-(SP)         ; Save D1, D2
 
     MOVEQ   #3,D2               ; Loop Counter (4 nibbles - 1 = 3)
 
@@ -97,7 +97,7 @@ BTH_W_PRINT:
 
     DBRA    D2,BTH_W_LOOP       ; Loop 4 times
 
-    MOVEM.L (SP)+,D1/D2          ; Restore D1, D2
+    MOVEM.L (SP)+,D0/D1/D2          ; Restore D1, D2
     RTS
 
 ; -------------------------------------------------------------

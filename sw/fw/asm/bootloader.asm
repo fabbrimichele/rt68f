@@ -43,6 +43,12 @@ BOOT_SER:
 DONE:
     LEA     MSG_DONE,A0
     BSR     PUTS
+    LEA     MSG_CHKSUM,A0
+    BSR     PUTS
+    JSR     BINTOHEX_W      ; Print D0.W as hex
+    MOVE.B  #LF,D0
+    JSR     PUTCHAR
+    JSR     PUTCHAR
     JMP     (A1)            ; Start program
     ;JSR     DUMP
 STOP:
@@ -89,6 +95,7 @@ TRAP_14_HANDLER:
 ; Return start address in A1.
 ; -------------------------------------------------------------------------
 LOAD_FLASH:
+    ; TODO: add checksum
     MOVE.L  #$80000,FLASH_ADDR  ; Flash address to read from
     BSR     FLASH_RD_LONG
     MOVE.L  D0,A0               ; A0 start address, for loading
@@ -99,6 +106,7 @@ LOAD_FLASH:
     CMP     #0,D1
     BEQ     .DONE               ; If D1 = 0, exit
 
+    ; TODO: the following line is wrong, we're not using DBRA anymore
     SUBQ.L  #1,D1               ; Decrement counter (required by DBRA)
 .LOOP:
     MOVE.B  #FL_CMD_RD,FLASH_CTRL ; Read command
@@ -106,8 +114,8 @@ LOAD_FLASH:
     TST.B   FLASH_CTRL          ; Is Flash ready (bit 7)?
     BMI     .WAIT               ; Busy if set to 1 (negative test)
     MOVE.W  FLASH_DATA,(A0)+    ; Copy byte read to SRAM
-    SUBQ.L  #1,D1
-    BNE     .LOOP               ; Decrement D1, if == 0 exit
+    SUBQ.L  #1,D1               ; Decrement D1
+    BNE     .LOOP               ; if != 0 continue
 
 .DONE:
 ; TODO: Load - Add checksum at the end
@@ -134,31 +142,40 @@ FLASH_WAIT:
 
 ; -------------------------------------------------------------------------
 ; Load from UART a binary content to memory.
-; Return start address in A1.
+; Outputs: A1 start address
+;          D0.W Fletcher’s Checksum, format: [SumB (High Byte)][SumA (Low Byte)]
 ; -------------------------------------------------------------------------
 LOAD_SERIAL:
     ; Read header start address (32 bits)
     JSR     READ_32BIT_WORD     ; Result in D1.L
     MOVE.L  D1,A0               ; A0 start address, for loading
     MOVE.L  D1,A1               ; A0 start address, to be returned
+
     ; Read content length
-    JSR     READ_32BIT_WORD     ; Result in D1.L
-                                ; D1 content lenght
+    JSR     READ_32BIT_WORD     ; Result in D1.L, D1 content lenght
     CMP     #0,D1
     BEQ     .DONE               ; If D1 = 0, exit
-    SUBQ.L  #2,D1               ; Decrement counter (required by DBRA)
 
     ; Read content
+    ; Init checksum
+    CLR.L   D6                  ; D0.B will be Sum A (Fletcher’s Checksum)
+    CLR.L   D7                  ; D1.B will be Sum B (Fletcher’s Checksum)
 .LOOP:
     JSR     GETCHAR             ; Read byte from UART to D0
     MOVE.B  D0,(A0)+            ; Copy read byte to memory
-    SUBQ.L  #1,D1
-    BNE     .LOOP                ; Decrement D1, if == 0 exit
+    ;MOVE.B  (A0)+,D0            ; Read back from memory (checks both serial and memory)
+    ADD.B   D0,D6               ; SumA = SumA + Data
+    ADD.B   D6,D7               ; SumB = SumB + SumA
+    SUBQ.L  #1,D1               ; Decrement D1
+    BNE     .LOOP               ; if != 0 continue
 
 .DONE:
+    ; Combine SumA and SumB into a single 16-bit word
+    ; Result format: [SumB (High Byte)][SumA (Low Byte)]
+    LSL.W   #8,D7          ; Shift SumB to high byte
+    MOVE.B  D6,D7          ; Put SumA in low byte
+    MOVE.W  D7,D0          ; Return result in D0
     RTS
-
-; TODO: Load - Add checksum at the end
 
 ; -------------------------------------------------------------
 ; READ_32BIT_WORD: Reads 4 bytes from UART and assembles into D1.L
@@ -177,10 +194,8 @@ READ_LOOP:
 
     ; 1. Shift the current result (D1) left by 8 bits (makes room for the new byte)
     LSL.L   #8,D1
-
     ; 2. OR the new byte (D0.B) into the least significant position of D1
     OR.B    D0,D1
-
     DBRA    D2,READ_LOOP    ; Loop 4 times total (D2 counts down from 3)
 
     MOVEM.L (SP)+,D0/D2      ; Restore registers
@@ -243,8 +258,9 @@ MSG_SELECT      DC.B LF,'Press <down> to boot from serial (2s).',LF,NUL
 MSG_BOOT_FROM   DC.B 'Booting from ',NUL
 MSG_BOOT_FLASH  DC.B 'flash...',NUL
 MSG_BOOT_SERIAL DC.B 'serial...',NUL
-MSG_DONE        DC.B ' OK',LF,LF,NUL
+MSG_DONE        DC.B ' OK',LF,NUL
 MSG_PRG_RETURN  DC.B 'Program returned, press reset to restart.',LF,NUL
+MSG_CHKSUM      DC.B 'Checksum [B|A]: ',NUL
 
 ; ------------------------------
 ; RAM Data Section (bootloader mem)
