@@ -162,8 +162,8 @@ LOAD_SERIAL:
     CLR.L   D7                  ; D1.B will be Sum B (Fletcher’s Checksum)
 .LOOP:
     JSR     GETCHAR             ; Read byte from UART to D0
-    MOVE.B  D0,(A0)+            ; Copy read byte to memory
-    ;MOVE.B  (A0)+,D0            ; Read back from memory (checks both serial and memory)
+    MOVE.B  D0,(A0)             ; Copy read byte to memory
+    MOVE.B  (A0)+,D0            ; Read back from memory (checks both serial and memory)
     ADD.B   D0,D6               ; SumA = SumA + Data
     ADD.B   D6,D7               ; SumB = SumB + SumA
     SUBQ.L  #1,D1               ; Decrement D1
