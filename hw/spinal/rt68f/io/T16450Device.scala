@@ -39,27 +39,4 @@ case class T16450Device() extends Component {
   when(uartSel) {
     io.bus.DTACK := False // acknowledge access (active low)
   }
-
-  /*
-  // TODO: I'm not sure this is correct, it should keep
-  //       DTACK set for the whole time uartSel is active
-  //
-  // It might work, try again once UART can write bytes
-  // Delay DTACK assertion of 1 cycle
-  val dtackReg = Reg(Bool()) init True
-  io.bus.DTACK := dtackReg
-  val fsm = new StateMachine {
-    val idle : State = new State with EntryPoint {
-      whenIsActive {
-        when(uartSel) {
-          goto(done)
-        }
-      }
-    }
-    val done : State = new State {
-      whenIsActive(goto(idle))
-      onExit(dtackReg := False)
-    }
-  }
-   */
 }
