@@ -126,21 +126,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // --------------------------------
     // SD Card reader
     // --------------------------------
-    /*
-      `clksPerHalfBit` set to integer number of clocks for each
-      half-bit of SPI data.  E.g. 100 MHz i_Clk, CLKS_PER_HALF_BIT = 2
-      would create o_SPI_CLK of 25 MHz.
-      SD Card clock must be between 100 KHz and 400 KHz:
-      16 MHz / 100 KHz = 160 -> it's half-bit thus * 2 = 160 * 2 = 320
-     */
-    // TODO: read the clock frequency from the current domain
-    /*
-    val sdCard = SpiDevice(SpiMasterConfig(clksPerHalfBit = 16000000 / 100000 * 2))
-    io.sd <> sdCard.io.spi
-    sdCard.io.cd := io.sd_cd
-    busManager.io.sdCardBus <> sdCard.io.bus
-    sdCard.io.sel := busManager.io.sdCardSel
-    */
     // TODO: SpiMasterMM supports many SPI devices with an 8-bit chip select
     //       connect here also the Flash Memory and replace the existing one.
     //       The latter requires rewriting the boot loader with a more complex

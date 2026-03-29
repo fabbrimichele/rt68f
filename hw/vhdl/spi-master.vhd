@@ -43,8 +43,7 @@
 --                   CS: Write bits:
 --
 --                   CS[0]   START : Start transfer
---                   CS[1]   END   : Deselect device after transfer
---                                   (or immediately if START = '0')
+--                   CS[1]   CS    : Chip Select (1 asserted, 0 unasserted)
 --                   CS[2]   IRQEN : Generate IRQ at end of transfer
 --                   CS[6:4] SPIAD : SPI device address
 --
@@ -161,9 +160,6 @@ architecture rtl of spi_master is
     signal spi_clk_divide  : std_logic_vector(2 downto 0);
     -- SPI transfer length
     signal transfer_length : std_logic_vector(1 downto 0);
-    -- Flag to indicate that the SPI slave should be deselected after the current
-    -- transfer
-    signal deselect        : std_logic;
     -- Flag to indicate that an IRQ should be generated at the end of a transfer
     signal irq_enable      : std_logic;
     -- Internal chip select signal, will be demultiplexed through the cs_mux
@@ -176,7 +172,6 @@ begin
     cpu_write : process(clk, reset)
     begin
         if reset = '1' then
-            deselect        <= '0';
             irq_enable      <= '0';
             start           <= '0';
             spi_clk_divide  <= "111"; -- Default divider 128
@@ -192,9 +187,8 @@ begin
                         spi_data_buf(15 downto 8) <= data_in;
                     when "10" =>
                         start      <= data_in(0);
-                        --deselect   <= data_in(1); not used anymore
+                        spi_cs     <= data_in(1);
                         irq_enable <= data_in(2);
-                        spi_cs     <= data_in(3); -- NEW: Direct control of the CS line
                         spi_addr   <= data_in(6 downto 4);
                     when "11" =>
                         spi_clk_divide  <= data_in(2 downto 0);
@@ -207,7 +201,7 @@ begin
     end process;
 
     --* Provide data for the CPU to read
-    cpu_read : process(shift_reg, addr, state, deselect, start)
+    cpu_read : process(shift_reg, addr, state, start)
     begin
         data_out <= (others => '0');
         case addr is
@@ -221,7 +215,6 @@ begin
                 else
                     data_out(0) <= '1';
                 end if;
-                data_out(1) <= deselect;
             when others =>
                 null;
         end case;
@@ -256,10 +249,7 @@ begin
                     if start = '1' then
                         count     <= (others => '0');
                         shift_reg <= spi_data_buf;
-                        --spi_cs    <= '1';
                         state     <= s_running;
-                    --elsif deselect = '1' then
-                    --    spi_cs <= '0';
                     end if;
                 when s_running =>
                     if prev_spi_clk = '1' and spi_clk_buf = '0' then
@@ -270,9 +260,6 @@ begin
                             or (count = "0111" and transfer_length = "01")
                             or (count = "1011" and transfer_length = "10")
                             or (count = "1111" and transfer_length = "11")) then
-                            --if deselect = '1' then
-                            --    spi_cs <= '0';
-                            --end if;
                             if irq_enable = '1' then
                                 irq <= '1';
                             end if;
