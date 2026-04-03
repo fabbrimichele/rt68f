@@ -6,12 +6,13 @@ import spinal.lib._
 
 import scala.language.postfixOps
 
-case class SpiMasterDevice() extends Component {
+case class SpiMasterConfig(portCount: Int)
+
+case class SpiMasterDevice(config: SpiMasterConfig) extends Component {
   val io = new Bundle {
     val bus = slave(M68kBus())
     val sel = in Bool() // chip select from decoder
-    val spi0 = master(Spi()) // TODO: make it generic?
-    val spi1 = master(Spi())
+    val spis = Vec(master(Spi()), config.portCount)
   }
 
   val spiMaster = new SpiMasterBB
@@ -23,22 +24,26 @@ case class SpiMasterDevice() extends Component {
   spiMaster.io.data_in := io.bus.DATAO(7 downto 0)
   spiMaster.io.rw := io.bus.RW
   io.bus.DATAI := spiMaster.io.data_out.resized
-  // TODO: spiMaster.io.irq
+  // spiMaster.io.irq not used
 
   // SPI bus
-  spiMaster.io.spi_miso := spiMaster.io.spi_cs_n.mux(
-    B"11111110" -> io.spi0.miso, // Device 0 Active
-    B"11111101" -> io.spi1.miso, // Device 1 Active
-    default -> True,
+  spiMaster.io.spi_miso := spiMaster.io.spi_cs_n.muxList(
+    defaultValue = True,
+    // spi_cs_n is asserted low, need false
+    // Patterns = 11111110, 11111101, 11111011, etc
+    mappings = for(i <- 0 until config.portCount) yield {
+      val pattern = B(8 bits, default -> true) // pattern = 11111111
+      pattern(i) := False                      // e.g. i = 1 -> pattern = 11111101
+      pattern -> io.spis(i).miso
+    },
   )
 
-  io.spi0.mosi := spiMaster.io.spi_mosi
-  io.spi0.clk := spiMaster.io.spi_clk
-  io.spi0.cs := spiMaster.io.spi_cs_n(0)
-
-  io.spi1.mosi := spiMaster.io.spi_mosi
-  io.spi1.clk := spiMaster.io.spi_clk
-  io.spi1.cs := spiMaster.io.spi_cs_n(1)
+  // SPIs outputs
+  for (i <- 0 until config.portCount) {
+    io.spis(i).mosi := spiMaster.io.spi_mosi
+    io.spis(i).clk := spiMaster.io.spi_clk
+    io.spis(i).cs := spiMaster.io.spi_cs_n(i)
+  }
 
   io.bus.DTACK := True  // inactive (assuming active low)
   when(spiSel) {

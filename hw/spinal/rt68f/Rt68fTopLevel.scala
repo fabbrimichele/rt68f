@@ -118,9 +118,9 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // --------------------------------
     // SPI Device (SD card and Flash Mem)
     // --------------------------------
-    val spiMaster = SpiMasterDevice()
-    io.sd <> spiMaster.io.spi0
-    io.flash <> spiMaster.io.spi1
+    val spiMaster = SpiMasterDevice(SpiMasterConfig(portCount = 2))
+    io.sd <> spiMaster.io.spis(0)
+    io.flash <> spiMaster.io.spis(1)
     busManager.io.spiBus <> spiMaster.io.bus
     spiMaster.io.sel := busManager.io.spiSel
     // spiMaster.io.cd := io.sd_cd // Card detect is not managed, EmuTOS doesn't use it
