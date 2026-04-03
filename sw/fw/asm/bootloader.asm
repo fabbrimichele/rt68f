@@ -115,7 +115,6 @@ LOAD_FLASH:
     BEQ     .DONE               ; If D1 = 0, exit
 
     ; Read content
-    SUBQ.L  #1,D1               ; -1 for DBRA
     ; Init checksum
     CLR.L   D6                  ; D0.B will be Sum A (Fletcher’s Checksum)
     CLR.L   D7                  ; D1.B will be Sum B (Fletcher’s Checksum)
@@ -125,7 +124,8 @@ LOAD_FLASH:
     MOVE.B  (A0)+,D0            ; Read back from memory (checks both serial and memory)
     ADD.B   D0,D6               ; SumA = SumA + Data
     ADD.B   D6,D7               ; SumB = SumB + SumA
-    DBRA    D1,.LOOP
+    SUBQ.L  #1,D1               ; Decrement D1 (DBRA DOES NOT WORK WITH LONG!)
+    BNE     .LOOP               ; if != 0 continue
 
 .DONE:
     ; Deassert SPI CS
@@ -229,7 +229,7 @@ LOAD_SERIAL:
     MOVE.B  (A0)+,D0            ; Read back from memory (checks both serial and memory)
     ADD.B   D0,D6               ; SumA = SumA + Data
     ADD.B   D6,D7               ; SumB = SumB + SumA
-    SUBQ.L  #1,D1               ; Decrement D1
+    SUBQ.L  #1,D1               ; Decrement D1 (DBRA DOES NOT WORK WITH LONG!)
     BNE     .LOOP               ; if != 0 continue
 
 .DONE:
