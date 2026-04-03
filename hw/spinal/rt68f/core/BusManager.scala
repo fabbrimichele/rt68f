@@ -20,7 +20,7 @@ case class BusManager() extends Component {
     val keyBus    = master(M68kBus())
     val sramBus   = master(M68kBus())
     val flashBus  = master(M68kBus())
-    val sdCardBus = master(M68kBus())
+    val spiBus    = master(M68kBus())
     val timerABus = master(M68kBus())
     //val timerBBus = master(M68kBus())
     val ps2aBus   = master(M68kBus())
@@ -58,7 +58,7 @@ case class BusManager() extends Component {
   // --------------------------------
   val peripheralBuses = List(
     io.romBus, io.vgaBus, io.ledBus, io.keyBus,
-    io.uartBus, io.sramBus, io.flashBus, io.sdCardBus,
+    io.uartBus, io.sramBus, io.flashBus, io.spiBus,
     io.timerABus, /*io.timerBBus,*/ io.ps2aBus,
     io.ps2bBus, io.psgBus,
   )
@@ -78,6 +78,8 @@ case class BusManager() extends Component {
   // Only autovectors are used for interrupts
   // IPL is active low
   // TODO: revisit interrupt priorities
+  // Check examples in the Atari ST and TOS
+  // For example, should the timer have priority over keyboard?
   when(io.ps2bInt) {
     io.ipl := B"001" // bitwise not 6
   } elsewhen(io.ps2aInt) {
@@ -116,6 +118,7 @@ case class BusManager() extends Component {
   // Decoding Chain, ensures that even if an address matches
   // two ranges, only the highest priority one is selected.
   val addr = io.cpuBus.ADDR
+  // TODO: switch could optimize resources but I need to check how it works
   when(addr(31 downto 3) === 0x00000000) { // 0x00000000 < 0x00000008
     // This is required to have Reset SP and PC defined
     // in ROM when the CPU starts, the 2 values are only
@@ -185,8 +188,8 @@ case class BusManager() extends Component {
       io.cpuBus.DATAI := io.flashBus.DATAI
       io.cpuBus.DTACK := io.flashBus.DTACK
     }  elsewhen (io.sdCardSel) {
-      io.cpuBus.DATAI := io.sdCardBus.DATAI
-      io.cpuBus.DTACK := io.sdCardBus.DTACK
+      io.cpuBus.DATAI := io.spiBus.DATAI
+      io.cpuBus.DTACK := io.spiBus.DTACK
     }elsewhen (io.timerASel) {
       io.cpuBus.DATAI := io.timerABus.DATAI
       io.cpuBus.DTACK := io.timerABus.DTACK

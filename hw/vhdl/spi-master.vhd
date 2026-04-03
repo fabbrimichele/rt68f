@@ -43,8 +43,7 @@
 --                   CS: Write bits:
 --
 --                   CS[0]   START : Start transfer
---                   CS[1]   END   : Deselect device after transfer
---                                   (or immediately if START = '0')
+--                   CS[1]   CS    : Chip Select (1 asserted, 0 unasserted)
 --                   CS[2]   IRQEN : Generate IRQ at end of transfer
 --                   CS[6:4] SPIAD : SPI device address
 --
@@ -54,12 +53,16 @@
 --
 --                   CO: Write bits
 --
---                   CO[1:0] DIVIDE: SPI clock divisor,
---                                   00=clk/2,
---                                   01=clk/4,
---                                   10=clk/8,
---                                   11=clk/16
---                   CO[3:2] LENGTH: Transfer length,
+--                   CO[2:0] DIVIDE: SPI clock divisor,
+--                                   000=clk/2,
+--                                   001=clk/4,
+--                                   010=clk/8,
+--                                   011=clk/16
+--                                   100=clk/32,
+--                                   101=clk/64,
+--                                   110=clk/128,
+--                                   111=clk/256
+--                   CO[4:3] LENGTH: Transfer length,
 --                                   00= 4 bits,
 --                                   01= 8 bits,
 --                                   10=12 bits,
@@ -151,15 +154,12 @@ architecture rtl of spi_master is
     signal spi_clk_out     : std_logic;
     -- Previous SPI clock state
     signal prev_spi_clk    : std_logic;
-    -- Number of clk cycles-1 in this SPI clock period
-    signal spi_clk_count   : std_logic_vector(2 downto 0);
-    -- SPI clock divisor
-    signal spi_clk_divide  : std_logic_vector(1 downto 0);
+    -- Number of clk cycles-1 in this SPI clock period (up to 256)
+    signal spi_clk_count   : std_logic_vector(7 downto 0);
+    -- SPI clock divisor (2, 4, 8, 16, 32, 64, 128, 256)
+    signal spi_clk_divide  : std_logic_vector(2 downto 0);
     -- SPI transfer length
     signal transfer_length : std_logic_vector(1 downto 0);
-    -- Flag to indicate that the SPI slave should be deselected after the current
-    -- transfer
-    signal deselect        : std_logic;
     -- Flag to indicate that an IRQ should be generated at the end of a transfer
     signal irq_enable      : std_logic;
     -- Internal chip select signal, will be demultiplexed through the cs_mux
@@ -172,10 +172,9 @@ begin
     cpu_write : process(clk, reset)
     begin
         if reset = '1' then
-            deselect        <= '0';
             irq_enable      <= '0';
             start           <= '0';
-            spi_clk_divide  <= "11";
+            spi_clk_divide  <= "111"; -- Default divider 128
             transfer_length <= "11";
             spi_data_buf    <= (others => '0');
         elsif falling_edge(clk) then
@@ -188,12 +187,12 @@ begin
                         spi_data_buf(15 downto 8) <= data_in;
                     when "10" =>
                         start      <= data_in(0);
-                        deselect   <= data_in(1);
+                        spi_cs     <= data_in(1);
                         irq_enable <= data_in(2);
                         spi_addr   <= data_in(6 downto 4);
                     when "11" =>
-                        spi_clk_divide  <= data_in(1 downto 0);
-                        transfer_length <= data_in(3 downto 2);
+                        spi_clk_divide  <= data_in(2 downto 0);
+                        transfer_length <= data_in(4 downto 3);
                     when others =>
                         null;
                 end case;
@@ -202,7 +201,7 @@ begin
     end process;
 
     --* Provide data for the CPU to read
-    cpu_read : process(shift_reg, addr, state, deselect, start)
+    cpu_read : process(shift_reg, addr, state, start)
     begin
         data_out <= (others => '0');
         case addr is
@@ -216,7 +215,6 @@ begin
                 else
                     data_out(0) <= '1';
                 end if;
-                data_out(1) <= deselect;
             when others =>
                 null;
         end case;
@@ -240,7 +238,7 @@ begin
             shift_reg    <= (others => '0');
             prev_spi_clk <= '0';
             spi_clk_out  <= '0';
-            spi_cs       <= '0';
+            --spi_cs       <= '0';
             state        <= s_idle;
             irq          <= 'Z';
         elsif falling_edge(clk) then
@@ -251,10 +249,7 @@ begin
                     if start = '1' then
                         count     <= (others => '0');
                         shift_reg <= spi_data_buf;
-                        spi_cs    <= '1';
                         state     <= s_running;
-                    elsif deselect = '1' then
-                        spi_cs <= '0';
                     end if;
                 when s_running =>
                     if prev_spi_clk = '1' and spi_clk_buf = '0' then
@@ -265,9 +260,6 @@ begin
                             or (count = "0111" and transfer_length = "01")
                             or (count = "1011" and transfer_length = "10")
                             or (count = "1111" and transfer_length = "11")) then
-                            if deselect = '1' then
-                                spi_cs <= '0';
-                            end if;
                             if irq_enable = '1' then
                                 irq <= '1';
                             end if;
@@ -290,10 +282,15 @@ begin
             spi_clk_buf   <= '0';
         elsif falling_edge(clk) then
             if state = s_running then
-                if ((spi_clk_divide = "00")
-                    or (spi_clk_divide = "01" and spi_clk_count = "001")
-                    or (spi_clk_divide = "10" and spi_clk_count = "011")
-                    or (spi_clk_divide = "11" and spi_clk_count = "111")) then
+                if ((spi_clk_divide = "000")
+                    or (spi_clk_divide = "001" and spi_clk_count = x"01")  -- clk/2
+                    or (spi_clk_divide = "010" and spi_clk_count = x"03")  -- clk/4
+                    or (spi_clk_divide = "011" and spi_clk_count = x"07")  -- clk/8
+                    or (spi_clk_divide = "100" and spi_clk_count = x"0F")  -- clk/16
+                    or (spi_clk_divide = "101" and spi_clk_count = x"1F")  -- clk/32
+                    or (spi_clk_divide = "110" and spi_clk_count = x"3F")  -- clk/64
+                    or (spi_clk_divide = "111" and spi_clk_count = x"7F")) -- clk/128
+                then
                     spi_clk_buf <= not spi_clk_buf;
                     spi_clk_count <= (others => '0');
                 else
