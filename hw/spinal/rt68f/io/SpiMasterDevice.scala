@@ -6,25 +6,12 @@ import spinal.lib._
 
 import scala.language.postfixOps
 
-/*
-    Memory mapped SPI device:
-    $00: Status/Control Register (read/write)
-    $01: RX/TS Data Register (read/write)
-
-    Status Register (read):
-    4-0: Unused
-    5  : Card Detect
-    6  : TX Ready
-    7  : RX Data valid (TODO: this doesn't work)
-
-    Control Register (write):
-    0  : SPI CS - 0 active/1 inactive
- */
 case class SpiMasterDevice(config: SpiMasterConfig = SpiMasterConfig()) extends Component {
   val io = new Bundle {
     val bus = slave(M68kBus())
     val sel = in Bool() // chip select from decoder
-    val spi = master(Spi()) // TODO: either extract CS from Spi or extend Spi.cs to 8 bits
+    val spi0 = master(Spi()) // TODO: make it generic?
+    val spi1 = master(Spi())
   }
 
   val spiMaster = new SpiMasterMM
@@ -39,10 +26,19 @@ case class SpiMasterDevice(config: SpiMasterConfig = SpiMasterConfig()) extends 
   // TODO: spiMaster.io.irq
 
   // SPI bus
-  spiMaster.io.spi_miso := io.spi.miso
-  io.spi.mosi := spiMaster.io.spi_mosi
-  io.spi.clk := spiMaster.io.spi_clk
-  io.spi.cs := spiMaster.io.spi_cs_n(0)
+  spiMaster.io.spi_miso := spiMaster.io.spi_cs_n.mux(
+    B"11111110" -> io.spi0.miso, // Device 0 Active
+    B"11111101" -> io.spi1.miso, // Device 1 Active
+    default -> True,
+  )
+
+  io.spi0.mosi := spiMaster.io.spi_mosi
+  io.spi0.clk := spiMaster.io.spi_clk
+  io.spi0.cs := spiMaster.io.spi_cs_n(0)
+
+  io.spi1.mosi := spiMaster.io.spi_mosi
+  io.spi1.clk := spiMaster.io.spi_clk
+  io.spi1.cs := spiMaster.io.spi_cs_n(1)
 
   io.bus.DTACK := True  // inactive (assuming active low)
   when(spiSel) {
