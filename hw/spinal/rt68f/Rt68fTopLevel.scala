@@ -122,7 +122,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     io.sd <> spiMaster.io.spi0
     io.flash <> spiMaster.io.spi1
     busManager.io.spiBus <> spiMaster.io.bus
-    spiMaster.io.sel := busManager.io.sdCardSel // TODO: rename sdCard to spi in the busManager
+    spiMaster.io.sel := busManager.io.spiSel
     // spiMaster.io.cd := io.sd_cd // Card detect is not managed, EmuTOS doesn't use it
 
     // --------------------------------

@@ -35,7 +35,7 @@ case class BusManager() extends Component {
     val keyDevSel         = out Bool()
     val uartDevSel        = out Bool()
     val sramSel           = out Bool()
-    val sdCardSel         = out Bool()
+    val spiSel         = out Bool()
     val timerASel         = out Bool()
     //val timerBSel         = out Bool()
     val ps2aSel           = out Bool()
@@ -105,7 +105,7 @@ case class BusManager() extends Component {
   io.keyDevSel         := False
   io.uartDevSel        := False
   io.sramSel           := False
-  io.sdCardSel         := False
+  io.spiSel         := False
   io.timerASel         := False
   //io.timerBSel       := False
   io.ps2aSel           := False
@@ -151,7 +151,7 @@ case class BusManager() extends Component {
   } elsewhen(addr(31 downto 16) === 0x004B) {
     io.keyDevSel := True
   } elsewhen(addr(31 downto 16) === 0x004C) {
-    io.sdCardSel := True
+    io.spiSel := True
   }
 
   // --------------------------------
@@ -179,7 +179,7 @@ case class BusManager() extends Component {
     } elsewhen (io.sramSel) {
       io.cpuBus.DATAI := io.sramBus.DATAI
       io.cpuBus.DTACK := io.sramBus.DTACK
-    } elsewhen (io.sdCardSel) {
+    } elsewhen (io.spiSel) {
       io.cpuBus.DATAI := io.spiBus.DATAI
       io.cpuBus.DTACK := io.spiBus.DTACK
     } elsewhen (io.timerASel) {
