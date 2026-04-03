@@ -14,7 +14,7 @@ case class SpiMasterDevice() extends Component {
     val spi1 = master(Spi())
   }
 
-  val spiMaster = new SpiMasterMM
+  val spiMaster = new SpiMasterBB
   val spiSel = !io.bus.AS && io.sel
 
   // 68000 bus

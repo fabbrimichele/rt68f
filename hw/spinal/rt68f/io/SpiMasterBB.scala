@@ -4,7 +4,7 @@ import spinal.core._
 
 import scala.language.postfixOps
 
-class SpiMasterMM extends BlackBox {
+class SpiMasterBB extends BlackBox {
   val io = new Bundle {
     // CPU Interface Signals
     val clk      = in Bool()
