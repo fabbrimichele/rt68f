@@ -6,7 +6,7 @@ import spinal.lib._
 
 import scala.language.postfixOps
 
-case class SpiMasterDevice(config: SpiMasterConfig = SpiMasterConfig()) extends Component {
+case class SpiMasterDevice() extends Component {
   val io = new Bundle {
     val bus = slave(M68kBus())
     val sel = in Bool() // chip select from decoder
