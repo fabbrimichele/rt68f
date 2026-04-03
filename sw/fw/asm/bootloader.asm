@@ -94,34 +94,47 @@ TRAP_14_HANDLER:
 ; File expected to be at Flash address: $80000
 ; Return start address in A1.
 ; -------------------------------------------------------------------------
-    ; TODO: add checksum
 LOAD_FLASH:
     ; Configure SPI for 8 bits lenght and max speed 8 MHz
     MOVE.B  #%00001000,SPI_CONF ; LENGTH = 01 (8 bits), DIVIDE = 000 (clk/2)
-    ; Assert CS
+    ; Assert SPI CS
     MOVE.B  #%00010010,SPI_CDST ; SPIAD = 001, IRQ = 0, CS = 1, START = 0
     ; Read command
     MOVE.L  #$00080000,D0       ; Start flash memory address
     BSR     SPI_READ_COMMAND    ; Send read command and address
+
+    ; Read header start address (32 bits)
     BSR     SPI_RD_LONG
     MOVE.L  D0,A0               ; A0 start address, for loading
     MOVE.L  D0,A1               ; A0 start address, to be returned
+
+    ; Read content length
     BSR     SPI_RD_LONG       ; D1 content length in bytes
     MOVE.L  D0,D1
     CMP     #0,D1
     BEQ     .DONE               ; If D1 = 0, exit
 
-    ; TODO: replace with DBRA (subtract 1 from D1 before start the loop)
+    ; Read content
+    SUBQ.L  #1,D1               ; -1 for DBRA
+    ; Init checksum
+    CLR.L   D6                  ; D0.B will be Sum A (Fletcher’s Checksum)
+    CLR.L   D7                  ; D1.B will be Sum B (Fletcher’s Checksum)
 .LOOP:
     BSR     SPI_READ_BYTE
-    MOVE.B  D0,(A0)+            ; Copy byte read to SRAM
-    SUBQ.L  #1,D1               ; Decrement D1
-    BNE     .LOOP               ; if != 0 continue
+    MOVE.B  D0,(A0)             ; Copy read byte to memory
+    MOVE.B  (A0)+,D0            ; Read back from memory (checks both serial and memory)
+    ADD.B   D0,D6               ; SumA = SumA + Data
+    ADD.B   D6,D7               ; SumB = SumB + SumA
+    DBRA    D1,.LOOP
 
 .DONE:
-    ; Deassert CS
+    ; Deassert SPI CS
     MOVE.B  #%00010000,SPI_CDST  ; SPIAD = 001, IRQ = 0, CS = 0, START = 0
-    ; TODO: Load - Add checksum at the end
+    ; Combine SumA and SumB into a single 16-bit word
+    ; Result format: [SumB (High Byte)][SumA (Low Byte)]
+    LSL.W   #8,D7          ; Shift SumB to high byte
+    MOVE.B  D6,D7          ; Put SumA in low byte
+    MOVE.W  D7,D0          ; Return result in D0
     RTS
 
 ;--------------------------------
