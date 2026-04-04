@@ -17,7 +17,7 @@ import scala.language.postfixOps
  * Bit 6: PS/2 ack  : Write to acknowledge Timer A interrupt
  * Bit 7: unused
 */
-case class Ps2Device(Timeout: BigInt = 100) extends Component {
+case class Ps2Device(Timeout: BigInt = 2000) extends Component {
   val io = new Bundle {
     val bus = slave(M68kBus())
     val sel = in Bool() // chip select from decoder
