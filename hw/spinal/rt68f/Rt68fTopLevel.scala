@@ -38,7 +38,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     val ps2b = master(Ps2())
     val audio2 = Audio()
     val sd = master(Spi())
-    val sd_cd = in Bool() // SD card detect
   }
 
   val clkCtrl = ClockCtrl()
@@ -123,7 +122,6 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     io.flash <> spiMaster.io.spis(1)
     busManager.io.spiBus <> spiMaster.io.bus
     spiMaster.io.sel := busManager.io.spiSel
-    // spiMaster.io.cd := io.sd_cd // Card detect is not managed, EmuTOS doesn't use it
 
     // --------------------------------
     // Timers
