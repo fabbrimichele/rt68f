@@ -6,28 +6,16 @@ import spinal.lib._
 
 import scala.language.postfixOps
 
-/*
-    Memory mapped SPI device:
-    $00: Status/Control Register (read/write)
-    $01: RX/TS Data Register (read/write)
+case class SpiMasterConfig(portCount: Int)
 
-    Status Register (read):
-    4-0: Unused
-    5  : Card Detect
-    6  : TX Ready
-    7  : RX Data valid (TODO: this doesn't work)
-
-    Control Register (write):
-    0  : SPI CS - 0 active/1 inactive
- */
-case class SpiMasterDevice(config: SpiMasterConfig = SpiMasterConfig()) extends Component {
+case class SpiMasterDevice(config: SpiMasterConfig) extends Component {
   val io = new Bundle {
     val bus = slave(M68kBus())
     val sel = in Bool() // chip select from decoder
-    val spi = master(Spi()) // TODO: either extract CS from Spi or extend Spi.cs to 8 bits
+    val spis = Vec(master(Spi()), config.portCount)
   }
 
-  val spiMaster = new SpiMasterMM
+  val spiMaster = new SpiMasterBB
   val spiSel = !io.bus.AS && io.sel
 
   // 68000 bus
@@ -36,13 +24,26 @@ case class SpiMasterDevice(config: SpiMasterConfig = SpiMasterConfig()) extends 
   spiMaster.io.data_in := io.bus.DATAO(7 downto 0)
   spiMaster.io.rw := io.bus.RW
   io.bus.DATAI := spiMaster.io.data_out.resized
-  // TODO: spiMaster.io.irq
+  // spiMaster.io.irq not used
 
   // SPI bus
-  spiMaster.io.spi_miso := io.spi.miso
-  io.spi.mosi := spiMaster.io.spi_mosi
-  io.spi.clk := spiMaster.io.spi_clk
-  io.spi.cs := spiMaster.io.spi_cs_n(0)
+  spiMaster.io.spi_miso := spiMaster.io.spi_cs_n.muxList(
+    defaultValue = True,
+    // spi_cs_n is asserted low, need false
+    // Patterns = 11111110, 11111101, 11111011, etc
+    mappings = for(i <- 0 until config.portCount) yield {
+      val pattern = B(8 bits, default -> true) // pattern = 11111111
+      pattern(i) := False                      // e.g. i = 1 -> pattern = 11111101
+      pattern -> io.spis(i).miso
+    },
+  )
+
+  // SPIs outputs
+  for (i <- 0 until config.portCount) {
+    io.spis(i).mosi := spiMaster.io.spi_mosi
+    io.spis(i).clk := spiMaster.io.spi_clk
+    io.spis(i).cs := spiMaster.io.spi_cs_n(i)
+  }
 
   io.bus.DTACK := True  // inactive (assuming active low)
   when(spiSel) {

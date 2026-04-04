@@ -116,25 +116,14 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     sramCtrl.io.sel := busManager.io.sramSel
 
     // --------------------------------
-    // Flash Reader: 16 bytes @ 0x100000 - 0x180000
+    // SPI Device (SD card and Flash Mem)
     // --------------------------------
-    val flash = FlashReader()
-    io.flash <> flash.io.spi
-    busManager.io.flashBus <> flash.io.bus
-    flash.io.sel := busManager.io.flashSel
-
-    // --------------------------------
-    // SD Card reader
-    // --------------------------------
-    // TODO: SpiMasterMM supports many SPI devices with an 8-bit chip select
-    //       connect here also the Flash Memory and replace the existing one.
-    //       The latter requires rewriting the boot loader with a more complex
-    //       code but it'll likely save FPGA resources
-    val spiMaster = SpiMasterDevice()
-    io.sd <> spiMaster.io.spi
-    // spiMaster.io.cd := io.sd_cd // Card detect is not managed, EmuTOS doesn't use it
+    val spiMaster = SpiMasterDevice(SpiMasterConfig(portCount = 2))
+    io.sd <> spiMaster.io.spis(0)
+    io.flash <> spiMaster.io.spis(1)
     busManager.io.spiBus <> spiMaster.io.bus
-    spiMaster.io.sel := busManager.io.sdCardSel
+    spiMaster.io.sel := busManager.io.spiSel
+    // spiMaster.io.cd := io.sd_cd // Card detect is not managed, EmuTOS doesn't use it
 
     // --------------------------------
     // Timers

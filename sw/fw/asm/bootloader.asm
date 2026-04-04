@@ -95,48 +95,111 @@ TRAP_14_HANDLER:
 ; Return start address in A1.
 ; -------------------------------------------------------------------------
 LOAD_FLASH:
-    ; TODO: add checksum
-    MOVE.L  #$80000,FLASH_ADDR  ; Flash address to read from
-    BSR     FLASH_RD_LONG
+    ; Configure SPI for 8 bits lenght and max speed 8 MHz
+    MOVE.B  #%00001000,SPI_CONF ; LENGTH = 01 (8 bits), DIVIDE = 000 (clk/2)
+    ; Assert SPI CS
+    MOVE.B  #%00010010,SPI_CDST ; SPIAD = 001, IRQ = 0, CS = 1, START = 0
+    ; Read command
+    MOVE.L  #$00080000,D0       ; Start flash memory address
+    BSR     SPI_READ_COMMAND    ; Send read command and address
+
+    ; Read header start address (32 bits)
+    BSR     SPI_RD_LONG
     MOVE.L  D0,A0               ; A0 start address, for loading
     MOVE.L  D0,A1               ; A0 start address, to be returned
-    BSR     FLASH_RD_LONG       ; D1 content length in bytes
+
+    ; Read content length
+    BSR     SPI_RD_LONG       ; D1 content length in bytes
     MOVE.L  D0,D1
-    LSR     #1,D1               ; D1 content length in words (files have always even length)
     CMP     #0,D1
     BEQ     .DONE               ; If D1 = 0, exit
 
-    ; TODO: the following line is wrong, we're not using DBRA anymore
-    SUBQ.L  #1,D1               ; Decrement counter (required by DBRA)
+    ; Read content
+    ; Init checksum
+    CLR.L   D6                  ; D0.B will be Sum A (Fletcher’s Checksum)
+    CLR.L   D7                  ; D1.B will be Sum B (Fletcher’s Checksum)
 .LOOP:
-    MOVE.B  #FL_CMD_RD,FLASH_CTRL ; Read command
-.WAIT:
-    TST.B   FLASH_CTRL          ; Is Flash ready (bit 7)?
-    BMI     .WAIT               ; Busy if set to 1 (negative test)
-    MOVE.W  FLASH_DATA,(A0)+    ; Copy byte read to SRAM
-    SUBQ.L  #1,D1               ; Decrement D1
+    BSR     SPI_READ_BYTE
+    MOVE.B  D0,(A0)             ; Copy read byte to memory
+    MOVE.B  (A0)+,D0            ; Read back from memory (checks both serial and memory)
+    ADD.B   D0,D6               ; SumA = SumA + Data
+    ADD.B   D6,D7               ; SumB = SumB + SumA
+    SUBQ.L  #1,D1               ; Decrement D1 (DBRA DOES NOT WORK WITH LONG!)
     BNE     .LOOP               ; if != 0 continue
 
 .DONE:
-; TODO: Load - Add checksum at the end
+    ; Deassert SPI CS
+    MOVE.B  #%00010000,SPI_CDST  ; SPIAD = 001, IRQ = 0, CS = 0, START = 0
+    ; Combine SumA and SumB into a single 16-bit word
+    ; Result format: [SumB (High Byte)][SumA (Low Byte)]
+    LSL.W   #8,D7          ; Shift SumB to high byte
+    MOVE.B  D6,D7          ; Put SumA in low byte
+    MOVE.W  D7,D0          ; Return result in D0
     RTS
 
-FLASH_RD_LONG:
-    BSR     FLASH_RD            ; Read a word in D0
+;--------------------------------
+; Read a long from SPI into D0
+; Result: D0 = [Byte1][Byte2][Byte3][Byte4]
+;--------------------------------
+SPI_RD_LONG:
+    BSR     SPI_READ_BYTE       ; Read a byte in D0
     LSL.L   #8,D0               ;
+    BSR     SPI_READ_BYTE       ; Read a byte in D0
     LSL.L   #8,D0               ;
-    BSR     FLASH_RD            ; Read a word in D0
+    BSR     SPI_READ_BYTE       ; Read a byte in D0
+    LSL.L   #8,D0               ;
+    BSR     SPI_READ_BYTE       ; Read a byte in D0
     RTS
 
-; Read one word from flash
-; Address should already be set
-; Return the word in D0
-FLASH_RD:
-    MOVE.B  #FL_CMD_RD,FLASH_CTRL ; Read command
-FLASH_WAIT:
-    TST.B   FLASH_CTRL            ; Is Flash ready (bit 7)?
-    BMI     FLASH_WAIT            ; Busy if set to 1 (negative test)
-    MOVE.W  FLASH_DATA,D0
+;--------------------------------
+; Send read command and address
+; (3 bytes) to SPI.
+; D0.L flash memory address
+;--------------------------------
+SPI_READ_COMMAND:
+    ; Send read command $03
+    MOVE.L  D0,D1
+    MOVE.B  #$03,D0
+    BSR     SPI_SEND_BYTE
+    MOVE.L  D1,D0
+
+    ; Send address
+    ; D0: [XX][AA][BB][CC]
+    SWAP    D0                  ; D0: [BB][CC][XX][AA]
+    BSR     SPI_SEND_BYTE       ; Send [AA]
+    ROL.L   #8,D0               ; D0: [CC][XX][AA][BB]
+    BSR     SPI_SEND_BYTE       ; Send [BB]
+    ROL.L   #8,D0               ; D0: [XX][AA][BB][CC]
+    BSR     SPI_SEND_BYTE       ; Send [CC]
+    RTS
+
+;--------------------------------
+; Read a byte from SPI
+; D0.B byte read
+;--------------------------------
+SPI_READ_BYTE:
+    MOVE.B  #$FF,D0             ; Trigger 8 clock pulses
+    BSR     SPI_SEND_BYTE
+    BSR     SPI_WAIT_READY
+    MOVE.B  SPI_DTLW,D0
+    RTS
+
+;--------------------------------
+; Send a byte to SPI
+; D0.B byte to send
+;--------------------------------
+SPI_SEND_BYTE:
+    BSR     SPI_WAIT_READY
+    MOVE.B  D0,SPI_DTLW
+    MOVE.B  #%00010011,SPI_CDST  ; SPIAD = 001, IRQ = 0, CS = 1, START = 1
+    RTS
+
+;--------------------------------
+; Wait for BUSY
+;--------------------------------
+SPI_WAIT_READY:
+    BTST    #0,SPI_CDST     ; Test bit 0 of the Status Register
+    BNE     SPI_WAIT_READY  ; Branch if Not Equal (to zero).
     RTS
 
 
@@ -166,7 +229,7 @@ LOAD_SERIAL:
     MOVE.B  (A0)+,D0            ; Read back from memory (checks both serial and memory)
     ADD.B   D0,D6               ; SumA = SumA + Data
     ADD.B   D6,D7               ; SumB = SumB + SumA
-    SUBQ.L  #1,D1               ; Decrement D1
+    SUBQ.L  #1,D1               ; Decrement D1 (DBRA DOES NOT WORK WITH LONG!)
     BNE     .LOOP               ; if != 0 continue
 
 .DONE:
@@ -245,7 +308,8 @@ INNER_LOOP:
 ; Libraries
 ; ------------------------------
     INCLUDE '../../lib/asm/console_io_16450.asm'
-    INCLUDE '../../lib/asm/spi_flash.asm'
+    INCLUDE '../../lib/asm/spi.asm'
+;    INCLUDE '../../lib/asm/spi_flash.asm'
     INCLUDE '../../lib/asm/key.asm'
     INCLUDE '../../lib/asm/isr_vector.asm'
     INCLUDE '../../lib/asm/conversions.asm'

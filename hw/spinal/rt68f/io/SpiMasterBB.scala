@@ -4,7 +4,7 @@ import spinal.core._
 
 import scala.language.postfixOps
 
-class SpiMasterMM extends BlackBox {
+class SpiMasterBB extends BlackBox {
   val io = new Bundle {
     // CPU Interface Signals
     val clk      = in Bool()
@@ -26,7 +26,7 @@ class SpiMasterMM extends BlackBox {
   mapClockDomain(clock = io.clk, reset = io.reset, resetActiveLevel = HIGH)
 
   setDefinitionName("spi_master") // This tells SpinalHDL which Verilog module to instantiate
-  addRTLPath("hw/vhdl/spi-master.vhd") // Merge the file to the generated 'mergeRTL.v' file
+  addRTLPath("hw/vhdl/spi_master.vhd") // Merge the file to the generated 'mergeRTL.v' file
 
   noIoPrefix() // Remove io_ prefix
 }

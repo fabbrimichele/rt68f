@@ -19,7 +19,6 @@ case class BusManager() extends Component {
     val ledBus    = master(M68kBus())
     val keyBus    = master(M68kBus())
     val sramBus   = master(M68kBus())
-    val flashBus  = master(M68kBus())
     val spiBus    = master(M68kBus())
     val timerABus = master(M68kBus())
     //val timerBBus = master(M68kBus())
@@ -36,8 +35,7 @@ case class BusManager() extends Component {
     val keyDevSel         = out Bool()
     val uartDevSel        = out Bool()
     val sramSel           = out Bool()
-    val flashSel          = out Bool()
-    val sdCardSel         = out Bool()
+    val spiSel         = out Bool()
     val timerASel         = out Bool()
     //val timerBSel         = out Bool()
     val ps2aSel           = out Bool()
@@ -58,7 +56,7 @@ case class BusManager() extends Component {
   // --------------------------------
   val peripheralBuses = List(
     io.romBus, io.vgaBus, io.ledBus, io.keyBus,
-    io.uartBus, io.sramBus, io.flashBus, io.spiBus,
+    io.uartBus, io.sramBus, io.spiBus,
     io.timerABus, /*io.timerBBus,*/ io.ps2aBus,
     io.ps2bBus, io.psgBus,
   )
@@ -107,8 +105,7 @@ case class BusManager() extends Component {
   io.keyDevSel         := False
   io.uartDevSel        := False
   io.sramSel           := False
-  io.flashSel          := False
-  io.sdCardSel         := False
+  io.spiSel         := False
   io.timerASel         := False
   //io.timerBSel       := False
   io.ps2aSel           := False
@@ -139,8 +136,6 @@ case class BusManager() extends Component {
     io.vgaPaletteSel := True
   } elsewhen(addr(31 downto 16) === 0x0043) {
     io.vgaControlSel := True
-  } elsewhen(addr(31 downto 16) === 0x0044) {
-    io.flashSel := True
   } elsewhen(addr(31 downto 16) === 0x0045) {
     io.timerASel := True
   /*} elsewhen(addr(31 downto 16) === 0x0046) {
@@ -156,7 +151,7 @@ case class BusManager() extends Component {
   } elsewhen(addr(31 downto 16) === 0x004B) {
     io.keyDevSel := True
   } elsewhen(addr(31 downto 16) === 0x004C) {
-    io.sdCardSel := True
+    io.spiSel := True
   }
 
   // --------------------------------
@@ -184,13 +179,10 @@ case class BusManager() extends Component {
     } elsewhen (io.sramSel) {
       io.cpuBus.DATAI := io.sramBus.DATAI
       io.cpuBus.DTACK := io.sramBus.DTACK
-    } elsewhen (io.flashSel) {
-      io.cpuBus.DATAI := io.flashBus.DATAI
-      io.cpuBus.DTACK := io.flashBus.DTACK
-    }  elsewhen (io.sdCardSel) {
+    } elsewhen (io.spiSel) {
       io.cpuBus.DATAI := io.spiBus.DATAI
       io.cpuBus.DTACK := io.spiBus.DTACK
-    }elsewhen (io.timerASel) {
+    } elsewhen (io.timerASel) {
       io.cpuBus.DATAI := io.timerABus.DATAI
       io.cpuBus.DTACK := io.timerABus.DTACK
     /*} elsewhen (io.timerBSel) {
