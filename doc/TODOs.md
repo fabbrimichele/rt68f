@@ -4,9 +4,9 @@
 * ~~Define a linker file (LD) with the memory layout for the monitor (RAM version)~~
 
 ### Bootloader
-* There might be a bug the serial loader:
-  * When loading the `monitor_ram.bin` and then entering a command it prints an error, I think it doesn't read the last character sent.
-  * Depending on the `monitor_ram.bin` size the last command parsing doesn't work, also in this case I think it depends on the last byte not read.
+* ~~There might be a bug the serial loader:~~
+  * ~~When loading the `monitor_ram.bin` and then entering a command it prints an error, I think it doesn't read the last character sent.~~
+  * ~~Depending on the `monitor_ram.bin` size the last command parsing doesn't work, also in this case I think it depends on the last byte not read.~~
 
 ### Firmware
 * Fix all firmware examples to use the new memory map (monitor is already updated)
@@ -54,10 +54,10 @@
 * ~~Design the registers to read from the SPI~~
 * ~~Read from the SPI Flash data with a 68000 program~~
 * ~~Create a bootloader in ROM that starts the monitor program from the SPI Flash~~
-* Use 64Mhz clock? 
+* ~~Use shared SPI Master component~~ 
 
 ### SD Card
-* Implement an SD Card controller using the SPI device
+* ~~Implement an SD Card controller using the SPI device~~
 
 ### Sound
 * Integrate a sound core synth, see:
