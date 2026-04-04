@@ -24,9 +24,15 @@ SEL_LOOP:
     MOVE.L  #10,D0
     JSR     DELAY_MS        ; Wait 10ms
     MOVE.W  (A1),D1
-    BTST    #KEY_DOWN,D1    ; Key down pressed?
+    BTST    #KEY_DOWN,D1    ; Down key pressed?
     BNE     BOOT_SER        ; Yes, jump to boot serial
+    BTST    #KEY_LEFT,D1    ; Left key pressed?
+    BNE     BOOT_MONITOR    ; Yes, jump to boot monitor from Flash
     DBRA    D2,SEL_LOOP
+    MOVE.L  #$00080000,D0   ; EmuTOS Flash ddress (default)
+    BRA     BOOT_FLASH
+BOOT_MONITOR:
+    MOVE.L  #$00100000,D0   ; Monitor Flash address
 BOOT_FLASH:
     LEA     MSG_BOOT_FROM,A0
     BSR     PUTS
@@ -91,8 +97,9 @@ TRAP_14_HANDLER:
 
 ; -------------------------------------------------------------------------
 ; Load from FLASH a binary content to memory.
-; File expected to be at Flash address: $80000
-; Return start address in A1.
+; File expected to be at Flash address D0.
+; Input: FLASH start address in D0.
+; Output: RAM start address in A1.
 ; -------------------------------------------------------------------------
 LOAD_FLASH:
     ; Configure SPI for 8 bits lenght and max speed 8 MHz
@@ -100,8 +107,7 @@ LOAD_FLASH:
     ; Assert SPI CS
     MOVE.B  #%00010010,SPI_CDST ; SPIAD = 001, IRQ = 0, CS = 1, START = 0
     ; Read command
-    MOVE.L  #$00080000,D0       ; Start flash memory address
-    BSR     SPI_READ_COMMAND    ; Send read command and address
+    BSR     SPI_READ_COMMAND    ; Send read command and address (D0)
 
     ; Read header start address (32 bits)
     BSR     SPI_RD_LONG
@@ -318,7 +324,12 @@ INNER_LOOP:
 ; ROM Data Section
 ; ------------------------------
 ; Messages
-MSG_SELECT      DC.B LF,'Press <down> to boot from serial (2s).',LF,NUL
+MSG_SELECT      DC.B LF,LF
+                DC.B 'Bootloader',LF,LF
+                DC.B 'Press <down> to boot from serial',LF
+                DC.B 'Press <left> to boot Monitor',LF
+                DC.B 'After 2s default boot EmuTOS',LF
+                DC.B LF,NUL
 MSG_BOOT_FROM   DC.B 'Booting from ',NUL
 MSG_BOOT_FLASH  DC.B 'flash...',NUL
 MSG_BOOT_SERIAL DC.B 'serial...',NUL

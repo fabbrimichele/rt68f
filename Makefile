@@ -179,8 +179,12 @@ prog-fpga:
 
 prog-flash:
 	echo "Programming Flash"
-	papilio-prog -v -s a -r -f target/Rt68f.bit -b hw/papilio-loader/bscan_spi_xc6slx9.bit -a 80000:target/app/monitor_ram.bin
-	# papilio-prog -v -s a -r -f target/$(TARGET).bit -b hw/papilio-loader/bscan_spi_xc6slx9.bit
+	echo "Flash address EmuTOS: $80000, address monitor: $100000"
+	cp sw/fw/img/emutos-rt68f.img target/rom.bin
+	truncate -s 512K target/rom.bin
+	cat target/app/monitor_ram.bin >> target/rom.bin
+	ls -la target/rom.bin
+	papilio-prog -v -s a -r -f target/Rt68f.bit -b hw/papilio-loader/bscan_spi_xc6slx9.bit -a 80000:target/rom.bin
 
 disassemble:
 	#m68k-elf-objdump -D -b binary -m m68k --adjust-vma=0x0 hw/gen/led_on.bin
