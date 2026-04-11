@@ -8,6 +8,28 @@ object InitialPalette {
   private val paletteSize = 256
 
   // 1. Standard 16 EGA/CGA colors
+  private def atariColors: Seq[Bits] = Seq(
+    B"12'xFFF", // Bright White (Pure White)
+    B"12'xF55", // Bright Red
+    B"12'x5F5", // Bright Green
+    B"12'x000", // Black
+
+    // Following one are not ST palette, to be fixed
+    B"12'x00A", // Blue
+    B"12'x0A0", // Green
+    B"12'x0AA", // Cyan
+    B"12'xA00", // Red
+    B"12'xA0A", // Magenta
+    B"12'xA50", // Brown (Special Case: R=A, G=5, B=0)
+    B"12'xAAA", // Light Gray
+    B"12'x555", // Dark Gray
+    B"12'x55F", // Bright Blue
+    B"12'x5FF", // Bright Cyan
+    B"12'xF5F", // Bright Magenta
+    B"12'xFF5", // Bright Yellow
+  )
+
+  // 1. Standard 16 EGA/CGA colors
   private def egaColors: Seq[Bits] = Seq(
     B"12'x000", // Black
     B"12'x00A", // Blue
@@ -89,5 +111,6 @@ object InitialPalette {
 
   // Must be a function, otherwise any error in any component
   // will trigger a null pointer exception in the Palette init.
-  def colors: Seq[Bits] = (egaColors ++ grayscaleRamp ++ colorRamp).padTo(paletteSize, B"12'x000")
+  //def colors: Seq[Bits] = (egaColors ++ grayscaleRamp ++ colorRamp).padTo(paletteSize, B"12'x000")
+  def colors: Seq[Bits] = atariColors
 }
