@@ -37,7 +37,7 @@ case class VgaBwDevice(clk25: ClockDomain) extends Component {
   val palette = Mem(Bits(12 bits), InitialPalette.colors)
 
   // Control register
-  // Bits 1-0 [Screen mode] : 0 -> 640x400 2 colors, 1 -> 640x200 4 colors, 2 -> 320x200 16 colors, 3 -> 640x400 2 colors
+  // Bits 1-0 [Screen mode] : 0 -> 640x400 2 colors, 1 -> 640x480 2 colors
   // Bit 2    [Overscan]    : 0 -> off, 1 -> on
   // Bit 3    [VBlank int]  : 0 -> off, 1 -> on
   // Bit 6    [VBlank ack]  : Write to acknowledge VBlank interrupt
