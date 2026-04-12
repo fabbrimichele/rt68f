@@ -215,7 +215,9 @@ case class VgaPlanarDevice(clk25: ClockDomain) extends Component {
       lineCounter := lineCounter + 1
       stretch := True
       // Stretch vertical resolution by 2 for all screen modes but M0_640X400Cxx
-      pixelStartLineCounter := pixelStartLineCounter + lineWidth
+      when(lineCounter.lsb === True) {
+        pixelStartLineCounter := pixelStartLineCounter + lineWidth
+      }
     }
 
     val wordDataHigh = framebufferHigh.readSync(
