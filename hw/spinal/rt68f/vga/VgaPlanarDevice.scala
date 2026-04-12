@@ -20,9 +20,11 @@ case class VgaPlanarDevice(clk25: ClockDomain) extends Component {
   }
 
   // Framebuffer
+  // Do not split into multiple buffers, it makes the
+  // period requirement for 16 MHz clock difficult to
+  // meet.
   val fbWidth = 32000 / 2
-  val framebufferHigh = Mem(Bits(16 bits), fbWidth / 2)
-  val framebufferLow = Mem(Bits(16 bits), fbWidth / 2)
+  val framebuffer = Mem(Bits(16 bits), fbWidth)
 
   // Palette
   val palette = Mem(Bits(12 bits), InitialPalette.colors)
@@ -109,12 +111,7 @@ case class VgaPlanarDevice(clk25: ClockDomain) extends Component {
       // Read Access (Byte strobes are ignored by the memory block)
       // ------------------------------------
       // NOTE: mem.readSync is fine; the M68k core internally selects D15-D8 or D7-D0 based on UDS/LDS.
-
-      when(wordAddr(0) === False) {
-        io.bus.DATAI := framebufferHigh.readSync(wordAddr >> 1)
-      } otherwise {
-        io.bus.DATAI := framebufferLow.readSync(wordAddr >> 1)
-      }
+        io.bus.DATAI := framebuffer.readSync(wordAddr)
 
     } otherwise {
       // ------------------------------------
@@ -125,19 +122,11 @@ case class VgaPlanarDevice(clk25: ClockDomain) extends Component {
       val byteMask = Cat(!io.bus.UDS, !io.bus.LDS).asBits // The 2-bit byte write enable mask
 
       // Use writeMixedWidth to enable byte-level writing
-      when(wordAddr(0) === False) {
-        framebufferHigh.writeMixedWidth(
-          address = wordAddr >> 1,
-          data = io.bus.DATAO,
-          mask = byteMask
-        )
-      } otherwise {
-        framebufferLow.writeMixedWidth(
-          address = wordAddr >> 1,
-          data = io.bus.DATAO,
-          mask = byteMask
-        )
-      }
+      framebuffer.writeMixedWidth(
+        address = wordAddr,
+        data = io.bus.DATAO,
+        mask = byteMask
+      )
     }
   }
 
@@ -220,13 +209,13 @@ case class VgaPlanarDevice(clk25: ClockDomain) extends Component {
       }
     }
 
-    val wordDataHigh = framebufferHigh.readSync(
-      address = fbReadAddr,
+    val wordDataHigh = framebuffer.readSync(
+      address = fbReadAddr << 1,
       clockCrossing = true
     )
 
-    val wordDataLow = framebufferLow.readSync(
-      address = fbReadAddr,
+    val wordDataLow = framebuffer.readSync(
+      address = (fbReadAddr << 1) | 1,
       clockCrossing = true
     )
 
