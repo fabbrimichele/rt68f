@@ -11,7 +11,7 @@ import spinal.lib.com.uart.Uart
 import spinal.lib.graphic.vga.Vga
 import spinal.lib.io.InOutWrapper
 import spinal.lib.{BufferCC, ResetCtrl, master}
-import vga.{VgaDevice, VgaPlanarDevice}
+import vga.{VgaBwDevice, VgaDevice, VgaPlanarDevice}
 
 import scala.language.postfixOps
 
@@ -67,7 +67,7 @@ case class Rt68fTopLevel(romFilename: String) extends Component {
     // --------------------------------
     // VGA
     // --------------------------------
-    val vga = VgaPlanarDevice(clkCtrl.clk25)
+    val vga = VgaBwDevice(clkCtrl.clk25)
     io.vga <> vga.io.vga
 
     busManager.io.vgaBus <> vga.io.bus

@@ -111,6 +111,6 @@ object InitialPalette {
 
   // Must be a function, otherwise any error in any component
   // will trigger a null pointer exception in the Palette init.
-  //def colors: Seq[Bits] = (egaColors ++ grayscaleRamp ++ colorRamp).padTo(paletteSize, B"12'x000")
-  def colors: Seq[Bits] = atariColors
+  def colors: Seq[Bits] = (egaColors ++ grayscaleRamp ++ colorRamp).padTo(paletteSize, B"12'x000")
+  //def colors: Seq[Bits] = atariColors
 }
