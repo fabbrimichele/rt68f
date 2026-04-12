@@ -10,11 +10,11 @@ object InitialPalette {
   // 1. Standard 16 EGA/CGA colors
   private def atariColors: Seq[Bits] = Seq(
     B"12'xFFF", // Bright White (Pure White)
-    B"12'xF55", // Bright Red
     B"12'x5F5", // Bright Green
+    B"12'xF55", // Bright Red
     B"12'x000", // Black
 
-    // Following one are not ST palette, to be fixed
+    // TODO: Following one are not ST palette, to be fixed
     B"12'x00A", // Blue
     B"12'x0A0", // Green
     B"12'x0AA", // Cyan

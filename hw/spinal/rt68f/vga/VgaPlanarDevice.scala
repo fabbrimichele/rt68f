@@ -21,7 +21,8 @@ case class VgaPlanarDevice(clk25: ClockDomain) extends Component {
 
   // Framebuffer
   val fbWidth = 32000 / 2
-  val framebuffer = Mem(Bits(16 bits), fbWidth)
+  val framebufferHigh = Mem(Bits(16 bits), fbWidth / 2)
+  val framebufferLow = Mem(Bits(16 bits), fbWidth / 2)
 
   // Palette
   val palette = Mem(Bits(12 bits), InitialPalette.colors)
@@ -32,8 +33,6 @@ case class VgaPlanarDevice(clk25: ClockDomain) extends Component {
   // Bit 3    [VBlank int]  : 0 -> off, 1 -> on
   // Bit 6    [VBlank ack]  : Write to acknowledge VBlank interrupt
   val controlReg = Reg(Bits(16 bits)) init 3 // 640X400C002, no overscan, no vBlank int
-  // TODO: it seems 640X400C002 is not working, it skips one byte
-  //       write a program to test it
 
   // ------------ Interrupts ------------
   // vSync
@@ -110,7 +109,13 @@ case class VgaPlanarDevice(clk25: ClockDomain) extends Component {
       // Read Access (Byte strobes are ignored by the memory block)
       // ------------------------------------
       // NOTE: mem.readSync is fine; the M68k core internally selects D15-D8 or D7-D0 based on UDS/LDS.
-      io.bus.DATAI := framebuffer.readSync(wordAddr)
+
+      when(wordAddr(0) === False) {
+        io.bus.DATAI := framebufferHigh.readSync(wordAddr >> 1)
+      } otherwise {
+        io.bus.DATAI := framebufferLow.readSync(wordAddr >> 1)
+      }
+
     } otherwise {
       // ------------------------------------
       // Write Access (Byte strobes MUST be managed)
@@ -120,11 +125,19 @@ case class VgaPlanarDevice(clk25: ClockDomain) extends Component {
       val byteMask = Cat(!io.bus.UDS, !io.bus.LDS).asBits // The 2-bit byte write enable mask
 
       // Use writeMixedWidth to enable byte-level writing
-      framebuffer.writeMixedWidth(
-        address = wordAddr,
-        data = io.bus.DATAO,
-        mask = byteMask
-      )
+      when(wordAddr(0) === False) {
+        framebufferHigh.writeMixedWidth(
+          address = wordAddr >> 1,
+          data = io.bus.DATAO,
+          mask = byteMask
+        )
+      } otherwise {
+        framebufferLow.writeMixedWidth(
+          address = wordAddr >> 1,
+          data = io.bus.DATAO,
+          mask = byteMask
+        )
+      }
     }
   }
 
@@ -205,19 +218,13 @@ case class VgaPlanarDevice(clk25: ClockDomain) extends Component {
       pixelStartLineCounter := pixelStartLineCounter + lineWidth
     }
 
-    // TODO:
-    //  These reads are sequential, but it doesn't seem to affect the result.
-    //  Another option is to split the framebuffer into banks but it makes the
-    //  68000 bus side a bit more complex and adding planes requires additional
-    //  splits.
-
-    val wordDataHigh = framebuffer.readSync(
-      address = fbReadAddr << 1,
+    val wordDataHigh = framebufferHigh.readSync(
+      address = fbReadAddr,
       clockCrossing = true
     )
 
-    val wordDataLow = framebuffer.readSync(
-      address = (fbReadAddr << 1) | 1,
+    val wordDataLow = framebufferLow.readSync(
+      address = fbReadAddr,
       clockCrossing = true
     )
 
@@ -230,7 +237,7 @@ case class VgaPlanarDevice(clk25: ClockDomain) extends Component {
       hCount - timings.h.colorStart,
       U(0, 12 bits)
     )
-    val loadShiftRegister = pixelX(2 downto 0) === 0
+    val loadShiftRegister = pixelX(3 downto 0) === 0
 
     when (loadShiftRegister) {
       shiftRegisterHigh := wordDataHigh
