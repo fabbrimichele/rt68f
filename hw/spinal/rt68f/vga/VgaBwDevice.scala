@@ -1,6 +1,7 @@
 package rt68f.vga
 
 import rt68f.core._
+import rt68f.vga.VgaBwDevice.Modes.M0_640X400C002
 import rt68f.vga.VgaBwDevice.rgbConfig
 import spinal.core._
 import spinal.lib.graphic.RgbConfig
@@ -30,7 +31,7 @@ case class VgaBwDevice(clk25: ClockDomain) extends Component {
   }
 
   // Framebuffer
-  val fbWidth = 32768 / 2  // 32KB = 640x400, 1 bit color
+  val fbWidth = 49152 / 2  // max 648x400, 1 bit color
   val framebuffer = Mem(Bits(16 bits), fbWidth)
 
   // Control register
@@ -118,17 +119,14 @@ case class VgaBwDevice(clk25: ClockDomain) extends Component {
     // Configuration
     val fbLatency = 1
     val lineWidth =  640
-    val numberOfLines = 400
-    val vertOffset = 40
-
-    val vertOffsetReg = Reg(UInt()) init 0
+    val numberOfLinesReg = Reg(UInt()) init 400
 
     val ctrl = VgaCtrl(rgbConfig)
     ctrl.io.softReset := False
 
-    when(overscanEn) {
+    when(mode === M0_640X400C002) {
       // VGA Signal 640 x 400 @ 70 Hz
-      vertOffsetReg := 0
+      numberOfLinesReg := 400
       ctrl.io.timings.setAs(
         hPixels = 640,
         hSync = 96,
@@ -142,7 +140,7 @@ case class VgaBwDevice(clk25: ClockDomain) extends Component {
         vPolarity = false
       )
     } otherwise {
-      vertOffsetReg := vertOffset
+      numberOfLinesReg := 480
       ctrl.io.timings.setAs_h640_v480_r60
     }
 
@@ -164,7 +162,7 @@ case class VgaBwDevice(clk25: ClockDomain) extends Component {
     val pixelCounter = Reg(UInt(log2Up(fbWidth) + 4 bits)) init 0
     val pixelStartLineCounter = Reg(UInt(log2Up(fbWidth) + 4 bits)) init 0
     val lineCounter = Reg(UInt(9 bits)) init 0
-    val isVisibleVertRange = vCount >= (timings.v.colorStart + vertOffsetReg) && vCount < (timings.v.colorStart + numberOfLines + vertOffsetReg)
+    val isVisibleVertRange = vCount >= timings.v.colorStart && vCount < (timings.v.colorStart + numberOfLinesReg)
     val isVisibleHorRange = hCount >= (timings.h.colorStart - fbLatency) && hCount < timings.h.colorEnd - fbLatency
 
     when (frameStart) {
