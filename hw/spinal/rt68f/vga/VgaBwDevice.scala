@@ -23,7 +23,7 @@ case class VgaBwDevice(clk25: ClockDomain) extends Component {
   val io = new Bundle {
     val bus             = slave(M68kBus())
     val framebufferSel  = in Bool()   // Framebuffer select from decoder
-    val paletteSel      = in Bool()   // Palette select from decoder
+    val paletteSel      = in Bool()   // Palette select from decoder (not used by this version)
     val controlSel      = in Bool()   // Control select from decoder
     val vBlankInt       = out Bool()  // Vertical blank interrupt
     val vga             = master(Vga(rgbConfig, withColorEn = false))
@@ -32,9 +32,6 @@ case class VgaBwDevice(clk25: ClockDomain) extends Component {
   // Framebuffer
   val fbWidth = 32768 / 2  // 32KB = 640x400, 1 bit color
   val framebuffer = Mem(Bits(16 bits), fbWidth)
-
-  // Palette
-  val palette = Mem(Bits(12 bits), InitialPalette.colors)
 
   // Control register
   // Bits 1-0 [Screen mode] : 0 -> 640x400 2 colors, 1 -> 640x480 2 colors
@@ -68,31 +65,6 @@ case class VgaBwDevice(clk25: ClockDomain) extends Component {
   // Default response
   io.bus.DATAI := 0
   io.bus.DTACK := True
-
-  // Palette read/write
-  when(!io.bus.AS && io.paletteSel) {
-    io.bus.DTACK := False // acknowledge access (active low)
-    val wordAddr = io.bus.ADDR(8 downto 1)
-
-    when(io.bus.RW) {
-      // Read
-      io.bus.DATAI := Cat(B(0, 4 bits), palette.readSync(wordAddr))
-    } otherwise {
-      // ------------------------------------
-      // Write Access (Byte strobes MUST be managed)
-      // ------------------------------------
-      // writeMixedWidth() works only with bytes and can't be used
-      val upperMask = B(4 bits, default -> !io.bus.UDS)
-      val lowerMask = B(8 bits, default -> !io.bus.LDS)
-
-      // Use writeMixedWidth to enable byte-level writing
-      palette.write(
-        address = wordAddr,
-        data = io.bus.DATAO(11 downto 0),
-        mask = upperMask ## lowerMask
-      )
-    }
-  }
 
   // Control read/write
   when(!io.bus.AS && io.controlSel) {
