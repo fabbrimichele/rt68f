@@ -6,7 +6,7 @@ import rt68f.vga.VgaBwDevice.rgbConfig
 import spinal.core._
 import spinal.lib.graphic.RgbConfig
 import spinal.lib.graphic.vga.Vga
-import spinal.lib.{BufferCC, Delay, master, slave}
+import spinal.lib.{BufferCC, master, slave}
 
 import scala.language.postfixOps
 
@@ -78,6 +78,15 @@ case class VgaBwDevice(clk25: ClockDomain) extends Component {
       // Write
       // TODO: handle UDS/LDS
       controlReg := io.bus.DATAO
+    }
+  }
+
+  // Simulate Palette access
+  when(!io.bus.AS && io.paletteSel) {
+    io.bus.DTACK := False // acknowledge access (active low)
+    when(io.bus.RW) {
+      // Read
+      io.bus.DATAI := 0
     }
   }
 
