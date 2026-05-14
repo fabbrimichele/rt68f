@@ -20,6 +20,7 @@ object VgaBwDevice {
 }
 
 //noinspection TypeAnnotation
+//noinspection ScalaWeakerAccess
 case class VgaBwDevice(clk25: ClockDomain) extends Component {
   val io = new Bundle {
     val bus             = slave(M68kBus())
@@ -31,7 +32,7 @@ case class VgaBwDevice(clk25: ClockDomain) extends Component {
   }
 
   // Framebuffer
-  val fbWidth = 49152 / 2  // max 648x400, 1 bit color
+  val fbWidth = 38400 / 2  // max 648x400, 1 bit color
   val framebuffer = Mem(Bits(16 bits), fbWidth)
 
   // Control register

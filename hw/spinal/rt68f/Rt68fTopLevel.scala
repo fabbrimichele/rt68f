@@ -24,6 +24,7 @@ import scala.language.postfixOps
  */
 
 //noinspection TypeAnnotation
+//noinspection ScalaWeakerAccess
 case class Rt68fTopLevel(romFilename: String) extends Component {
   val io = new Bundle {
     val clk = in Bool()
